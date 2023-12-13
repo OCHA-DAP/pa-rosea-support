@@ -1,7 +1,10 @@
-library(rhdx)
-library(tidyverse)
-library(janitor)
-library(glue)
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 
 get_proj_cods <-  function(){
   lgdf <- load_proj_cods()
@@ -49,12 +52,15 @@ load_proj_cods <-  function(){
 #' library(targets)
 #' lgdf_adm_natl <-  load_proj_cods()
 #' lgdf_adm <- compile_proj_cods(lgdf_adm_natl)
-#' 
+#' }
+
 compile_proj_cods <-  function(lgdf){
   adm0= bind_rows(lgdf$Kenya$adm0,lgdf$Somalia$adm0,lgdf$Ethiopia$adm0)  
   adm1= bind_rows(lgdf$Kenya$adm1,lgdf$Somalia$adm1,lgdf$Ethiopia$adm1)  
   adm2= bind_rows(lgdf$Kenya$adm2,lgdf$Somalia$adm2,lgdf$Ethiopia$adm2)  
-  lst(adm0,adm1,adm2)
+  return(
+    lst(adm0,adm1,adm2)
+  )
 }
 
 
