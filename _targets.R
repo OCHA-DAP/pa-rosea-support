@@ -38,36 +38,38 @@ dir_wp <-  file.path(
 
 list(
 # Step 1. Get AOI ----------------------------------------------------------------
-  tar_target(name = lgdf_adm, 
+  tar_target(name = lgdf_adm, # list of geodataframes (lgdf)
              command=get_proj_cods()
-             )
+             ),
+  tar_target(
+    name=fp_wp,
+    command= file.path(dir_wp,"som_ppp_2020_1km_Aggregated_UNadj.tif" ),
+    format = "file"
+  ),
+
+  tar_target(
+    name=fp_fs,
+    command= file.path(
+      Sys.getenv("AA_DATA_DIR"),
+      "private",
+      "raw",
+      "glb",
+      "floodscan",
+      "floodscan_flooded_fraction_africa_19980112-20221231_p00",
+      "aer_sfed_area_300s_19980112_20221231_v05r01.nc"
+    )
+  )
 )
-#   tar_target(
-#     name=fp_wp,
-#     command= file.path(dir_wp,"som_ppp_2020_1km_Aggregated_UNadj.tif" ),
-#     format = "file"
-#   ),
-#   tar_target(
-#     name=fp_ocha_pop,
-#     command= file.path(dir_ocha_explore,"2024 Population Disaggregation.xlsx" ),
-#     format = "file"
-#   ),
-#   tar_target(
-#     name=fp_ocha_pin,
-#     command= file.path(dir_ocha_explore,"Workspace_3A-3B_PIN&Sev_2023-10-24_district level.xlsx"),
-#     format = "file"
-#   ),
-#   tar_target(
-#     name=fp_fs,
-#     command= file.path(
-#       Sys.getenv("AA_DATA_DIR"),
-#       "private",
-#       "raw",
-#       "glb",
-#       "floodscan",
-#       "floodscan_flooded_fraction_africa_19980112-20221231_p00",
-#       "aer_sfed_area_300s_19980112_20221231_v05r01.nc"
-#     ),
+  #   tar_target(
+  #     name=fp_ocha_pop,
+  #     command= file.path(dir_ocha_explore,"2024 Population Disaggregation.xlsx" ),
+  #     format = "file"
+  #   ),
+  #   tar_target(
+  #     name=fp_ocha_pin,
+  #     command= file.path(dir_ocha_explore,"Workspace_3A-3B_PIN&Sev_2023-10-24_district level.xlsx"),
+  #     format = "file"
+  #   ),
 # 
 #     format = "file"
 #   ),
