@@ -1,0 +1,306 @@
+---
+title: "East Africa Flood Susceptibility"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    self-contained: true
+    embed-resoures: true
+    smooth-scroll: true
+execute:
+  echo: false
+  warning: false
+  message: false
+  eval: false
+  results: "asis"
+  out.width: "100%"
+editor: visual
+project:
+     execute-dir: project
+---
+
+## Intro
+
+This analysis uses FloodScan (1998-2022) & WorldPop (2022) to generate flood estimates for our specified AOI in East Africa. The AOI includes:
+
+-   SOM. ETH, KEN.
+
+-   Analysis is performed at admin 1 & admin 2
+
+```{r ,eval=T, echo=F, results='hide'}
+library(targets)
+library(tidyverse)
+library(here)
+library(scales)
+library(sf)
+library(gghdx)
+library(glue)
+gghdx()
+
+```
+
+```{r ,eval=T}
+
+# Load  a bunch of targets so it's easy to make visuals
+tar_load(lgt_adm1_bin_method,store = here("_targets"))
+tar_load(lgt_adm2_bin_method,store = here("_targets"))
+tar_load(lgdf_adm,store = here("_targets"))
+tar_load(df_adm1_mean_stat,store = here("_targets"))
+tar_load(df_adm2_mean_stat,store = here("_targets"))
+tar_load(df_adm2_stats_bin_method,store = here("_targets"))
+```
+
+
+## Admin 1
+
+::: {.panel-tabset}
+## Method 1
+
+::: {.panel-tabset}
+
+## Somalia
+
+```{r ,eval=T}
+lgt_adm1_bin_method$Somalia
+```
+
+## Ethiopia
+
+```{r ,eval=T}
+lgt_adm1_bin_method$Ethiopia
+```
+
+## Kenya
+
+```{r ,eval=T}
+lgt_adm1_bin_method$Kenya
+```
+
+## Map (Absolute)
+
+Issue is that admin 1 in Ethiopia is just way bigger
+```{r, eval=T}
+gdf_adm1_stat<- lgdf_adm$adm1 %>% 
+  left_join(df_adm1_mean_stat)
+
+gdf_adm1_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=mean_exposed))+
+  scale_fill_gradient(
+    trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    
+    high="red",
+    
+    breaks= c(1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e11),
+    labels=scales::label_comma()
+  )+
+  geom_sf(data= lgdf_adm$adm0,fill=NA,color="black",lwd=1)+
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+## Map (%)
+% district potentially exposed
+```{r, eval=T}
+gdf_adm1_stat<- lgdf_adm$adm1 %>% 
+  left_join(df_adm1_mean_stat)
+
+gdf_adm1_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=pct_exposed))+
+  scale_fill_gradient(
+    # trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    
+    high="red",
+    
+    breaks= c(seq(0,0.1,by=0.02),seq(0.15,0.25, by=0.05)),
+    # breaks= c(seq(0,0.2,by=0.04)),
+    labels=scales::label_percent()
+  )+
+  geom_sf(data= lgdf_adm$adm0,fill=NA,color="black",lwd=1)+
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+
+:::
+
+## Method 2
+::: {.panel-tabset}
+
+## Somalia
+
+## Kenya
+
+## Ethiopia
+
+:::
+
+:::
+
+## Admin 2
+
+::: {.panel-tabset}
+## Method 1
+
+::: {.panel-tabset}
+
+## Somalia
+
+```{r ,eval=T}
+lgt_adm2_bin_method$Somalia
+```
+
+## Ethiopia
+
+```{r ,eval=T}
+lgt_adm2_bin_method$Ethiopia
+```
+
+## Kenya
+
+```{r ,eval=T}
+lgt_adm2_bin_method$Kenya
+```
+
+## Map (Absolute)
+
+Adm2 still bigger in Ethiopia, but there is just more flooding and/or higher pop densities.
+```{r, eval=T}
+gdf_adm2_stat<- lgdf_adm$adm2 %>% 
+  left_join(df_adm2_mean_stat)
+
+gdf_adm2_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=mean_exposed))+
+  scale_fill_gradient(
+    # trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    high="red",
+    breaks= c(10,50,100,10000,50000,75000,100000, 200000),
+    labels=scales::label_comma()
+  )+
+  geom_sf(data= lgdf_adm$adm1,fill=NA,color="black",lwd=0.5)+
+  geom_sf(data= lgdf_adm$adm0,fill=NA,color="black",lwd=1)+
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+## Map (%)
+% district potentially exposed
+```{r, eval=T}
+
+gdf_adm2_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=pct_exposed))+
+  scale_fill_gradient(
+    # trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    high="red",
+    
+    breaks= c(seq(0,0.1,by=0.02),seq(0.15,0.25, by=0.05)),
+    # breaks= c(seq(0,0.2,by=0.04)),
+    labels=scales::label_percent()
+  )+
+  geom_sf(data= lgdf_adm$adm1,fill=NA,color="black",lwd=0.5)+
+  geom_sf(data= lgdf_adm$adm0,fill=NA,color="black",lwd=1)+
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+
+
+:::
+## Method 2
+::: {.panel-tabset}
+
+## Somalia
+
+## Kenya
+
+## Ethiopia
+
+:::
+
+:::
+
+
+## Range Estimates
+One idea would be to calculate range estimates using the confidence interval at admin 2. Below is a visual showing what that looks like for Somalia. I'm not going to develop this idea further until we get more feedback.
+
+```{r testing, fig.height=7, eval=T}
+
+
+adm0_map <- df_adm2_stats_bin_method$adm0_en %>% unique()
+
+p_adm2_distribution_estimates <- map(set_names(adm0_map,adm0_map),
+  ~ df_adm2_stats_bin_method %>% 
+  group_by(across(matches("adm"))) %>% 
+  mutate(
+    mean_exposed = mean(pop_exposed_wp),
+    sd_exposed = sd(pop_exposed_wp),
+    se = 1.96*sd_exposed,
+    lower_ci = mean_exposed-se,
+    upper_ci = mean_exposed+se
+  ) %>% 
+  filter(
+   adm0_en ==.x
+  ) %>% 
+  ggplot(
+    aes(x=pop_exposed_wp,y=adm2_en)
+  )+
+  geom_jitter(alpha=0.3, size=1)+
+  stat_summary(fun.data = mean_cl_normal,  
+                 geom = "errorbar",color="black",
+               lwd=0.5,alpha=1, width =0.5
+               ) +
+      stat_summary(
+    fun=mean,
+    geom="point",
+    shape=10, alpha=0.5,
+    size=2,
+    color="red"
+  )+
+  facet_wrap(
+    ~adm1_en,scale="free_y"
+  )+
+  scale_x_continuous(
+    labels = scales::label_comma()
+  )+
+  labs(
+    y= "Admin 2",
+    x= "Population Exposed",
+    title = glue("{.x}: Distribution of population exposed to flooding yearly")
+  )+
+    theme(
+      axis.text.x = element_text(angle=90, size=6),
+      axis.text.y = element_text(size=6),
+      strip.text = element_text(size=8),
+      plot.title = element_text(size= 12)
+    )
+)
+
+p_adm2_distribution_estimates$Somalia
+
+```
+
+
+## Method Note
+
+Yearly maximum composite flood composite rasters were made for each year of available FloodScan Data (1998-2022). The yearly maximum composites were then re-sampled to the [World Pop 2020 UN Adjusted (1 km) Population Count Grid](https://hub.worldpop.org/). Flood fraction was then combined with world population folllowing 2 methods to get population exposure estimates:
+
+**Method 1**
+All flood fractions > 20 % were assumed to be "flooded". The entire population beneath any "flooded" pixel was then considered flooded
+
+**Method 2**
+The flood fraction was multiplied by the population in each cell (after removing very low flood fraction values of <0.005). For example, if a pixel has a flood fraction of 50% and population of 100,then a population of 50 would be considered exposed to flooding.
+
+
+```{r}
+```
+
+
+

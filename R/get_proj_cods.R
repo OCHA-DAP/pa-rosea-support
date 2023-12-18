@@ -1,10 +1,12 @@
 
-#' Title
+#' get_proj_cods
 #'
-#' @return
-#' @export
+#' @return list of 3 sf class data.frames.
+#'   return adm0, 1, & 2 for SOM, ETH, & KEN.
 #'
-#' @examples
+#' @examples \dontrun{
+#' lgdf_adm <-  get_proj_cods()
+#' }
 
 get_proj_cods <-  function(){
   lgdf <- load_proj_cods()
@@ -13,10 +15,9 @@ get_proj_cods <-  function(){
   
 
 
-#' Title
+#' load_proj_cods
 #'
-#' @return
-#' @export
+#' @return list of sf class data.frames
 #'
 #' @examples \dontrun{
 #' lgdf_adm <-  load_proj_cods()
@@ -64,6 +65,10 @@ compile_proj_cods <-  function(lgdf){
 }
 
 
+
+#' get_proj_cod_layer_names
+#'
+#' @return list of AOI layer names so that they can be downloaded from HDX with `{rhdx}` package
 
 get_proj_cod_layer_names <- function(){
   som <- list(
