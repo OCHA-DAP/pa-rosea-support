@@ -1,0 +1,3 @@
+floodscan_susceptibility:
+  script: floodscan_susceptibliity_target_pipeline.R
+  store: flood_target_store
