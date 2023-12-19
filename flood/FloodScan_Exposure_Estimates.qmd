@@ -43,12 +43,12 @@ gghdx()
 ```{r ,eval=T}
 
 # Load  a bunch of targets so it's easy to make visuals
-tar_load(lgt_adm1_bin_method,store = here("_targets"))
-tar_load(lgt_adm2_bin_method,store = here("_targets"))
-tar_load(lgdf_adm,store = here("_targets"))
-tar_load(df_adm1_mean_stat,store = here("_targets"))
-tar_load(df_adm2_mean_stat,store = here("_targets"))
-tar_load(df_adm2_stats_bin_method,store = here("_targets"))
+tar_load(lgt_adm1_bin_method,store = here("flood_target_store"))
+tar_load(lgt_adm2_bin_method,store = here("flood_target_store"))
+tar_load(lgdf_adm,store = here("flood_target_store"))
+tar_load(df_adm1_mean_stat,store = here("flood_target_store"))
+tar_load(df_adm2_mean_stat,store = here("flood_target_store"))
+tar_load(df_adm2_stats_bin_method,store = here("flood_target_store"))
 ```
 
 
