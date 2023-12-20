@@ -1,4 +1,4 @@
-### R code for making some maps from IPC data
+### R code for making some maps from IPC data for Southern Africa
 ### setup
 library(tidyverse)
 library(sf)
@@ -13,6 +13,7 @@ shp_path <- file.path(
 esa_shp <- st_read(shp_path)
 ipc_data <- read_csv("https://data.humdata.org/dataset/7a7e7428-b8d7-4d2e-91d3-19100500e016/resource/f6e7954c-3717-487a-b0d9-787881831634/download/ipc_global_level1_long.csv")
 ipc_data_latest <- read_csv("https://data.humdata.org/dataset/7a7e7428-b8d7-4d2e-91d3-19100500e016/resource/741a6164-c8b8-413b-b021-53d250a5814b/download/ipc_global_level1_long_latest.csv")
+ipc_data_wide <- read_csv("https://data.humdata.org/dataset/7a7e7428-b8d7-4d2e-91d3-19100500e016/resource/6c61ca6f-bd79-4956-9887-624bd38d9daa/download/ipc_global_national_wide_latest.csv")
 load_source_sans_3()
 options(scipen = 999)
 sf_use_s2(FALSE)
@@ -49,13 +50,14 @@ sa_ipc_data <- ipc_data_latest %>%
                                  admin_id == "Madagascar_Anosy" ~ "Madagascar_Toliara",
                                  admin_id == "Madagascar_Atsimo Andrefana" ~ "Madagascar_Toliara",
                                  admin_id == "Madagascar_Atsimo Atsinanana" ~ "Madagascar_Fianarantsoa",
-                                 .default = ""))
+                                 .default = ""),
+         percent_pop = (as.numeric(Number) / as.numeric(`Total country population`))*100)
   
 
 sa_country_ipc <- merge(sa_country_shp, sa_ipc_data, by.x = "admin_id", by.y = "admin_fixed", all = TRUE)
 
 ### Phase 3+ plot for current projections
-plot_fxn <- function(geodata1, geodata2, phase, period, text){
+total_plot_fxn <- function(geodata1, geodata2, phase, period, text){
   
   # plot
   phase3 <- geodata1 %>%
@@ -69,33 +71,74 @@ plot_fxn <- function(geodata1, geodata2, phase, period, text){
     annotate(geom = "text", x = 40, y = -35, label = text, 
              color = "grey22", size = 4) +
     # geom_sf_label(aes(label = country_name)) +
-    ggtitle(label = paste("Acute Food Insecurity IPC Phase ", phase), subtitle = "Population at Risk in '00,000s") +
-    scale_fill_gradient(low="#56b0f5", high="#132b43") +
+    ggtitle(label = paste0("Acute Food Insecurity IPC Phase ", phase, " (", str_to_title(period), ")"), 
+            subtitle = "Population at Risk in '00,000s") +
+    scale_fill_gradient(low="pink", high="red") +
     labs(fill = "in '00,000s", x = "", y = "") +
     theme_hdx()
   
 }
 
-phase3 <- sa_country_ipc %>%
-  filter((Phase == "3+" | is.na(Phase)) & (`Validity period` == "current" | is.na(`Validity period`))) %>%
-  mutate(Number_t = as.numeric(Number)/100000)
-
-ggplot() +
-  geom_sf(data = phase3, aes(fill = Number_t)) +
-  geom_sf(data = sa_shp, fill = "transparent", linewidth=1) +
-  geom_sf_text(data = sa_shp, aes(label = COUNTRY)) +
-  annotate(geom = "text", x = 40, y = -35, label = "Zambia - Aug 2023 to Sep 2023\nMadagascar - May 2023 to Sep 2023\nMozambique - Situation Jul 2023 to Sep 2023", 
-           color = "grey22", size = 4) +
-  # geom_sf_label(aes(label = country_name)) +
-  ggtitle(label = paste("Acute Food Insecurity IPC Phase 3+"), subtitle = "Population at Risk Oct 2023 - Mar 2024 in '00,000s") +
-  scale_fill_gradient(low="#56b0f5", high="#132b43") +
-  labs(fill = "in '00,000s", x = "", y = "") +
-  theme_hdx()
-
-plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+# 3+ and current period
+total_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
          phase = "3+", period = "current", 
          text = "Zambia - Aug 2023 to Sep 2023\nMadagascar - May 2023 to Sep 2023\nMozambique - Jul 2023 to Sep 2023")
 
-plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+# 4+ and current period
+total_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
          phase = "4", period = "current", 
          text = "Zambia - Aug 2023 to Sep 2023\nMadagascar - May 2023 to Sep 2023\nMozambique - Jul 2023 to Sep 2023")
+
+# 3+ and projected period
+total_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+         phase = "3+", period = "projected", 
+         text = "Zambia - Oct 2023 to Mar 2024\nMadagascar - Oct 2023 to Dec 2023\nMozambique - Oct 2023 to Mar 2024")
+
+# 4+ and projected period
+total_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+         phase = "4", period = "projected", 
+         text = "Zambia - Oct 2023 to Mar 2024\nMadagascar - Oct 2023 to Dec 2023\nMozambique - Oct 2023 to Mar 2024")
+
+### Percent of Population
+### Phase 3+ plot for current projections
+perc_plot_fxn <- function(geodata1, geodata2, phase, period, text){
+  
+  # plot
+  phase3 <- geodata1 %>%
+    filter((Phase == phase | is.na(phase)) & (`Validity period` == period | is.na(`Validity period`))) 
+  
+  ggplot() +
+    geom_sf(data = phase3, aes(fill = percent_pop)) +
+    geom_sf(data = geodata2, fill = "transparent", linewidth=1) +
+    geom_sf_text(data = geodata2, aes(label = COUNTRY)) +
+    annotate(geom = "text", x = 40, y = -35, label = text, 
+             color = "grey22", size = 4) +
+    # geom_sf_label(aes(label = country_name)) +
+    ggtitle(label = paste0("Acute Food Insecurity IPC Phase ", phase, " (", str_to_title(period), ")"), 
+            subtitle = "Percent of Population at Risk in '00,000s") +
+    scale_fill_gradient(low="pink", high="red") +
+    labs(fill = "% of Population", x = "", y = "") +
+    theme_hdx()
+  
+}
+
+# 3+ and current period
+perc_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+               phase = "3+", period = "current", 
+               text = "Zambia - Aug 2023 to Sep 2023\nMadagascar - May 2023 to Sep 2023\nMozambique - Jul 2023 to Sep 2023")
+
+# 4+ and current period
+perc_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+               phase = "4", period = "current", 
+               text = "Zambia - Aug 2023 to Sep 2023\nMadagascar - May 2023 to Sep 2023\nMozambique - Jul 2023 to Sep 2023")
+
+# 3+ and projected period
+perc_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+               phase = "3+", period = "projected", 
+               text = "Zambia - Oct 2023 to Mar 2024\nMadagascar - Oct 2023 to Dec 2023\nMozambique - Oct 2023 to Mar 2024")
+
+# 4+ and projected period
+perc_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp, 
+               phase = "4", period = "projected", 
+               text = "Zambia - Oct 2023 to Mar 2024\nMadagascar - Oct 2023 to Dec 2023\nMozambique - Oct 2023 to Mar 2024")
+
