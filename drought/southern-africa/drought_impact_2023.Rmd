@@ -46,11 +46,11 @@ sa_country_shp <- esa_shp %>%
 sa_country_ipc <- merge(sa_country_shp, sa_ipc_data, by = "iso3", all = TRUE)
 sa_country_ipc_plus <- sa_country_ipc %>%
   mutate(country_name = countrycode(iso3, origin = "iso3c", destination = "country.name"),
-         phase3_num_t = phase3_num/100000,
-         phase4_num_t = phase4_num/100000,
-         phase5_num_t = phase5_num/100000,
-         phase3plus_num = rowSums(across(phase3_num:phase5_num), na.rm = T)/100000,
-         phase4plus_num = rowSums(across(phase4_num:phase5_num), na.rm = T)/100000) %>% 
+         phase3_num_t = phase3_num,
+         phase4_num_t = phase4_num,
+         phase5_num_t = phase5_num,
+         phase3plus_num = rowSums(across(phase3_num:phase5_num), na.rm = T),
+         phase4plus_num = rowSums(across(phase4_num:phase5_num), na.rm = T)) %>% 
   rowwise() %>% 
   mutate(phase3plus_num = if_else(all(is.na(phase3_num_t), is.na(phase4_num_t), is.na(phase5_num_t)), NA, phase3plus_num),
          phase4plus_num = if_else(all(is.na(phase4_num_t), is.na(phase5_num_t)), NA, phase4plus_num)) %>%
@@ -58,8 +58,7 @@ sa_country_ipc_plus <- sa_country_ipc %>%
 
 ```
 
-This document looks at the IPC phases for each of the countries in Southern Africa. 
-## Inputs and Outputs
+This document looks at the IPC phases for each of the countries in Southern Africa.
 
 ```{r eruptions, echo=FALSE}
 inputPanel(
@@ -86,8 +85,9 @@ renderPlot({
     ggplot() +
       geom_sf(aes(fill = vals)) +
       # geom_sf_label(aes(label = country_name)) +
-      ggtitle(label = paste("Acute Food Insecurity IPC ", input$ipc_phases), subtitle = "Population at Risk Oct 2023 - Mar 2024 in '00,000s") +
-      scale_fill_continuous(low="#56b0f5", high="#132b43") +
-      labs(fill = "in '00,000s") 
+      ggtitle(label = paste("Acute Food Insecurity IPC ", input$ipc_phases), subtitle = "Population at Risk Oct 2023 - Mar 2024") +
+      scale_fill_gradient(low="#56b0f5", high="#132b43",
+                            labels = scales::label_number(scale = 1e-3, suffix = "k")) +
+      labs(fill = "Population") 
 })
 ```

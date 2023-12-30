@@ -60,12 +60,12 @@ sa_country_ipc <- merge(sa_country_shp, sa_ipc_data, by.x = "admin_id", by.y = "
 total_plot_fxn <- function(geodata1, geodata2, phase, period, text){
   
   # plot
-  phase3 <- geodata1 %>%
+  phase_df <- geodata1 %>%
     filter((Phase == phase | is.na(phase)) & (`Validity period` == period | is.na(`Validity period`))) %>%
     mutate(Number_t = as.numeric(Number))
   
   ggplot() +
-    geom_sf(data = phase3, aes(fill = Number_t)) +
+    geom_sf(data = phase_df, aes(fill = Number_t)) +
     geom_sf(data = geodata2, fill = "transparent", linewidth=1) +
     geom_sf_text(data = geodata2, aes(label = COUNTRY)) +
     annotate(geom = "text", x = 40, y = -35, label = text, 
@@ -104,19 +104,20 @@ total_plot_fxn(geodata1 = sa_country_ipc, geodata2 = sa_shp,
 perc_plot_fxn <- function(geodata1, geodata2, phase, period, text){
   
   # plot
-  phase3 <- geodata1 %>%
+  phase_df <- geodata1 %>%
     filter((Phase == phase | is.na(phase)) & (`Validity period` == period | is.na(`Validity period`))) 
   
   ggplot() +
-    geom_sf(data = phase3, aes(fill = percent_pop)) +
+    geom_sf(data = phase_df, aes(fill = percent_pop)) +
     geom_sf(data = geodata2, fill = "transparent", linewidth=1) +
     geom_sf_text(data = geodata2, aes(label = COUNTRY)) +
     annotate(geom = "text", x = 40, y = -35, label = text, 
              color = "grey22", size = 4) +
     # geom_sf_label(aes(label = country_name)) +
     ggtitle(label = paste0("Acute Food Insecurity IPC Phase ", phase, " (", str_to_title(period), ")"), 
-            subtitle = "Percent of Population at Risk in '00,000s") +
-    scale_fill_gradient(low="pink", high="red") +
+            subtitle = "Percent of Population at Risk") +
+    scale_fill_gradient(low="pink", high="red",
+                        labels = scales::label_percent(scale = 1)) +
     labs(fill = "% of Population", x = "", y = "")
   
 }
