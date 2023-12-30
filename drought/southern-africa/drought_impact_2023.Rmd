@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Southern Africa IPC Map"
 author: "Pauline"
 date: "`r Sys.Date()`"
 output: html_document
@@ -17,7 +17,7 @@ library(raster)
 library(sp)
 library(gghdx)
 
-load_source_sans_3()
+gghdx()
 options(scipen = 999)
 sf_use_s2(FALSE)
 
@@ -31,7 +31,11 @@ sa_ipc_data <- ipc_country_data %>%
   filter(country %in% esa_iso2 & from == "Oct 2023") %>%
   mutate(iso3 = countrycode(country, origin = "iso2c", destination = "iso3c"))
 
-esa_shp <- st_read("C:/Users/pauni/Desktop/Work/OCHA/ROSEA/esa_admin1_region/ESA_admin1_region.shp")
+shp_path <- file.path(
+  Sys.getenv("AA_DATA_DIR"), 
+  "public", "raw", "esa", "cod_ab", 
+  "esa_admin1_region", "ESA_admin1_region.shp")
+esa_shp <- st_read(shp_path)
 
 sa_country_shp <- esa_shp %>%
   filter(COUNTRY %in% esa_countries) %>%
@@ -84,7 +88,6 @@ renderPlot({
       # geom_sf_label(aes(label = country_name)) +
       ggtitle(label = paste("Acute Food Insecurity IPC ", input$ipc_phases), subtitle = "Population at Risk Oct 2023 - Mar 2024 in '00,000s") +
       scale_fill_continuous(low="#56b0f5", high="#132b43") +
-      labs(fill = "in '00,000s") +
-      theme_hdx()
+      labs(fill = "in '00,000s") 
 })
 ```

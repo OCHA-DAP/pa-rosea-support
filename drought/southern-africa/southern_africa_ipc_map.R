@@ -14,7 +14,7 @@ esa_shp <- st_read(shp_path)
 ipc_data <- read_csv("https://data.humdata.org/dataset/7a7e7428-b8d7-4d2e-91d3-19100500e016/resource/f6e7954c-3717-487a-b0d9-787881831634/download/ipc_global_level1_long.csv")
 ipc_data_latest <- read_csv("https://data.humdata.org/dataset/7a7e7428-b8d7-4d2e-91d3-19100500e016/resource/741a6164-c8b8-413b-b021-53d250a5814b/download/ipc_global_level1_long_latest.csv")
 ipc_data_wide <- read_csv("https://data.humdata.org/dataset/7a7e7428-b8d7-4d2e-91d3-19100500e016/resource/6c61ca6f-bd79-4956-9887-624bd38d9daa/download/ipc_global_national_wide_latest.csv")
-load_source_sans_3()
+gghdx()
 options(scipen = 999)
 sf_use_s2(FALSE)
 
@@ -62,7 +62,7 @@ total_plot_fxn <- function(geodata1, geodata2, phase, period, text){
   # plot
   phase3 <- geodata1 %>%
     filter((Phase == phase | is.na(phase)) & (`Validity period` == period | is.na(`Validity period`))) %>%
-    mutate(Number_t = as.numeric(Number)/100000)
+    mutate(Number_t = as.numeric(Number))
   
   ggplot() +
     geom_sf(data = phase3, aes(fill = Number_t)) +
@@ -72,10 +72,10 @@ total_plot_fxn <- function(geodata1, geodata2, phase, period, text){
              color = "grey22", size = 4) +
     # geom_sf_label(aes(label = country_name)) +
     ggtitle(label = paste0("Acute Food Insecurity IPC Phase ", phase, " (", str_to_title(period), ")"), 
-            subtitle = "Population at Risk in '00,000s") +
-    scale_fill_gradient(low="pink", high="red") +
-    labs(fill = "in '00,000s", x = "", y = "") +
-    theme_hdx()
+            subtitle = "Population at Risk") +
+    scale_fill_gradient(low="pink", high="red", 
+                        labels = scales::label_number(scale = 1e-3, suffix = "k")) +
+    labs(fill = "Population", x = "", y = "")
   
 }
 
@@ -117,8 +117,7 @@ perc_plot_fxn <- function(geodata1, geodata2, phase, period, text){
     ggtitle(label = paste0("Acute Food Insecurity IPC Phase ", phase, " (", str_to_title(period), ")"), 
             subtitle = "Percent of Population at Risk in '00,000s") +
     scale_fill_gradient(low="pink", high="red") +
-    labs(fill = "% of Population", x = "", y = "") +
-    theme_hdx()
+    labs(fill = "% of Population", x = "", y = "")
   
 }
 
