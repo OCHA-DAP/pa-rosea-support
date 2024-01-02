@@ -1,0 +1,93 @@
+---
+title: "Southern Africa IPC Map"
+author: "Pauline"
+date: "`r Sys.Date()`"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ripc)
+library(tidyverse)
+library(countrycode)
+library(sf)
+library(raster)
+library(sp)
+library(gghdx)
+
+gghdx()
+options(scipen = 999)
+sf_use_s2(FALSE)
+
+ipc_country_data <- ipc_get_country()
+
+esa_iso2 <- c("AO", "SZ", "LS", "MG", "MW", "MZ", "NA", "MW", "MZ", "ZA", "ZM", "ZW")
+esa_iso3 <- countrycode(esa_iso2, origin = "iso2c", destination = "iso3c")
+esa_countries <- countrycode(esa_iso2, origin = "iso2c", destination = "country.name")
+
+sa_ipc_data <- ipc_country_data %>%
+  filter(country %in% esa_iso2 & from == "Oct 2023") %>%
+  mutate(iso3 = countrycode(country, origin = "iso2c", destination = "iso3c"))
+
+shp_path <- file.path(
+  Sys.getenv("AA_DATA_DIR"), 
+  "public", "raw", "esa", "cod_ab", 
+  "esa_admin1_region", "ESA_admin1_region.shp")
+esa_shp <- st_read(shp_path)
+
+sa_country_shp <- esa_shp %>%
+  filter(COUNTRY %in% esa_countries) %>%
+  group_by(COUNTRY) %>% 
+  summarize(geometry = st_union(geometry)) %>%
+  mutate(iso3 = countrycode(COUNTRY, origin = "country.name", destination = "iso3c"))
+
+sa_country_ipc <- merge(sa_country_shp, sa_ipc_data, by = "iso3", all = TRUE)
+sa_country_ipc_plus <- sa_country_ipc %>%
+  mutate(country_name = countrycode(iso3, origin = "iso3c", destination = "country.name"),
+         phase3_num_t = phase3_num,
+         phase4_num_t = phase4_num,
+         phase5_num_t = phase5_num,
+         phase3plus_num = rowSums(across(phase3_num:phase5_num), na.rm = T),
+         phase4plus_num = rowSums(across(phase4_num:phase5_num), na.rm = T)) %>% 
+  rowwise() %>% 
+  mutate(phase3plus_num = if_else(all(is.na(phase3_num_t), is.na(phase4_num_t), is.na(phase5_num_t)), NA, phase3plus_num),
+         phase4plus_num = if_else(all(is.na(phase4_num_t), is.na(phase5_num_t)), NA, phase4plus_num)) %>%
+  pivot_longer(cols = phase3_num_t:phase4plus_num, names_to = "labels", values_to = "vals")
+
+```
+
+This document looks at the IPC phases for each of the countries in Southern Africa.
+
+```{r eruptions, echo=FALSE}
+inputPanel(
+  selectInput("ipc_phases", label = "IPC Phase:",
+              choices = c("Phase 3", "Phase 3+", "Phase 4", "Phase 4+", "Phase 5"), selected = "Phase 3")
+)
+
+plot_obj <- reactive({
+  if(input$ipc_phases == "Phase 3"){
+  "phase3_num_t"
+} else if(input$ipc_phases == "Phase 3+"){
+  "phase3plus_num"
+} else if(input$ipc_phases == "Phase 4"){
+  "phase4_num_t"
+} else if(input$ipc_phases == "Phase 4+"){
+  "phase4plus_num"
+} else if(input$ipc_phases == "Phase 5"){
+  "phase5_num"
+}})
+
+renderPlot({
+  sa_country_ipc_plus %>%
+  filter(labels == plot_obj()) %>%
+    ggplot() +
+      geom_sf(aes(fill = vals)) +
+      # geom_sf_label(aes(label = country_name)) +
+      ggtitle(label = paste("Acute Food Insecurity IPC ", input$ipc_phases), subtitle = "Population at Risk Oct 2023 - Mar 2024") +
+      scale_fill_gradient(low="#56b0f5", high="#132b43",
+                            labels = scales::label_number(scale = 1e-3, suffix = "k")) +
+      labs(fill = "Population") 
+})
+```
