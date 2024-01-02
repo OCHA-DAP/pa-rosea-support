@@ -23,11 +23,13 @@ esa_iso2 <- c("AO", "SZ", "LS", "MG", "MW", "MZ", "NA", "MW", "MZ", "ZA", "ZM", 
 esa_iso3 <- countrycode(esa_iso2, origin = "iso2c", destination = "iso3c")
 esa_countries <- countrycode(esa_iso2, origin = "iso2c", destination = "country.name")
 
+all_esa <- c(esa_countries, "Botswana", "Swaziland")
 # filtering for only SA countries
 sa_shp <- esa_shp %>%
-  filter(COUNTRY %in% esa_countries) %>%
+  filter(COUNTRY %in% all_esa) %>%
   group_by(COUNTRY) %>% 
-  summarize(geometry = st_union(geometry))
+  summarize(geometry = st_union(geometry)) %>%
+  mutate(COUNTRY = recode(COUNTRY, "Swaziland" = "Eswatini"))
 
 sa_country_shp <- esa_shp %>%
   filter(COUNTRY %in% esa_countries) %>%
@@ -75,7 +77,8 @@ total_plot_fxn <- function(geodata1, geodata2, phase, period, text){
             subtitle = "Population at Risk") +
     scale_fill_gradient(low="pink", high="red", 
                         labels = scales::label_number(scale = 1e-3, suffix = "k")) +
-    labs(fill = "Population", x = "", y = "")
+    labs(fill = "Population", x = "", y = "") + 
+    theme(legend.key.width = unit(1, "cm"))
   
 }
 
@@ -117,8 +120,9 @@ perc_plot_fxn <- function(geodata1, geodata2, phase, period, text){
     ggtitle(label = paste0("Acute Food Insecurity IPC Phase ", phase, " (", str_to_title(period), ")"), 
             subtitle = "Percent of Population at Risk") +
     scale_fill_gradient(low="pink", high="red",
-                        labels = scales::label_percent(scale = 1)) +
-    labs(fill = "% of Population", x = "", y = "")
+                        labels = scales::label_percent(scale = 1, accuracy = 0.1)) +
+    labs(fill = "% of Population", x = "", y = "") + 
+    theme(legend.key.width = unit(1, "cm"))
   
 }
 
