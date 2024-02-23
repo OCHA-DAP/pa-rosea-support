@@ -7,12 +7,34 @@
 #' @examples \dontrun{
 #' lgdf_adm <-  get_proj_cods()
 #' }
+#' 
+#' 
+#' 
+moz_cod_lookup <-  function(){
+  df_lookup<- tibble::tribble(
+    ~original, ~standardized,
+    "adm3_pt", "adm3_en",
+    "adm2_pt", "adm2_en",
+    "adm1_pt","adm1_en",
+  )
+  set_names(df_lookup$original, df_lookup$standardized)
+}
+
 
 get_proj_cods <-  function(){
   lgdf <- load_proj_cods()
+  
+  # some special COD cleaning for Mozambique
+  lgdf$Mozambique <- lgdf$Mozambique %>% 
+    map(\(gdf_moz){
+      gdf_moz %>%
+        rename(
+          any_of(moz_cod_lookup()) 
+        )
+    })
   compile_proj_cods(lgdf)
 }
-  
+
 
 
 #' load_proj_cods
@@ -33,7 +55,7 @@ load_proj_cods <-  function(){
             get_resource(2) %>%
             read_resource(layer = .x) %>%
             clean_names() %>%
-            select(matches("^adm\\d_"))
+            select(matches("^adm\\d_[ep]"))
         )
     }
     
@@ -42,6 +64,8 @@ load_proj_cods <-  function(){
   
   
 }
+
+
 
 #' compile_proj_cods
 #'
@@ -56,9 +80,9 @@ load_proj_cods <-  function(){
 #' }
 
 compile_proj_cods <-  function(lgdf){
-  adm0= bind_rows(lgdf$Kenya$adm0,lgdf$Somalia$adm0,lgdf$Ethiopia$adm0)  
-  adm1= bind_rows(lgdf$Kenya$adm1,lgdf$Somalia$adm1,lgdf$Ethiopia$adm1)  
-  adm2= bind_rows(lgdf$Kenya$adm2,lgdf$Somalia$adm2,lgdf$Ethiopia$adm2)  
+  adm0= bind_rows(lgdf$Kenya$adm0,lgdf$Somalia$adm0,lgdf$Ethiopia$adm0, lgdf$Mozambique$adm0)  
+  adm1= bind_rows(lgdf$Kenya$adm1,lgdf$Somalia$adm1,lgdf$Ethiopia$adm1,lgdf$Mozambique$adm1)  
+  adm2= bind_rows(lgdf$Kenya$adm2,lgdf$Somalia$adm2,lgdf$Ethiopia$adm2,lgdf$Mozambique$adm2)  
   return(
     lst(adm0,adm1,adm2)
   )
@@ -87,10 +111,15 @@ get_proj_cod_layer_names <- function(){
     adm0= "ken_admbnda_adm0_iebc_20191031",
     adm1="ken_admbnda_adm1_iebc_20191031",
     adm2= "ken_admbnda_adm2_iebc_20191031" 
-    
+  )
+  moz <-  list(
+    adm0="moz_admbnda_adm0_ine_20190607",
+    adm1= "moz_admbnda_adm1_ine_20190607", 
+    adm2= "moz_admbnda_adm2_ine_20190607",
+    adm3 = "moz_admbnda_adm3_ine_20190607"
   )
   return(
-    list(Somalia=som, Ethiopia=eth, Kenya=ken)
+    list(Somalia=som, Ethiopia=eth, Kenya=ken, Mozambique= moz)
   )
   
   

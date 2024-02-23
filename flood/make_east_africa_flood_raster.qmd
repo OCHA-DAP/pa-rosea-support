@@ -1,0 +1,261 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+**note to self** - move raster processing to targets
+
+## Intro/Overview
+
+Currently we have produced estimates of population exposed to flooding at admins 0-2 for KEN, ETH,  SOM, and MOZ. The methodology can be found [here](insert link).  These outputs are tabular and therefore well suited for tables and choropleth maps. However, to make a more interesting and potentially useful spatial maps we should also produce raster approximations. 
+
+Therefore, this document creates the raster approximations for:
+  - Flooded fraction (historical mean + median)
+  - Flood Exposure (flood fraction mean/median + pop density)
+
+
+
+```{r}
+library(targets)
+library(sf)
+library(tidyverse)
+library(terra)
+library(tidyterra)
+library(tidync)
+library(gghdx)
+gghdx()
+fp_fs <- file.path(
+      Sys.getenv("AA_DATA_DIR"),
+      "private",
+      "raw",
+      "glb",
+      "floodscan",
+      "floodscan_flooded_fraction_africa_19980112-20221231_p00",
+      "aer_sfed_area_300s_19980112_20221231_v05r01.nc"
+    )
+
+tar_load(lgdf_adm,store = "flood_target_store")
+tar_source()
+```
+
+```{r processEA}
+
+# we can basically migrate this whole section to targets and then `unwrap()` raster here.
+
+gdf_ea_adm0 <- lgdf_adm$adm0 %>% 
+                       filter(adm0_en!="Mozambique")
+
+
+r_fs <- tidync(fp_fs) %>% 
+    fs_filter_bounds(geometry = gdf_ea_adm0) %>% 
+    fs_to_raster(band = "SFED_AREA")
+
+
+
+
+fs_lookup <-  floodscan_lookup(r_fs) 
+
+
+# do the same, but this time per year
+lr_max <- unique(fs_lookup$yr_int) %>%
+  map(
+    \(yr_tmp){
+      rname_temp<- fs_lookup %>%
+        filter(yr_int==yr_tmp) %>%
+        pull(fs_name)
+      r_fs_tmp <- r_fs[[names(r_fs) %in% rname_temp]]
+      r_max <- max(r_fs_tmp)
+      r_max %>%
+        set.names(rname_temp[1])
+      return(r_max)
+    }
+  )
+r_max <- rast(lr_max)
+r_mean_yr = mean(r_max)
+r_median_yr = median(r_max)
+  
+```
+
+```{r}
+
+r_mean_yr[r_mean_yr<0.1] <- NA
+r_mean_yr <- terra::mask(x = r_mean_yr, mask = lgdf_adm$adm0)
+
+r_median_yr[r_median_yr<0.1] <- NA
+r_median_yr <- terra::mask(x = r_median_yr, mask = lgdf_adm$adm0)
+
+```
+
+```{r processMozRaster}
+gdf_moz_adm0 <- lgdf_adm$adm0 %>% 
+                       filter(adm0_en=="Mozambique")
+
+r_fs_moz <- tidync(fp_fs) %>% 
+    fs_filter_bounds(geometry = gdf_moz_adm0) %>% 
+    fs_to_raster(band = "SFED_AREA")
+plot(r_fs_moz[[1]])
+# plot(gdf_moz_adm0$geometry,add=TRUE)
+
+fs_lookup_moz <-  floodscan_lookup(r_fs_moz) 
+
+# do the same, but this time per year
+lr_max_moz <- unique(fs_lookup_moz$yr_int) %>%
+  map(
+    \(yr_tmp){
+      rname_temp<- fs_lookup_moz %>%
+        filter(yr_int==yr_tmp) %>%
+        pull(fs_name)
+      r_fs_tmp <- r_fs_moz[[names(r_fs_moz) %in% rname_temp]]
+      r_max <- max(r_fs_tmp)
+      r_max %>%
+        set.names(rname_temp[1])
+      return(r_max)
+    }
+  )
+
+
+r_max_moz <- rast(lr_max_moz)
+r_mean_yr_moz = mean(r_max_moz)
+r_median_yr_moz = median(r_max_moz)
+```
+
+
+```{r}
+
+r_mean_yr_moz[r_mean_yr_moz<0.1] <- NA
+r_mean_yr_moz <- terra::mask(x = r_mean_yr_moz,
+                             mask = gdf_moz_adm0)
+
+r_median_yr_moz[r_median_yr_moz<0.1] <- NA
+r_median_yr_moz <- terra::mask(x = r_median_yr_moz, mask = gdf_moz_adm0)
+
+```
+
+## Maps
+
+### East Africa (KEN, ETH, SOM)
+
+```{r map-meanFlood}
+```{r map-meanFlood}
+# idea - make big, bring in topography w/ blender, bring in some degree of admin labeling.... 
+# could go slippy map direction w/ mapgl, but need to gauge interest first.
+
+# probably still need to play around with colors
+
+# tmaptools::palette_explorer()
+# tmaptools::get_brewer_pal("RdYlBu", n = 9)
+# RColorBrewer::brewer.pal(name="RdYlBu",n=9)
+# low_fill = "#FFFFBF"
+# med_fill ="#66C2A5" 
+# high_fill= "#3288BD"
+low_fill = "#E0F3F8"
+med_fill ="#74ADD1" 
+high_fill= "#4575B4"
+
+
+ggplot()+
+  geom_spatraster(data = r_mean_yr)+
+    scale_fill_steps2(
+    breaks = seq(0,1,by=0.2),
+  low = low_fill,
+  mid = med_fill,
+  high = high_fill,
+  midpoint = 0.5,
+  space = "Lab",
+  na.value = NA,
+  guide = "coloursteps",
+  aesthetics = "fill",
+  name= "Flooded\nFraction",labels=scales::label_percent()
+)+
+  geom_sf(data= lgdf_adm$adm1,fill=NA,linewidth=0.5,color="grey")+
+  geom_sf(data= lgdf_adm$adm0,fill=NA, linewidth=0.8)+
+  labs(title = "22 years of FloodScan Data",
+       subtitle = "East Africa: Flood Susceptibility")+
+  theme(
+    legend.text = element_text(angle=90)
+  )
+  # theme_hdx()
+
+
+```
+
+
+```{r map-medianFlood}
+ggplot()+
+  geom_spatraster(data = r_median_yr)+
+    scale_fill_steps2(
+    breaks = seq(0,1,by=0.2),
+  low = low_fill,
+  mid = med_fill,
+  high = high_fill,
+  midpoint = 0.5,
+  space = "Lab",
+  na.value = NA,
+  guide = "coloursteps",
+  aesthetics = "fill",
+  name= "Flooded\nFraction"
+)+
+  geom_sf(data= lgdf_adm$adm1,fill=NA,linewidth=0.5,color="grey")+
+  geom_sf(data= lgdf_adm$adm0,fill=NA, linewidth=0.8)+
+  labs(title = "20 years of FloodScan Data",
+       subtitle = "East Africa: Median Flood Susceptibility")+
+  theme_bw() #+
+```
+
+
+### MOZ
+
+mean flood frac
+
+```{r}
+ggplot()+
+  geom_spatraster(data = r_mean_yr_moz)+
+    scale_fill_steps2(
+    breaks = seq(0,1,by=0.2),
+  low = low_fill,
+  mid = med_fill,
+  high = high_fill,
+  midpoint = 0.5,
+  space = "Lab",
+  na.value = NA,
+  guide = "coloursteps",
+  aesthetics = "fill",
+  name= "Flooded\nFraction",labels=scales::label_percent()
+)+
+  geom_sf(data= lgdf_adm$adm1 %>% filter(adm0_pcode=="MZ"),fill=NA,linewidth=0.5,color="grey")+
+  geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode=="MZ"),fill=NA, linewidth=0.8)+
+  labs(title = "22 years of FloodScan Data",
+       subtitle = "Mozambique: Flood Susceptibility")+
+  theme(
+    legend.text = element_text(angle=90)
+  )
+```
+
+median flood frac
+```{r}
+ggplot()+
+  geom_spatraster(data = r_median_yr_moz)+
+    scale_fill_steps2(
+    breaks = seq(0,1,by=0.2),
+  low = low_fill,
+  mid = med_fill,
+  high = high_fill,
+  midpoint = 0.5,
+  space = "Lab",
+  na.value = NA,
+  guide = "coloursteps",
+  aesthetics = "fill",
+  name= "Flooded\nFraction",labels=scales::label_percent()
+)+
+  geom_sf(data= lgdf_adm$adm1 %>% filter(adm0_pcode=="MZ"),fill=NA,linewidth=0.5,color="grey")+
+  geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode=="MZ"),fill=NA, linewidth=0.8)+
+  labs(title = "22 years of FloodScan Data",
+       subtitle = "Mozambique: Flood Susceptibility")+
+  theme(
+    legend.text = element_text(angle=90)
+  )
+```
+
+
+

@@ -1,9 +1,16 @@
 #' @title East Africa Flood Exposure Estimates
 #' @description
 #' This analysis uses FloodScan (1998-2022) & WorldPop (2022) to generate flood estimates for our specified AOI in East Africa.
+#' Navigate to run.R file to run pipeline
 
 
 library(targets)
+
+# just need these 3 libraries separate to DL World Pop rasters from HDX before pipeline begins
+library(tidyverse) # for mapping/downloading in beginning
+library(glue) # for downloading
+library(terra)
+
 tar_source()
 # Flood Analysis ----------------------------------------------------------
 # Set target options:
@@ -53,6 +60,33 @@ fp_wp_ken <- file.path(
   "ken_ppp_2020_1km_Aggregated_UNadj.tif" # this is 100 m?
 )
 
+# switchingn to read directly from HDX
+
+# "https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/KEN/ken_ppp_2020_1km_Aggregated_UNadj.tif"
+
+cat("downloading worldpop raster from HDX\n")
+countries_dl_wp <- c(Kenya="KEN",Ethiopia="ETH",Somalia="SOM",Mozambique="MOZ")
+lr_wp <- map(countries_dl_wp,\(country_code){
+  cat("downloading ",country_code,"\n")
+  country_code_lower <- str_to_lower(country_code)
+  url <- glue("https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/{country_code}/{country_code_lower}_ppp_2020_1km_Aggregated_UNadj.tif")
+  terra::rast(url)
+}
+)
+
+
+
+
+
+fp_wp_moz <- file.path(
+  "public",
+  "raw",
+  "ken",
+  "worldpop",
+  "ken_ppp_2020_1km_Aggregated_UNadj.tif"
+)
+
+
 list(
   # Load Inputs -------------------------------------------------------------
 
@@ -76,6 +110,15 @@ list(
       "aer_sfed_area_300s_19980112_20221231_v05r01.nc"
     )
   ),
+  # need to fix finish this up -- if we have a wrapped raster func
+  # it will make our next steps more generic
+  # this isn't necessary at this stage.
+  # tar_target(
+  # name = r_fs,
+  # command =  tidync(fp_fs) %>% 
+  #   fs_filter_bounds(geometry = lgdf_adm$adm0) %>% 
+  #   fs_to_raster(band = "SFED_AREA")
+  # ),
 
   # Zonal Stats World Pop ---------------------------------------------------
 
@@ -84,7 +127,7 @@ list(
   tar_target(
     name = df_adm2_worldpop_summary,
     command = exact_extract(
-      x = mosaic_worldpop(list(fp_wp_eth, fp_wp_ken, fp_wp_som)),
+      x = mosaic_worldpop(lr_wp, from_path =F),
       y = lgdf_adm$adm2,
       fun = "sum",
       append_cols = c("adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
@@ -102,18 +145,36 @@ list(
   ## Admin 2 level ####
 
   ### Admin 2 - method 1: binary reclassification ####
+  
+  # need to separate Mozambique from the rest as running into memory issues
   tar_target(
-    name = df_adm2_stats_binary,
+    name = df_ken_eth_som_adm2_stats_binary,
     command = zonal_pop_exposure(
       floodscan_path = fp_fs,
-      worldpop_paths = list(fp_wp_eth, fp_wp_ken, fp_wp_som),
+      worldpop_inputs = discard_at(lr_wp,"Mozambique"),
       flood_frac_thresh = 0.2,
       binarize_floodscan = T,
-      adm = lgdf_adm$adm2,
+      adm = lgdf_adm$adm2 %>% 
+        filter(adm0_pcode!="MZ"),
       cols_keep = c("adm0_en", "adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
     )
   ),
-
+  tar_target(
+    name = df_moz_adm2_stats_binary,
+    command = zonal_pop_exposure(
+      floodscan_path = fp_fs,
+      worldpop_inputs = keep_at(lr_wp,"Mozambique"),
+      flood_frac_thresh = 0.2,
+      binarize_floodscan = T,
+      adm = lgdf_adm$adm2 %>% 
+        filter(adm0_pcode=="MZ"),
+      cols_keep = c("adm0_en", "adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
+    )
+  ),
+  tar_target(
+    name= df_adm2_stats_binary,
+    command= bind_rows(df_ken_eth_som_adm2_stats_binary,df_moz_adm2_stats_binary)
+  ),
   # Join w/ world pop zonal stats (adm2) to calculate % populations
   tar_target(
     name = df_adm2_stats_bin_method,
