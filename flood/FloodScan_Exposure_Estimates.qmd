@@ -172,7 +172,7 @@ lgt_adm2_bin_method$Kenya
 
 ## Mozambique
 
-```{r}
+```{r eval=T}
 lgt_adm2_bin_method$Mozambique
 ```
 
