@@ -13,7 +13,7 @@
 #' @return `data.frame` with zonal stats of population exposed to flooding for each admin zone for each year of FloodScan data.
 
 zonal_pop_exposure <- function(floodscan_path=fp_fs,
-                               worldpop_paths=fp_wp,
+                               worldpop_inputs =fp_wp,
                                flood_frac_thresh=0.005,
                                binarize_floodscan = T,
                                adm = lgdf_adm$adm0,
@@ -22,7 +22,7 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
   tnc_fs <- tidync(floodscan_path)
   tnc_fs_filt <- fs_filter_bounds(fs_obj = tnc_fs,geometry = adm)
   r_fs <- fs_to_raster(fs_obj = tnc_fs_filt,band = "SFED_AREA")
-  r_wp <-  mosaic_worldpop(worldpop_paths)
+  r_wp <-  mosaic_worldpop(worldpop_inputs,from_path=F)
   fs_lookup <-  floodscan_lookup(r_fs) 
 
   # do the same, but this time per year
