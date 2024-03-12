@@ -1,3 +1,18 @@
+---
+title: "Moz Flash Response Floods"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
 library(googledrive )
 library(here)
 library(terra)
@@ -7,6 +22,11 @@ library(janitor)
 library(tidyterra)
 library(gghdx)
 library(glue)
+library(targets)
+library(exactextractr)
+
+tar_load(lgdf_adm,store="flood_target_store")
+
 gghdx()
 source(
   file.path("R","googledrive.R")
@@ -70,8 +90,8 @@ lr <- set_names(df_latest_files_meta$file_name,str_extract(df_latest_files_meta$
       }
   )
 
-library(targets)
-tar_load(lgdf_adm,store="flood_target_store")
+
+
 
 lgdf_moz <- lgdf_adm %>% 
   map(
@@ -79,6 +99,8 @@ lgdf_moz <- lgdf_adm %>%
       filter(adm0_en =="Mozambique")
   )
 df_bbox <-  st_bbox(lgdf_moz$adm0)
+
+
 lr_bounded <- lr %>% 
   map(
     \(rtmp){
@@ -88,6 +110,15 @@ lr_bounded <- lr %>%
     }
   )
 
+rivers_gpkg <-  file.path(
+  Sys.getenv("AA_DATA_DIR"),
+  "public",
+  "raw",
+  "moz",
+  "waterways",
+  "hotosm_moz_named_rivers_lines_geojson.gpkg"
+)
+rivers<- st_read(rivers_gpkg,"hotosm_moz_rivers_lines_geojson__hotosm_moz_waterways_lines_geojsongeojson")
 
 
 surrounding_countries<- file.path(
@@ -104,15 +135,102 @@ gdf_esa<- st_read(
 ) %>% 
   clean_names()
 
+
 gdf_surround <- gdf_esa %>% 
   filter(
-    country %in% c("Zimbabwe","Zambia","Malawi","Tanzania","South Africa")
+    country %in% c("Zimbabwe",
+                   "Zambia",
+                   "Malawi","Tanzania","South Africa","Swazilnd")
   ) %>% 
   st_make_valid() #%>% 
   # st_simplify(
   #   dTolerance = 20000
   # )
+```
 
+## Calculate Exposure
+
+```{r calcExposure}
+
+countries_dl_wp <- c(Mozambique="MOZ")
+r_wp <- map(countries_dl_wp,\(country_code){
+  cat("downloading ",country_code,"\n")
+  country_code_lower <- str_to_lower(country_code)
+  url <- glue("https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/{country_code}/{country_code_lower}_ppp_2020_1km_Aggregated_UNadj.tif")
+  terra::rast(url)}
+)
+
+
+# resampling Experiment
+r_fs_sfed_crop <- crop(lr_bounded$sfed, r_wp$Mozambique)
+ext(r_fs_sfed_crop) <- ext( r_wp$Mozambique)
+
+cat("resampling floodscan to worldpop\n")
+# r_fs_resampled <- terra::resample(x = r_fs_sfed_crop,y=r_wp$Mozambique)
+r_fs_resampled_nn <- terra::resample(
+  x = r_fs_sfed_crop,r_wp$Mozambique,
+  method ="near"
+  )
+r_fs_resampled_bilinear <- terra::resample(x = r_fs_resampled,
+                                           y=r_wp$Mozambique, 
+                                           method ="bilinear")
+
+plot(r_fs_sfed_crop[[1]])
+plot(r_fs_resampled_nn[[1]])
+plot(r_fs_resampled_bilinear[[1]])
+
+
+# Expsure Calcs ####
+# remember this is masked already . .... remember to think about
+
+#flood frac thresh
+threshold = 0.2
+lr_exposure <- lr_bounded %>% 
+  map(
+    \(rtmp){
+      cat("cropping\n")
+      r_fs_max_crop <- crop(rtmp, r_wp$Mozambique)
+      ext(r_fs_max_crop) <- ext( r_wp$Mozambique)
+      
+      cat("resampling floodscan to worldpop\n")
+      r_fs_resampled <- terra::resample(x = r_fs_max_crop,r_wp$Mozambique,method="near")
+      cat("binarizing floodscan\n")
+      r_fs_resampled[r_fs_resampled<threshold,] <- NA
+      cat("multiplying floodscan by worldpop for pop exposure\n")
+      r_exposure <- r_fs_resampled*r_wp$Mozambique
+      
+      return(r_exposure)
+      
+    }
+  )
+```
+
+```{r}
+# Zonal Stats ###
+# exact_extract(lr_exposure$sfed,y = lgdf_moz$adm1)
+df_adm2_exposure <- lr_exposure %>% 
+  map(
+    \(rtmp){
+      exact_extract(x = rtmp,
+                           y = lgdf_moz$adm2,
+                           fun ="sum",
+                           append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
+                           force_df = TRUE
+      ) %>%
+        pivot_longer(cols = starts_with("sum"),
+                     names_to = "sum_date",
+                     values_to = "pop_exposed") %>%
+        separate(col = sum_date, "\\.",into = c("stat","date")) %>%
+        mutate(
+          date= as_date(date)
+        )
+      
+    }
+  )
+```
+
+## Map Flood Fraction
+```{r}
 
 low_fill = "#E0F3F8"
 med_fill ="#74ADD1" 
@@ -153,42 +271,48 @@ ggplot()+
     legend.text = element_text(angle=90)
   )
 ggsave("map_moz_SFED_flood_frac_last_10_days.png",height = 15,width = 10)
+```
 
+# Max Flood Fraction
 
-countries_dl_wp <- c(Mozambique="MOZ")
-r_wp <- map(countries_dl_wp,\(country_code){
-  cat("downloading ",country_code,"\n")
-  country_code_lower <- str_to_lower(country_code)
-  url <- glue("https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/{country_code}/{country_code_lower}_ppp_2020_1km_Aggregated_UNadj.tif")
-  terra::rast(url)}
-)
+```{r}
+ggplot()+
+  geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
+  geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
+    geom_sf(
+    data= rivers,
+    color="lightblue",lwd=0.1#,alpha=0.4
+  )+
+  geom_spatraster(data = max(lr_bounded$sfed))+
+  scale_fill_steps2(
+    breaks = seq(0,1,by=0.2),
+    low = low_fill,
+    mid = med_fill,
+    high = high_fill,
+    midpoint = 0.3,
+    space = "Lab",
+    na.value = NA,
+    guide = "coloursteps",
+    aesthetics = "fill",
+    name= "Flooded\nFraction",labels=scales::label_percent()
+  )+
+  geom_sf(
+    data= gdf_surround, 
+    fill="grey",alpha=0.8, color = "white"  )+
 
-library(exactextractr)
-
-# Expsure Calcs ####
-# remember this is masked already . .... remember to think about
-
-#flood frac thresh
-threshold = 0.2
-lr_exposure <- lr_bounded %>% 
-  map(
-    \(rtmp){
-      cat("cropping\n")
-      r_fs_max_crop <- crop(rtmp, r_wp$Mozambique)
-      ext(r_fs_max_crop) <- ext( r_wp$Mozambique)
-      
-      cat("resampling floodscan to worldpop\n")
-      r_fs_resampled <- terra::resample(x = r_fs_max_crop,r_wp$Mozambique)
-      cat("binarizing floodscan\n")
-      r_fs_resampled[r_fs_resampled<threshold,] <- NA
-      cat("multiplying floodscan by worldpop for pop exposure\n")
-      r_exposure <- r_fs_resampled*r_wp$Mozambique
-      
-      return(r_exposure)
-      
-    }
+  coord_sf(xlim=df_bbox[c(1,3)],ylim=df_bbox[c(2,4)])+
+  labs(title = "Mozambique Daily Flood Fraction (SFED)",
+       subtitle = "Last 10 days")+
+  theme(
+    legend.text = element_text(angle=90)
   )
 
+ggsave("moz_sfed_max_flood_frac.png")
+```
+
+
+## Map Exposure
+```{r}
 # Map Flood Exposure
 
 lr_exposure$sfed %>% 
@@ -206,11 +330,11 @@ ggplot()+
   geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
   geom_spatraster(data = lr_exposure$sfed)+
   scale_fill_steps2(
-    breaks = c(0,10,50,100,150),
+    breaks = c(10,50,100,150,500),
     low = "yellow",
     mid = "orange",
     high = "red",
-    midpoint = 40,
+    midpoint = 20,
     space = "Lab",
     na.value = NA,
     guide = "coloursteps",
@@ -228,31 +352,95 @@ ggplot()+
     legend.text = element_text(angle=90)
   )
 ggsave("map_moz_SFED_flood_exposure_last_10_days.png",height = 15,width = 10)
+```
 
 
-
-
-# Zonal Stats ###
-# exact_extract(lr_exposure$sfed,y = lgdf_moz$adm1)
-df_adm2_exposure <- lr_exposure %>% 
+## Max Flood Exposure
+```{r}
+lr_max_exposure <-  lr_exposure %>% 
   map(
-    \(rtmp){
-      exact_extract(x = rtmp,
-                           y = lgdf_moz$adm2,
-                           fun ="sum",
-                           append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
-                           force_df = TRUE
-      ) %>%
-        pivot_longer(cols = starts_with("sum"),
-                     names_to = "sum_date",
-                     values_to = "pop_exposed") %>%
-        separate(col = sum_date, "\\.",into = c("stat","date")) %>%
-        mutate(
-          date= as_date(date)
-        )
-      
-    }
+   ~max(.x) 
   )
+
+max_sfed_clipped<- mask(
+  lr_max_exposure$sfed,
+  adm0_simp
+  )
+
+lr_max_exposure$sfed %>% 
+  values() %>% 
+  data.frame() %>% 
+  pivot_longer(cols = everything()) %>% 
+  filter(!is.na(value)) %>% 
+  ggplot(
+    aes(x= value)
+  )+
+  geom_histogram()
+
+max_sfed_clipped %>% 
+  values() %>% 
+  data.frame() %>% 
+  pivot_longer(cols = everything()) %>% 
+  filter(!is.na(value)) %>% 
+  ggplot(
+    aes(x= value)
+  )+
+  geom_histogram()
+
+# terra::writeRaster(max_sfed_clipped,"test.tif")
+
+ggplot()+
+  geom_sf(data= adm0_simp,fill="white", linewidth=0.3)+
+  geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
+  geom_spatraster(data = lr_max_exposure$sfed) +
+  
+  # scale_fill_brewer(type = "seq")
+  scale_fill_steps2(
+    breaks = c(0,10,20,50,100,200),
+    low = "yellow",
+    mid = "orange",
+    high = "red",
+    midpoint = 20,
+    # trans = scales::transform_pseudo_log(),
+    space = "Lab",
+    na.value = NA,
+    guide = "coloursteps",
+    aesthetics = "fill",
+    name= "Flooded\nExposure",labels=scales::label_comma()
+  )+
+  # geom_sf(
+  #   data= gdf_surround, 
+  #   fill="grey",alpha=0.8, color = "white"  )+
+  coord_sf(xlim=df_bbox[c(1,3)],ylim=df_bbox[c(2,4)])+
+  labs(title = "Mozambique Maximum Potential Flood Exposure",
+       subtitle = "Last 10 days")+
+  theme(
+    legend.text = element_text(angle=90)
+  )
+ggsave("moz_sfed_max_flood_exposure.png")
+
+
+
+ggplot()+
+  geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
+  geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
+  geom_spatraster(data = lr_max_exposure$sfed)+
+  geom_sf(
+    data= gdf_surround, 
+    fill="grey",alpha=0.8, color = "white"  )+
+  coord_sf(xlim=df_bbox[c(1,3)],ylim=df_bbox[c(2,4)])+
+  labs(title = "Mozambique Daily Flood Fraction (SFED)",
+       subtitle = "Last 10 days")+
+  theme(
+    legend.text = element_text(angle=90)
+  )
+```
+
+
+
+
+```{r}
+
 
 
 # select only adm2s that had some flood exposure for plotting
@@ -332,3 +520,14 @@ patchwork::wrap_plots(l_ps,ncol = 1)+
 
 
 
+
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
