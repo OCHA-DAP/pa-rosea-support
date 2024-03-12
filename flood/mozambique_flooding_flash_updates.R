@@ -4,6 +4,9 @@ library(terra)
 library(sf)
 library(tidyverse)
 library(janitor)
+library(tidyterra)
+library(gghdx)
+gghdx()
 source(
   file.path("R","googledrive.R")
 )
@@ -65,3 +68,65 @@ lr <- set_names(df_latest_files_meta$file_name,str_extract(df_latest_files_meta$
       return(r)
       }
   )
+
+library(targets)
+tar_load(lgdf_adm,store="flood_target_store")
+
+lgdf_moz <- lgdf_adm %>% 
+  map(
+    ~.x %>% 
+      filter(adm0_en =="Mozambique")
+  )
+
+lr_bounded <- lr %>% 
+  map(
+    \(rtmp){
+      r_tmp_cropped<- crop(rtmp, lgdf_moz$adm0)
+      r_tmp_cropped[r_tmp_cropped<0.02]<-NA
+      return(r_tmp_cropped)
+    }
+  )
+
+
+
+
+low_fill = "#E0F3F8"
+med_fill ="#74ADD1" 
+high_fill= "#4575B4"
+
+lgdf_moz$adm0 %>% object.size()
+adm0_simp<- st_simplify(lgdf_moz$adm0,4000)
+adm1_simp<- st_simplify(lgdf_moz$adm1,4000)
+adm0_simp %>% 
+  object.size()
+adm1_simp %>% 
+  object.size()
+
+ggplot()+
+  geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
+  geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
+  geom_spatraster(data = lr_bounded$sfed)+
+  scale_fill_steps2(
+    breaks = seq(0,1,by=0.2),
+    low = low_fill,
+    mid = med_fill,
+    high = high_fill,
+    midpoint = 0.5,
+    space = "Lab",
+    na.value = NA,
+    guide = "coloursteps",
+    aesthetics = "fill",
+    name= "Flooded\nFraction",labels=scales::label_percent()
+  )+
+  facet_wrap(~lyr)+
+  
+  labs(title = "Mozambique",
+       subtitle = "East Africa: Flood Susceptibility")+
+  theme(
+    legend.text = element_text(angle=90)
+  )
+# ggsave("map_moz_SFED_flood_frac_last_10_days.png",height = 15)
+
+
+
+
