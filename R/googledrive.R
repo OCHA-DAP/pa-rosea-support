@@ -13,7 +13,9 @@
 #' @examples
 load_drive_file <-  function(
     dribble,
-    file_name){
+    file_name, overwrite =F
+    
+    ){
   file_id <-  get_drive_id(dribble = dribble,
                            file_name = file_name)
   tmp_file_path <-  file.path(
@@ -23,13 +25,38 @@ load_drive_file <-  function(
   cat("downloading ", file_name," to temp path\n")
   googledrive::drive_download(
     file = googledrive::as_id(file_id),
-    path = tmp_file_path
+    path = tmp_file_path,overwrite = overwrite
   )
   cat("reading ", file_name," to memory\n")
   ret <- read_fun(tmp_file_path)
   unlink(tmp_file_path)
   return(ret)
 }
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
+download_drive_zips <- function(
+  dribble,
+  file_name,
+  overwrite=F){
+    file_id <-  get_drive_id(dribble = dribble,
+                             file_name = file_name)
+    tmp_file_path <-  file.path(
+      tempdir(),file_name
+    )
+    
+    cat("downloading ", file_name," to temp path\n")
+    googledrive::drive_download(
+      file = googledrive::as_id(file_id),
+      path = tmp_file_path,
+      overwrite =overwrite
+    )
+    return(tmp_file_path)
+  }
 
 #' Title
 #'
