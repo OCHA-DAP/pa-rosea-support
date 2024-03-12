@@ -10,6 +10,7 @@ library(targets)
 library(tidyverse) # for mapping/downloading in beginning
 library(glue) # for downloading
 library(terra)
+re_download_worldpop <- c(T,F)[1]
 
 tar_source()
 # Flood Analysis ----------------------------------------------------------
@@ -64,15 +65,19 @@ fp_wp_ken <- file.path(
 
 # "https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/KEN/ken_ppp_2020_1km_Aggregated_UNadj.tif"
 
-cat("downloading worldpop raster from HDX\n")
-countries_dl_wp <- c(Kenya="KEN",Ethiopia="ETH",Somalia="SOM",Mozambique="MOZ")
-lr_wp <- map(countries_dl_wp,\(country_code){
-  cat("downloading ",country_code,"\n")
-  country_code_lower <- str_to_lower(country_code)
-  url <- glue("https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/{country_code}/{country_code_lower}_ppp_2020_1km_Aggregated_UNadj.tif")
-  terra::rast(url)
+if(re_download_worldpop){
+  cat("downloading worldpop raster from HDX\n")
+  countries_dl_wp <- c(Kenya="KEN",Ethiopia="ETH",Somalia="SOM",Mozambique="MOZ")
+  lr_wp <- map(countries_dl_wp,\(country_code){
+    cat("downloading ",country_code,"\n")
+    country_code_lower <- str_to_lower(country_code)
+    url <- glue("https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/{country_code}/{country_code_lower}_ppp_2020_1km_Aggregated_UNadj.tif")
+    terra::rast(url)
+  }
+  )
+  
+  
 }
-)
 
 
 
@@ -329,5 +334,15 @@ list(
             title = paste0("Approximate population susceptible to flooding ", country_name)
           )
       })
+  ),
+  # quick flood scan analysis for cyclones
+  tar_target(
+    name = moz_adm1_floodscan_unprocessed,
+    command= zonal_floodscan(floodscan_path = fp_fp,
+                             geom = lgdf_adm$adm1 %>% filter(adm0_en=="Mozambique"),
+                             cols_keep = c("adm0_en","adm0_pcode","adm1_en","adm1_pcode"),
+                             zonal_stat= c("mean","median")
+                             )
+    
   )
 )

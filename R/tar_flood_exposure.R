@@ -134,6 +134,31 @@ floodscan_lookup <-  function(r_fs){
 
 }
 
+zonal_floodscan <- function(floodscan_path=fp_fs,
+                            adm = lgdf_adm$adm1 %>% filter(adm0_en=="Mozambique"),
+                            cols_keep = c("adm0_en","adm0_pcode","adm1_en","adm1_pcode"),
+                            zonal_stat= "mean"
+                            ){
+  tnc_fs <- tidync(floodscan_path)
+  tnc_fs_filt <- fs_filter_bounds(fs_obj = tnc_fs,geometry = adm)
+  r_fs <- fs_to_raster(fs_obj = tnc_fs_filt,band = "SFED_AREA")
+  
+  ret <- exact_extract(x =r_fs,
+                       y = adm,
+                       fun =zonal_stat,
+                       append_cols= cols_keep,
+                       force_df = TRUE
+  ) %>%
+    pivot_longer(cols = matches('^mean.|^median.'),
+                 names_to = "stat_date",
+                 values_to = "flood_frac") %>%
+    separate(col = stat_date, "\\.",into = c("stat","date")) %>%
+    mutate(
+      date= as_date(date)
+    )
+  
+}
+
 
 
 
