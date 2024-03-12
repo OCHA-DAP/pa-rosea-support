@@ -8,3 +8,6 @@
 flood_target_store/*
 *.json
 *.png
+
+# gdrive not syncing so keeping this local for quicker work
+esa_admin_region/*
