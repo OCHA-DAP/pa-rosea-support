@@ -76,7 +76,7 @@ source(here(file.path("R","googledrive.R")))
 drive_auth(path=here(Sys.getenv("FS_SA_JSON")))
 
 
-update_data <- c(T,F)[2]
+update_data <- c(T,F)[1]
 
 tar_load(lgdf_adm,store=here("flood_target_store"))
 lgdf_moz <- lgdf_adm %>% 
@@ -362,8 +362,8 @@ df_adm2_exposure_max <- lr_exposure_max %>%
 #| eval: true
 #| include: true
 #| results: 'asis'
-#| fig-height: 12
-#| out-height: 12in
+#| fig-height: 8
+#| out-height: 8in
 
 df_adm2_max_pop <- df_adm2_exposure_max %>% 
   imap(

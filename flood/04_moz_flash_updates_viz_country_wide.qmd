@@ -29,12 +29,13 @@ project:
 
 This report attempts to give provide estimates of the current flooding and potential exposed populations in Mozambique. We do this by analyzing 2 data sets:
 
-1. FloodScan - Last 10 days
-2. WorldPop UN Adjusted (2020) population estimates.
+1.  FloodScan - Last 10 days
+2.  WorldPop UN Adjusted (2020) population estimates.
 
 FloodScan provide two flood fraction estimates: Standard Flood Event Depiction (SFED) and Maximum Flood Event Depiction (MFED). Both are presented throughout the report along with the average of the two. More details can be found in the [FloodScan Data Users Guide](https://www.aer.com/siteassets/resources/floodscan_data_users_guide_v05r01_r01.pdf)
 
 This report is generated every 24 hours as new daily FloodScan data is received.
+
 ```{r paramWrangling}
 #| eval: true
 #| include: true
@@ -51,8 +52,6 @@ include_adm1 <- switch(params$aoi,
 #        )
 
 ```
-
-
 
 ```{r}
 #| eval: true
@@ -76,7 +75,7 @@ source(here(file.path("R","googledrive.R")))
 drive_auth(path=here(Sys.getenv("FS_SA_JSON")))
 
 
-update_data <- c(T,F)[2]
+update_data <- c(T,F)[1]
 
 tar_load(lgdf_adm,store=here("flood_target_store"))
 lgdf_moz <- lgdf_adm %>% 
@@ -179,7 +178,6 @@ if(!update_data){
   )
 }
 ```
-
 
 ```{r geospatialInputs}
 
@@ -827,8 +825,6 @@ patchwork::wrap_plots(l_ps,ncol = 1)+
   )
 
 ```
-
-
 
 ```{r mapFloodFrac10d}
 #| eval: false
