@@ -1,18 +1,32 @@
 ---
-title: "Moz Flash Response Floods"
-format: html
+title: "Mozambique Flash Updates - Flooding"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    self-contained: true
+    embed-resoures: true
+    smooth-scroll: true
+execute:
+  include: false
+  echo: false
+  warning: false
+  message: false
+  eval: false
+  results: "asis"
+  out.width: "100%"
 editor: visual
+project:
+     execute-dir: project
 ---
 
 ## Quarto
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
 
 ```{r}
+#| eval: true
+
 library(googledrive )
 library(here)
 library(terra)
@@ -24,17 +38,18 @@ library(gghdx)
 library(glue)
 library(targets)
 library(exactextractr)
+library(gt)
 
 
-tar_load(lgdf_adm,store="flood_target_store")
+tar_load(lgdf_adm,store=here("flood_target_store"))
 
 gghdx()
 source(
-  file.path("R","googledrive.R")
+  here(file.path("R","googledrive.R"))
 )
 
 drive_auth(
-  path=Sys.getenv("FS_SA_JSON")
+  path=here(Sys.getenv("FS_SA_JSON"))
 )
 
 drive_dribble <- drive_ls(
@@ -68,27 +83,27 @@ lr <- set_names(df_latest_files_meta$file_name,str_extract(df_latest_files_meta$
         ) %>% 
         slice_max(order_by = date, n = 10)
       
-    cat("unzipping last 10\n")
-    unzip(zipfile = tmp_fp,
-          files = latest_10_days_meta$name,
-          exdir = dirtmp <- tempdir(),
-    )
-    list.files(dirtmp)
-    
-    fps_tifs_last_10 <- list.files(
-      file.path(
-        dirtmp,
-        glue("aer_floodscan_{nm}_area_flooded_fraction_africa_90days")
-      ),
-      full.names = T
-    )
-    cat("reading raster\n")
+      cat("unzipping last 10\n")
+      unzip(zipfile = tmp_fp,
+            files = latest_10_days_meta$name,
+            exdir = dirtmp <- tempdir(),
+      )
+      list.files(dirtmp)
+      
+      fps_tifs_last_10 <- list.files(
+        file.path(
+          dirtmp,
+          glue("aer_floodscan_{nm}_area_flooded_fraction_africa_90days")
+        ),
+        full.names = T
+      )
+      cat("reading raster\n")
       r <- rast(fps_tifs_last_10)
       lyr_names <- basename(fps_tifs_last_10)
       lyr_date_names <- as_date(stringr::str_extract(lyr_names , "\\d{8}"),"%Y%M%D")
       set.names(r, lyr_date_names)
       return(r)
-      }
+    }
   )
 
 
@@ -101,9 +116,9 @@ lgdf_moz <- lgdf_adm %>%
   )
 df_bbox <-  st_bbox(lgdf_moz$adm0)
 
-lr$sfed[[1]]
-lr$mfed[[1]]
 
+
+# remove all < 2% flood frac right off batt
 lr_bounded <- lr %>% 
   map(
     \(rtmp){
@@ -121,21 +136,18 @@ rivers_gpkg <-  file.path(
   "waterways",
   "hotosm_moz_named_rivers_lines_geojson.gpkg"
 )
-rivers<- st_read(rivers_gpkg,"hotosm_moz_rivers_lines_geojson__hotosm_moz_waterways_lines_geojsongeojson")
+rivers<- st_read(rivers_gpkg,
+                 "hotosm_moz_rivers_lines_geojson__hotosm_moz_waterways_lines_geojsongeojson")
 
 
-surrounding_countries<- file.path(
+gdf_esa<- st_read(file.path(
   Sys.getenv("AA_DATA_DIR"),
   "public",
   "raw",
   "esa",
   "cod_ab",
   "esa_admin_region"
-)
-gdf_esa<- st_read(
-  "esa_admin_region",
-  "ESA_admin0_region"
-) %>% 
+)) %>% 
   clean_names()
 
 
@@ -146,14 +158,14 @@ gdf_surround <- gdf_esa %>%
                    "Malawi","Tanzania","South Africa","Swazilnd")
   ) %>% 
   st_make_valid() #%>% 
-  # st_simplify(
-  #   dTolerance = 20000
-  # )
+
 ```
 
 
 ```{r calcExposureRaster}
+#| eval: true
 
+# download wrold pop
 countries_dl_wp <- c(Mozambique="MOZ")
 r_wp <- map(countries_dl_wp,\(country_code){
   cat("downloading ",country_code,"\n")
@@ -171,13 +183,12 @@ lr_fs_max <- lr_bounded %>%
   )
 
 threshold = 0.2
-
 lr_exposure_max <- lr_fs_max %>% 
   map(
     \(rtmp){
       cat("cropping\n")
       r_max_composite <- max(rtmp)
-      r_fs_tmp <- crop(rtmp, r_wp$Mozambique)
+      r_fs_tmp <- crop(r_max_composite, r_wp$Mozambique)
       ext(r_fs_tmp) <- ext( r_wp$Mozambique)
       
       cat("resampling floodscan to worldpop\n")
@@ -223,16 +234,17 @@ lr_exposure_daily <- lr_bounded %>%
 
 
 ```{r calcExposureVector}
+#| eval: true
 # Zonal Stats ###
 # exact_extract(lr_exposure$sfed,y = lgdf_moz$adm1)
 df_adm2_exposure_daily <- lr_exposure_daily %>% 
   map(
     \(rtmp){
       exact_extract(x = rtmp,
-                           y = lgdf_moz$adm2,
-                           fun ="sum",
-                           append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
-                           force_df = TRUE
+                    y = lgdf_moz$adm2,
+                    fun ="sum",
+                    append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
+                    force_df = TRUE
       ) %>%
         pivot_longer(cols = starts_with("sum"),
                      names_to = "sum_date",
@@ -249,10 +261,10 @@ df_adm2_exposure_max <- lr_exposure_max %>%
   map(
     \(rtmp){
       exact_extract(x = rtmp,
-                           y = lgdf_moz$adm2,
-                           fun ="sum",
-                           append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
-                           force_df = TRUE
+                    y = lgdf_moz$adm2,
+                    fun ="sum",
+                    append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
+                    force_df = TRUE
       ) %>%
         pivot_longer(cols = starts_with("sum"),
                      names_to = "sum_date",
@@ -268,6 +280,10 @@ df_adm2_exposure_max <- lr_exposure_max %>%
 
 ## Top line Figures
 ```{r eval=T}
+#| eval: true
+#| include: true
+#| results: 'asis'
+
 df_adm2_max_pop <- df_adm2_exposure_max %>% 
   imap(
     \(dft,nm){
@@ -276,7 +292,7 @@ df_adm2_max_pop <- df_adm2_exposure_max %>%
         mutate(
           data_source= toupper(nm)
         )
-        
+      
     }
   ) %>% 
   list_rbind()
@@ -291,7 +307,7 @@ df_adm2_max_pop_processed <- df_adm2_max_pop %>%
   ) %>% 
   filter(
     any(pop_exposed>0)
-    ) %>% 
+  ) %>% 
   ungroup() 
 
 df_adm2_max_pop_processed %>% 
@@ -312,25 +328,181 @@ df_adm2_max_pop_processed %>%
   )+
   theme(
     axis.title = element_blank(),
-    legend.position = "none",
+    legend.title = element_blank(),
     plot.caption = element_text(hjust=0)
   )
 
 ```
 
 ```{r}
-library(gt)
+#| eval: true
+#| include: true
+#| results: 'asis'
+
 df_adm2_max_pop_processed %>% 
+  # bind_rows(df_adm2_max_pop_avg) %>% 
   pivot_wider(names_from = data_source, values_from = pop_exposed) %>% 
+  rowwise() %>% 
+  mutate(
+    Average = mean(c(SFED,MFED))
+  ) %>% 
+  ungroup() %>% 
+  arrange(desc(Average)) %>% 
+  
   gt() %>% 
   cols_hide(
-    columns = c(matches("_pcode$"),"stat")
+    columns = c(matches("_pcode$"),"stat","adm0_en")
+  ) %>% 
+  cols_label(
+    adm0_en="Country",
+    adm1_en="Region",
+    adm2_en="District"
+  ) %>% 
+  fmt_number(columns = c("SFED","MFED","Average"),decimals = 0) %>% 
+  tab_header(
+    title = "Mozambique: Potential Population Exposed to Flooding By District",
+    subtitle = glue("Last 10 days ({subtitle_date_ramge})"),
+  ) %>% 
+  tab_footnote(footnote = 
+                 html(
+                   "Estimates calculated using FloodScan (SFED & MFED) and WorldPop 2020 UN adjusted raster in the following steps:<br> 
+    1. a maximum flood fraction raster was calculated over the previous 10 days<br>
+    2. This maximum flood fraction raster was thresholded to only include fraction ≥ 20%<br>
+    3. The flood fraction raster was multiplied by the WorldPop raster to obtain an estimated maximum exposure raster<br>
+    4. Weighted zonal sum calclulated at the admin 2 level to obtain approximte population potentially exposed to flooding the past 10 days"
+                 )
   )
-  
 ```
 
 
-```{r}
+## Time Series
+
+
+SFED & MFED shaded range
+
+```{r timeSeriesBoth}
+#| eval: true
+#| include: true
+#| results: "asis"
+#| fig-height: 10
+#| out-height: 10in
+
+  # select only adm2s that had some flood exposure for plotting
+  df_adm2_exposed_daily_processed_sfed_mfed <- df_adm2_exposure_daily %>% 
+  imap(
+    \(dft,nm){
+      dft %>% 
+        group_by(
+          across(matches("adm\\d"))
+        ) %>% 
+        filter(
+          any(pop_exposed!=0)
+        ) %>% 
+        mutate(
+          
+          data_source = toupper(nm)
+        ) %>% 
+        ungroup()
+      
+    }
+  ) %>% 
+  list_rbind()
+
+
+
+# annoyingly there will be too many admins for having 1 color per adm2
+# can't make a legend with 30 colors
+
+# therefore we split the plots by admin1 give each plot it's own legend
+adm1_w_exposure <- df_adm2_exposed_daily_processed_sfed_mfed$adm1_en %>% 
+  unique()
+
+# requires patchwork and some fangling like this to only put dates
+# on bottom plot
+bottom_plot <- adm1_w_exposure[length(adm1_w_exposure)]
+
+
+l_ps <-adm1_w_exposure %>% 
+  map(
+    \(adm1_tmp){
+      # print(adm1_tmp)
+      # adm1_tmp <-  "Niassa"
+      # adm1_tmp<-"Tete"
+      df_tmp <- df_adm2_exposed_daily_processed_sfed_mfed %>% 
+        filter(
+          adm1_en == adm1_tmp
+        ) %>%
+        group_by(
+          across(matches("adm\\d")),date
+        ) %>% 
+        summarise(
+          min_pop = min(pop_exposed),
+          max_pop = max(pop_exposed),
+          mean_pop = mean(pop_exposed)
+        ) 
+      length(unique(df_tmp$adm2_en))
+      num_legend_cols <-  ifelse(length(unique(df_tmp$adm2_en))>6,2,1)
+      p <- df_tmp %>% 
+        ggplot(
+          aes(x= date, y= mean_pop, group=adm2_en, color=adm2_en, fill =adm2_en)
+        )+
+        # geom_line()+
+        geom_ribbon(aes(ymin= min_pop,ymax=max_pop),alpha= 0.3)+
+        geom_point(alpha=0.8)+
+        # scale_color_brewer(type = "qual",palette = "Accent")+
+        scale_color_manual(values = tmaptools::get_brewer_pal("Accent", n = 10,plot=F))+
+        scale_fill_manual(values = tmaptools::get_brewer_pal("Accent", n = 10,plot=F))+
+        # scale_fill_brewer(type="qual",palette="Accent")+
+        labs(
+          subtitle = adm1_tmp
+        )+
+        scale_x_date(
+          date_breaks = "day",date_labels = "%e-%b"
+        )+
+        scale_y_continuous(
+          labels = scales::label_comma()
+        )+
+        guides(colour=guide_legend(ncol=num_legend_cols))+
+        theme(
+          legend.title = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.x = element_blank(),
+          legend.text = element_text(size=8),
+          legend.spacing =unit(0, 'cm'),
+          legend.key.height = unit(0.2,'cm'),
+          legend.position = "right"
+        )
+      if(adm1_tmp==bottom_plot){
+        p <- p+
+          labs(
+            caption = "Estimates calculated using FloodScan (SFED) and WorldPop 2020 UN adjusted raster in the following steps: 
+    1. Each daily FloodScan raster was thresholded to only include fraction ≥ 20%
+    2. Each thresholded raster was multipled by the WorldPop raster to obtain approximate potential daily exposure rasters
+    4. Weighted zonal sum calclulated at the admin 2 level to obtain approximte population potentially exposed to flooding during each of the last 10 days"
+          )+
+          theme(
+            plot.caption =element_text(hjust=0),
+            axis.text.x = element_text(angle=90),
+          )
+      }
+      return(p)
+    }
+    
+  )
+
+patchwork::wrap_plots(l_ps,ncol = 1)+
+  patchwork::plot_annotation(
+    title= "Mozambique: population potentially exposed to flooding",
+    subtitle = "FloodScan (MFED & SFED range) + WorldPop",
+  )
+
+```
+
+
+```{r timeSeriesSFED}
+#| eval: false
+#| include: false
 
 
 
@@ -365,16 +537,16 @@ bottom_plot <- adm1_w_exposure[length(adm1_w_exposure)]
 l_ps <-adm1_w_exposure %>% 
   map(
     \(adm1_tmp){
-     p <-  df_adm2_exposed_processed %>% 
-  filter(
-    adm1_en == adm1_tmp
-  ) %>%
+      p <-  df_adm2_exposed_daily_processed %>% 
+        filter(
+          adm1_en == adm1_tmp
+        ) %>%
         ggplot(
-        aes(x= date,
-            y= pop_exposed, 
-            group = adm2_en,
-            color= adm2_en)
-      )+
+          aes(x= date,
+              y= pop_exposed, 
+              group = adm2_en,
+              color= adm2_en)
+        )+
         geom_point()+
         geom_line()+
         scale_color_brewer(type = "qual")+
@@ -397,22 +569,22 @@ l_ps <-adm1_w_exposure %>%
           legend.key.height = unit(0.2,'cm'),
           legend.position = "right"
         )
-     if(adm1_tmp==bottom_plot){
-       p <- p+
-         labs(
-           caption = "Estimates calculated using FloodScan (SFED) and WorldPop 2020 UN adjusted raster in the following steps: 
+      if(adm1_tmp==bottom_plot){
+        p <- p+
+          labs(
+            caption = "Estimates calculated using FloodScan (SFED) and WorldPop 2020 UN adjusted raster in the following steps: 
     1. Each daily FloodScan raster was thresholded to only include fraction ≥ 20%
     2. Each thresholded raster was multipled by the WorldPop raster to obtain approximate potential daily exposure rasters
     4. Weighted zonal sum calclulated at the admin 2 level to obtain approximte population potentially exposed to flooding during each of the last 10 days")+
-             
-           theme(
-             plot.caption =element_text(hjust=0),
-         axis.text.x = element_text(angle=90),
-       )
-     }
-     return(p)
+          
+          theme(
+            plot.caption =element_text(hjust=0),
+            axis.text.x = element_text(angle=90),
+          )
+      }
+      return(p)
     }
-  
+    
   )
 
 patchwork::wrap_plots(l_ps,ncol = 1)+
@@ -420,17 +592,19 @@ patchwork::wrap_plots(l_ps,ncol = 1)+
     title= "Mozambique: population potentially exposed to flooding",
     subtitle = "FloodScan SFED + WorldPop",
     
-)
+  )
 
 ```
 
-```{r}
-
-```
-
+## Appendix
 
 ## Map Flood Fraction
-```{r}
+```{r mapFloodFrac10d}
+#| eval: true
+#| include: true
+#| results: "asis"
+#| fig-height: 10
+#| out-height: 10in
 
 low_fill = "#E0F3F8"
 med_fill ="#74ADD1" 
@@ -470,7 +644,7 @@ ggplot()+
   theme(
     legend.text = element_text(angle=90)
   )
-ggsave("map_moz_SFED_flood_frac_last_10_days.png",height = 15,width = 10)
+# ggsave("map_moz_SFED_flood_frac_last_10_days.png",height = 15,width = 10)
 ```
 
 # Max Flood Fraction
@@ -479,7 +653,7 @@ ggsave("map_moz_SFED_flood_frac_last_10_days.png",height = 15,width = 10)
 ggplot()+
   geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
   geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
-    geom_sf(
+  geom_sf(
     data= rivers,
     color="lightblue",lwd=0.1#,alpha=0.4
   )+
@@ -499,7 +673,7 @@ ggplot()+
   geom_sf(
     data= gdf_surround, 
     fill="grey",alpha=0.8, color = "white"  )+
-
+  
   coord_sf(xlim=df_bbox[c(1,3)],ylim=df_bbox[c(2,4)])+
   labs(title = "Mozambique Daily Flood Fraction (SFED)",
        subtitle = "Last 10 days")+
@@ -559,13 +733,13 @@ ggsave("map_moz_SFED_flood_exposure_last_10_days.png",height = 15,width = 10)
 ```{r}
 lr_max_exposure <-  lr_exposure %>% 
   map(
-   ~max(.x) 
+    ~max(.x) 
   )
 
 max_sfed_clipped<- mask(
   lr_max_exposure$sfed,
   adm0_simp
-  )
+)
 
 lr_max_exposure$sfed %>% 
   values() %>% 
@@ -636,16 +810,3 @@ ggplot()+
   )
 ```
 
-
-
-
-
-
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
