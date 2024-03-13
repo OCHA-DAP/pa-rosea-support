@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 
+data/*
 .scrapy/*
 *.html
 flood_target_store/*
@@ -12,3 +13,4 @@ flood_target_store/*
 # gdrive not syncing so keeping this local for quicker work
 esa_admin_region/*
 *.tif
+*.gif
