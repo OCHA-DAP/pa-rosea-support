@@ -438,7 +438,7 @@ SFED & MFED shaded range
 # therefore we split the plots by admin1 give each plot it's own legend
 adm1_w_exposure <- df_adm2_exposed_daily_processed_sfed_mfed$adm1_en %>% 
   unique()
-
+adm1_w_exposure <- c("Sofala", "Inhambane", "Gaza", "Maputo")
 # requires patchwork and some fangling like this to only put dates
 # on bottom plot
 bottom_plot <- adm1_w_exposure[length(adm1_w_exposure)]
