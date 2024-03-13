@@ -1,6 +1,6 @@
 ---
 title: "Mozambique Flash Updates - Flooding"
-subtitle: "Country Wide Analysis"
+subtitle: "Analysis of Sofala & Inhambane Provinces"
 format:
   html:
     toc: true
@@ -10,7 +10,7 @@ format:
     embed-resoures: true
     smooth-scroll: true
 params:
-  aoi: "country_wide"
+  aoi: "subset1"
 execute:
   include: false
   echo: false
@@ -843,46 +843,85 @@ high_fill= "#4575B4"
 
 lgdf_moz$adm0 %>% object.size()
 adm0_simp<- st_simplify(lgdf_moz$adm0,20000)
-adm1_simp<- st_simplify(lgdf_moz$adm1,20000)
+adm1_simp<- st_simplify(adm1_aoi,20000)
 adm0_simp %>% 
   object.size()*1e-6
 adm1_simp %>% 
   object.size() *1e-6
 library(gganimate)
+lp_gifs[[1]]
 
-p_gif <- ggplot()+
-  geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
-  geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
-  geom_spatraster(data = lr_bounded$sfed)+
-  scale_fill_steps2(
-    breaks = seq(0,1,by=0.2),
-    low = low_fill,
-    mid = med_fill,
-    high = high_fill,
-    midpoint = 0.5,
-    space = "Lab",
-    na.value = NA,
-    guide = "coloursteps",
-    aesthetics = "fill",
-    name= "Flooded\nFraction",labels=scales::label_percent()
-  )+
-  transition_states(lyr)+
-  # facet_wrap(~lyr)+
-  geom_sf(
-    data= gdf_surround, 
-    fill="grey",
-    alpha=0.8, 
-    color = "white"  )+
-  coord_sf(xlim=df_bbox[c(1,3)],ylim=df_bbox[c(2,4)])+
-  labs(title = "Mozambique Daily Flood Fraction (SFED)",
-       subtitle = "Day: {closest_state}")+
-  theme(
-    legend.text = element_text(angle=90)
+lp_gifs <- unique(adm1_simp$adm1_en) %>% 
+  map(
+    \(adm1_tmp){
+      
+      df_map_tmp <- adm1_simp %>% 
+        filter(
+          adm1_en == adm1_tmp
+        )
+      adm2_tmp <- adm2_simp %>% 
+        filter(
+          adm1_en %in% adm1_tmp
+        )
+      df_map_tmp_bbox <-  st_bbox(df_map_tmp)
+      
+      ggplot()+
+        geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
+        geom_sf(data= df_map_tmp,fill=NA,linewidth=0.5,color="grey")+
+        geom_sf(data= adm2_tmp,fill=NA,linewidth=0.2,color="lightgrey")+
+        geom_spatraster(data = lr_bounded$sfed)+
+        scale_fill_steps2(
+          breaks = seq(0,1,by=0.2),
+          low = low_fill,
+          mid = med_fill,
+          high = high_fill,
+          midpoint = 0.5,
+          space = "Lab",
+          na.value = NA,
+          guide = "coloursteps",
+          aesthetics = "fill",
+          name= "Flooded\nFraction",labels=scales::label_percent()
+        )+
+        transition_states(lyr)+
+        geom_sf(
+          data= gdf_surround, 
+          fill="grey",
+          alpha=0.8, 
+          color = "white"  )+
+        coord_sf(xlim=df_map_tmp_bbox[c(1,3)],ylim=df_map_tmp_bbox[c(2,4)])+
+        labs(title = paste0("Mozambique - ",adm1_tmp," Province: Daily Flood Fraction (SFED)"),
+             subtitle = "Day: {closest_state}")+
+        theme(
+          legend.text = element_text(angle=90),
+          plot.title = element_text(size=8)
+        )
+    }
   )
+library(magick)
+
+# lp_gifs[1]
+# gif_1 <- animate(lp_gifs[[1]],width=500, height = 500)
+# gif_2 <- animate(lp_gifs[[2]],width=500, height = 500)
+
+gif_1 <- animate(lp_gifs[[1]],width=500, height = 500)
+gif_2 <- animate(lp_gifs[[2]],width=500, height = 500)
+
+# length(lp_gifs[[1]])
+# length(lp_gifs[[2]])
+mgif_1 <-  image_read(gif_1)
+mgif_2 <- image_read(gif_2)
+
+new_gif <-  image_append(c(mgif_1[1], mgif_2[1]))
+for(i in 2:14){
+  combined_mgif <- image_append(c(mgif_1[i],mgif_2[i]))
+  new_gif <- c(new_gif, combined_mgif) 
+}
+new_gif
+# length(lp_gifs)
+# patchwork::wrap_plots(lp_gifs,ncol = 2)
 
 
-
-# anim_save("moz_flood_frac.gif")
+anim_save("moz_flood_frac.gif")
 
 # ggsave("map_moz_SFED_flood_frac_last_10_days.png",height = 15,width = 10)
 ```
