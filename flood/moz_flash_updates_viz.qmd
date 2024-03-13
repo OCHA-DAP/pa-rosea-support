@@ -16,6 +16,7 @@ execute:
   eval: false
   results: "asis"
   out.width: "100%"
+  code-fold: true
 editor: visual
 project:
      execute-dir: project
@@ -88,7 +89,7 @@ lr <- set_names(df_latest_files_meta$file_name,str_extract(df_latest_files_meta$
             files = latest_10_days_meta$name,
             exdir = dirtmp <- tempdir(),
       )
-      list.files(dirtmp)
+      
       
       fps_tifs_last_10 <- list.files(
         file.path(
@@ -102,6 +103,7 @@ lr <- set_names(df_latest_files_meta$file_name,str_extract(df_latest_files_meta$
       lyr_names <- basename(fps_tifs_last_10)
       lyr_date_names <- as_date(stringr::str_extract(lyr_names , "\\d{8}"),"%Y%M%D")
       set.names(r, lyr_date_names)
+      # unlink(dirtmp,recursive=T)
       return(r)
     }
   )
@@ -122,7 +124,8 @@ df_bbox <-  st_bbox(lgdf_moz$adm0)
 lr_bounded <- lr %>% 
   map(
     \(rtmp){
-      r_tmp_cropped<- crop(rtmp, lgdf_moz$adm0)
+      rtmp_copy <- deepcopy(rtmp)
+      r_tmp_cropped<- crop(rtmp_copy, lgdf_moz$adm0)
       r_tmp_cropped[r_tmp_cropped<0.02]<-NA
       return(r_tmp_cropped)
     }
@@ -178,25 +181,31 @@ r_wp <- map(countries_dl_wp,\(country_code){
 lr_fs_max <- lr_bounded %>% 
   map(
     \(rtmp){
-      r_max_composite <- max(rtmp)
+      r_tmp_copy <- deepcopy(rtmp)  
+      r_max_composite <- max(r_tmp_copy)
+      return(r_max_composite)
     }
   )
+
+
 
 threshold = 0.2
 lr_exposure_max <- lr_fs_max %>% 
   map(
     \(rtmp){
       cat("cropping\n")
-      r_max_composite <- max(rtmp)
+      r_max_composite <- deepcopy(rtmp)
       r_fs_tmp <- crop(r_max_composite, r_wp$Mozambique)
       ext(r_fs_tmp) <- ext( r_wp$Mozambique)
       
       cat("resampling floodscan to worldpop\n")
       r_fs_resampled <- terra::resample(x = r_fs_tmp,r_wp$Mozambique,method="near")
       cat("binarizing floodscan\n")
-      r_fs_resampled[r_fs_resampled<threshold,] <- NA
+      lgl_thresh_mask <- ifel(r_fs_resampled>=threshold,1,0) 
+      r_fs_resampled_masked <- mask(r_fs_resampled,lgl_thresh_mask)
+   
       cat("multiplying floodscan by worldpop for pop exposure\n")
-      r_exposure <- r_fs_resampled*r_wp$Mozambique
+      r_exposure <- r_fs_resampled_masked*r_wp$Mozambique
       
       return(r_exposure)
       
@@ -213,15 +222,21 @@ lr_exposure_daily <- lr_bounded %>%
   map(
     \(rtmp){
       cat("cropping\n")
-      r_fs_tmp <- crop(rtmp, r_wp$Mozambique)
+      rtmp_copy <- deepcopy(rtmp)
+      r_fs_tmp <- crop(rtmp_copy, r_wp$Mozambique)
       ext(r_fs_tmp) <- ext( r_wp$Mozambique)
       
       cat("resampling floodscan to worldpop\n")
       r_fs_resampled <- terra::resample(x = r_fs_tmp,r_wp$Mozambique,method="near")
       cat("binarizing floodscan\n")
-      r_fs_resampled[r_fs_resampled<threshold,] <- NA
+      
+      lgl_thresh_mask <- ifel(r_fs_resampled>=threshold,1,0) 
+      r_fs_resampled_masked <- mask(r_fs_resampled,lgl_thresh_mask)
+   
+      
+      
       cat("multiplying floodscan by worldpop for pop exposure\n")
-      r_exposure <- r_fs_resampled*r_wp$Mozambique
+      r_exposure <- r_fs_resampled_masked*r_wp$Mozambique
       
       return(r_exposure)
       
@@ -240,7 +255,8 @@ lr_exposure_daily <- lr_bounded %>%
 df_adm2_exposure_daily <- lr_exposure_daily %>% 
   map(
     \(rtmp){
-      exact_extract(x = rtmp,
+      rtmp_copy <- deepcopy(rtmp)
+      exact_extract(x = rtmp_copy,
                     y = lgdf_moz$adm2,
                     fun ="sum",
                     append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
@@ -256,11 +272,13 @@ df_adm2_exposure_daily <- lr_exposure_daily %>%
       
     }
   )
-
+lr_exposure_daily$mfed
+lr_exposure_max$mfed
 df_adm2_exposure_max <- lr_exposure_max %>% 
   map(
     \(rtmp){
-      exact_extract(x = rtmp,
+      rtmp_copy <-  deepcopy(rtmp)
+      exact_extract(x = rtmp_copy,
                     y = lgdf_moz$adm2,
                     fun ="sum",
                     append_cols= c("adm0_en","adm1_pcode","adm1_en","adm2_en","adm2_pcode"),
@@ -386,6 +404,8 @@ SFED & MFED shaded range
 #| results: "asis"
 #| fig-height: 10
 #| out-height: 10in
+#| column: screen
+#| out.width: 75%
 
   # select only adm2s that had some flood exposure for plotting
   df_adm2_exposed_daily_processed_sfed_mfed <- df_adm2_exposure_daily %>% 
@@ -408,6 +428,12 @@ SFED & MFED shaded range
   ) %>% 
   list_rbind()
 
+# df_adm2_exposed_daily_processed_sfed_mfed %>% 
+#   filter(pop_exposed!=0) %>% 
+#   group_by(adm1_en) %>% 
+#   distinct(adm2_pcode) %>% 
+#   count()
+
 
 
 # annoyingly there will be too many admins for having 1 color per adm2
@@ -427,7 +453,7 @@ l_ps <-adm1_w_exposure %>%
     \(adm1_tmp){
       # print(adm1_tmp)
       # adm1_tmp <-  "Niassa"
-      # adm1_tmp<-"Tete"
+      # adm1_tmp<-"Zambezia"
       df_tmp <- df_adm2_exposed_daily_processed_sfed_mfed %>% 
         filter(
           adm1_en == adm1_tmp
@@ -440,8 +466,13 @@ l_ps <-adm1_w_exposure %>%
           max_pop = max(pop_exposed),
           mean_pop = mean(pop_exposed)
         ) 
-      length(unique(df_tmp$adm2_en))
-      num_legend_cols <-  ifelse(length(unique(df_tmp$adm2_en))>6,2,1)
+      num_adm2s <- length(unique(df_tmp$adm2_en))
+      num_legend_cols <- case_when(
+        num_adm2s>=14~3,
+        num_adm2s>=7~2,
+        .default=1)
+        
+
       p <- df_tmp %>% 
         ggplot(
           aes(x= date, y= mean_pop, group=adm2_en, color=adm2_en, fill =adm2_en)
@@ -450,8 +481,8 @@ l_ps <-adm1_w_exposure %>%
         geom_ribbon(aes(ymin= min_pop,ymax=max_pop),alpha= 0.3)+
         geom_point(alpha=0.8)+
         # scale_color_brewer(type = "qual",palette = "Accent")+
-        scale_color_manual(values = tmaptools::get_brewer_pal("Accent", n = 10,plot=F))+
-        scale_fill_manual(values = tmaptools::get_brewer_pal("Accent", n = 10,plot=F))+
+        scale_color_manual(values = tmaptools::get_brewer_pal("Accent", n = 21,plot=F))+
+        scale_fill_manual(values = tmaptools::get_brewer_pal("Accent", n = 21,plot=F))+
         # scale_fill_brewer(type="qual",palette="Accent")+
         labs(
           subtitle = adm1_tmp
@@ -490,6 +521,7 @@ l_ps <-adm1_w_exposure %>%
     }
     
   )
+
 
 patchwork::wrap_plots(l_ps,ncol = 1)+
   patchwork::plot_annotation(
