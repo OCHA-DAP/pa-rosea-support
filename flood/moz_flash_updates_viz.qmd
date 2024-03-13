@@ -24,7 +24,6 @@ project:
 
 ## Quarto
 
-
 ```{r}
 #| eval: true
 
@@ -158,12 +157,11 @@ gdf_surround <- gdf_esa %>%
   filter(
     country %in% c("Zimbabwe",
                    "Zambia",
-                   "Malawi","Tanzania","South Africa","Swazilnd")
+                   "Malawi","Tanzania","South Africa","Swaziland")
   ) %>% 
   st_make_valid() #%>% 
 
 ```
-
 
 ```{r calcExposureRaster}
 #| eval: true
@@ -247,7 +245,6 @@ lr_exposure_daily <- lr_bounded %>%
 
 ```
 
-
 ```{r calcExposureVector}
 #| eval: true
 # Zonal Stats ###
@@ -297,6 +294,7 @@ df_adm2_exposure_max <- lr_exposure_max %>%
 ```
 
 ## Top line Figures
+
 ```{r eval=T}
 #| eval: true
 #| include: true
@@ -392,9 +390,7 @@ df_adm2_max_pop_processed %>%
   )
 ```
 
-
 ## Time Series
-
 
 SFED & MFED shaded range
 
@@ -531,7 +527,6 @@ patchwork::wrap_plots(l_ps,ncol = 1)+
 
 ```
 
-
 ```{r timeSeriesSFED}
 #| eval: false
 #| include: false
@@ -631,6 +626,7 @@ patchwork::wrap_plots(l_ps,ncol = 1)+
 ## Appendix
 
 ## Map Flood Fraction
+
 ```{r mapFloodFrac10d}
 #| eval: true
 #| include: true
@@ -716,8 +712,8 @@ ggplot()+
 ggsave("moz_sfed_max_flood_frac.png")
 ```
 
-
 ## Map Exposure
+
 ```{r}
 # Map Flood Exposure
 
@@ -760,8 +756,8 @@ ggplot()+
 ggsave("map_moz_SFED_flood_exposure_last_10_days.png",height = 15,width = 10)
 ```
 
-
 ## Max Flood Exposure
+
 ```{r}
 lr_max_exposure <-  lr_exposure %>% 
   map(
@@ -841,4 +837,3 @@ ggplot()+
     legend.text = element_text(angle=90)
   )
 ```
-
