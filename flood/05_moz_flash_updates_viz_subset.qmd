@@ -11,6 +11,7 @@ format:
     smooth-scroll: true
 params:
   aoi: "subset1"
+  update_data: "true"
 execute:
   include: false
   echo: false
@@ -45,6 +46,14 @@ include_adm1 <- switch(params$aoi,
        "subset1" = c("MZ09","MZ03")
        )
 
+# seems like open issues w/ quarto and logical boolean/params. Just going to run this
+# switch so I don' thave to change code
+update_data <- switch(
+  params$update_data,
+  "true" = TRUE,
+  "false"= FALSE
+)
+
 # report_subtitle <- switch(params$aoi,
 #        "country_wide"="Country Wide Analysis",
 #        "subset1" = "Analysis of Sofala & Inhambane Provinces"
@@ -76,7 +85,7 @@ source(here(file.path("R","googledrive.R")))
 drive_auth(path=here(Sys.getenv("FS_SA_JSON")))
 
 
-update_data <- c(T,F)[1]
+
 
 tar_load(lgdf_adm,store=here("flood_target_store"))
 lgdf_moz <- lgdf_adm %>% 
@@ -837,13 +846,39 @@ patchwork::wrap_plots(l_ps,ncol = 1)+
 #| fig-height: 10
 #| out-height: 10in
 
+library(gganimate)
+library(magick)
+adm0_simp<- st_simplify(lgdf_moz$adm0,20000)
+adm1_simp<- st_simplify(adm1_aoi,20000)
+adm2_simp <- st_simplify(lgdf_moz$adm2 ,dTolerance = 1000)
+
 low_fill = "#E0F3F8"
 med_fill ="#74ADD1" 
 high_fill= "#4575B4"
 
+ggplot()+
+        geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
+        geom_sf(data= adm1_simp,fill=NA,linewidth=0.5,color="grey")+
+        # geom_sf(data= adm2_simp,fill=NA,linewidth=0.2,color="lightgrey")+
+        # geom_spatraster(data = lr_bounded$sfed)+
+  facet_wrap(~adm1_en,scales="free")+
+   geom_spatraster(data = lr_bounded$sfed[[2]])+
+        scale_fill_steps2(
+          breaks = seq(0,1,by=0.2),
+          low = low_fill,
+          mid = med_fill,
+          high = high_fill,
+          midpoint = 0.5,
+          space = "Lab",
+          na.value = NA,
+          guide = "coloursteps",
+          aesthetics = "fill",
+          name= "Flooded\nFraction",labels=scales::label_percent()
+        )
+
+
 lgdf_moz$adm0 %>% object.size()
-adm0_simp<- st_simplify(lgdf_moz$adm0,20000)
-adm1_simp<- st_simplify(adm1_aoi,20000)
+
 adm0_simp %>% 
   object.size()*1e-6
 adm1_simp %>% 
@@ -851,7 +886,9 @@ adm1_simp %>%
 library(gganimate)
 lp_gifs[[1]]
 
-lp_gifs <- unique(adm1_simp$adm1_en) %>% 
+adm1_iter <- unique(adm1_simp$adm1_en) 
+
+lp_gifs <- set_names(adm1_iter,adm1_iter)%>% 
   map(
     \(adm1_tmp){
       
@@ -869,7 +906,7 @@ lp_gifs <- unique(adm1_simp$adm1_en) %>%
         geom_sf(data= adm0_simp,fill="white", linewidth=0.8)+
         geom_sf(data= df_map_tmp,fill=NA,linewidth=0.5,color="grey")+
         geom_sf(data= adm2_tmp,fill=NA,linewidth=0.2,color="lightgrey")+
-        geom_spatraster(data = lr_bounded$sfed)+
+        geom_spatraster(data = lr_bounded$sfed[[1:4]])+
         scale_fill_steps2(
           breaks = seq(0,1,by=0.2),
           low = low_fill,
@@ -897,14 +934,14 @@ lp_gifs <- unique(adm1_simp$adm1_en) %>%
         )
     }
   )
-library(magick)
+
 
 # lp_gifs[1]
 # gif_1 <- animate(lp_gifs[[1]],width=500, height = 500)
 # gif_2 <- animate(lp_gifs[[2]],width=500, height = 500)
 
-gif_1 <- animate(lp_gifs[[1]],width=500, height = 500)
-gif_2 <- animate(lp_gifs[[2]],width=500, height = 500)
+gif_1 <- animate(lp_gifs$Inhambane,width=500, height = 500)
+gif_2 <- animate(lp_gifs$Sofala,width=500, height = 500)
 
 # length(lp_gifs[[1]])
 # length(lp_gifs[[2]])

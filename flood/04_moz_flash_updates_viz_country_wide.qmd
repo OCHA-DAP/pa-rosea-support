@@ -46,6 +46,14 @@ include_adm1 <- switch(params$aoi,
        "subset1" = c("MZ09","MZ03")
        )
 
+# seems like open issues w/ quarto and logical boolean/params. Just going to run this
+# switch so I don' thave to change code
+update_data <- switch(
+  params$update_data,
+  "true" = TRUE,
+  "false"= FALSE
+)
+
 # report_subtitle <- switch(params$aoi,
 #        "country_wide"="Country Wide Analysis",
 #        "subset1" = "Analysis of Sofala & Inhambane Provinces"
