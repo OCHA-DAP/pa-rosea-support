@@ -11,6 +11,7 @@ format:
     smooth-scroll: true
 params:
   aoi: "country_wide"
+  update_data: "false"
 execute:
   include: false
   echo: false
@@ -45,6 +46,7 @@ include_adm1 <- switch(params$aoi,
        "country_wide"=c("MZ01", "MZ02", "MZ03", "MZ04", "MZ05", "MZ06", "MZ07", "MZ08", "MZ09", "MZ10", "MZ11"),
        "subset1" = c("MZ09","MZ03")
        )
+
 
 # seems like open issues w/ quarto and logical boolean/params. Just going to run this
 # switch so I don' thave to change code
@@ -83,7 +85,7 @@ source(here(file.path("R","googledrive.R")))
 drive_auth(path=here(Sys.getenv("FS_SA_JSON")))
 
 
-update_data <- c(T,F)[1]
+
 
 tar_load(lgdf_adm,store=here("flood_target_store"))
 lgdf_moz <- lgdf_adm %>% 
@@ -624,21 +626,40 @@ adm1_w_exposure <- df_adm2_exposed_daily_processed_sfed_mfed$adm1_en %>%
   unique()
 
 
-l_ps <-adm1_w_exposure %>% 
+l_ps <-set_names(adm1_w_exposure,adm1_w_exposure) %>% 
   map(
     \(adm1_tmp){
-      df_tmp <- df_adm2_exposed_daily_processed_sfed_mfed %>% 
+      # adm1_tmp ="Tete"
+      df_tmp_filt <- df_adm2_exposed_daily_processed_sfed_mfed %>% 
+        select(-stat) %>% 
         filter(
           adm1_en == adm1_tmp
-        ) %>%
+        ) %>% 
+        group_by(across(matches("^adm\\d")), date) %>%
+        complete(
+          data_source = c("SFED", "MFED"),
+          fill = list(pop_exposed = 0)
+        )
+      
+      df_tmp <- df_tmp_filt%>%
         group_by(
           across(matches("adm\\d")),date
         ) %>% 
         summarise(
           min_pop = min(pop_exposed),
           max_pop = max(pop_exposed),
-          mean_pop = mean(pop_exposed)
+          mean_pop = mean(pop_exposed),
         ) 
+      df_tmp_filt_wide <- df_tmp_filt%>%
+        pivot_wider(names_from = data_source, values_from=pop_exposed)
+      
+      df_tmp <- df_tmp %>% 
+        left_join(df_tmp_filt_wide) %>% 
+        mutate(
+          across(c("SFED","MFED"),~replace_na(.x,0))
+        )
+      
+      
       num_adm2s <- length(unique(df_tmp$adm2_pcode))
       num_legend_cols <- case_when(
         num_adm2s>=14~3,
@@ -652,7 +673,9 @@ l_ps <-adm1_w_exposure %>%
         geom_ribbon(aes(ymin= min_pop,ymax=max_pop),alpha= 0.3)+
         # geom_point_interactive(alpha=0.8,aes(tooltip=adm2_en))+
         geom_point_interactive(alpha=0.8,aes(tooltip= glue("District:{ adm2_en}
-                                                           Mean pop exposed: {format(round(mean_pop,0),nsmall=0,big.mark=',')}"
+                                                           Mean pop exposed: {format(round(mean_pop,0),nsmall=0,big.mark=',')}
+                                                          pop exposed (MFED): {format(round(MFED,0),nsmall=0,big.mark=',')}
+                                                          pop exposed (SFED): {format(round(SFED,0),nsmall=0,big.mark=',')}"
                                                            )))+
         # geom_line(alpha=0.7)+
         scale_color_manual(values = tmaptools::get_brewer_pal("Accent", n = num_adm2s,plot=F))+
