@@ -633,6 +633,7 @@ l_ps <-set_names(adm1_w_exposure,adm1_w_exposure) %>%
       all_dates <- unique(df_adm2_exposed_daily_processed_sfed_mfed$date)
       
       df_tmp_filt <- df_adm2_exposed_daily_processed_sfed_mfed %>% 
+        select(-any_of(c("stat"))) %>% 
         filter(
           adm1_en == adm1_tmp
         ) %>% 
@@ -655,8 +656,7 @@ l_ps <-set_names(adm1_w_exposure,adm1_w_exposure) %>%
           max_pop = max(pop_exposed),
           mean_pop = mean(pop_exposed),
         ) 
-      df_tmp_filt_wide <- df_tmp_filt%>%
-        select(-stat) %>% 
+       df_tmp_filt_wide <- df_tmp_filt%>%
         pivot_wider(names_from = data_source, values_from=pop_exposed)
       
       df_tmp <- df_tmp %>% 
