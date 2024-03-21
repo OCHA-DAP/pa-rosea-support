@@ -19,9 +19,11 @@ moz_rain_adm1 <- moz_rain_data %>%
   left_join((moz_shp %>%
                select(ADM2_PCODE, ADM1_PCODE, ADM1_PT)), 
             by = "ADM2_PCODE", suffix = c("", "_shp")) %>%
-  mutate(month_total = as.numeric(r1h)) %>%
+  mutate(month_total = as.numeric(r1h),
+         month_total_avg = as.numeric(r1h_avg)) %>%
   group_by(ADM1_PCODE, ADM1_PT, date) %>%
-  summarise(adm1_med = median(month_total, na.rm = T)) %>%
+  summarise(adm1_tot_med = median(month_total, na.rm = T),
+            adm1_avg_med = median(month_total_avg, na.rm = T)) %>%
   mutate(dekad_start = substr(date, 9, 10),
          month = substr(date, 6, 7),
          month_name = month.name[as.numeric(month)],
@@ -30,12 +32,20 @@ moz_rain_adm1 <- moz_rain_data %>%
            month %in% c("10", "11", "12") ~ paste0(yr, "/", yr+1),
            month %in% c("01", "02", "03") ~ paste0(yr-1, "/", yr))) %>%
   filter(dekad_start == "21" & 
-           month_name %in% moz_ssn) 
+           month_name %in% moz_ssn) %>%
+  mutate(month_name = factor(month_name, levels = moz_ssn),
+         highlighted_ssn = case_when(
+           season == "2015/2016" ~ season,
+           season == "2023/2024" ~ season,
+           .default = "Other Seasons"
+         ))
 
-moz_rain_adm1 %>%
-  mutate(month_name = as.factor(month_name, levels = moz_ssn))
 
 ggplot(data = moz_rain_adm1) +
-  geom_line(aes(x=month_name, y=adm1_med, group=season))
+  geom_line(aes(x=month_name, y=adm1_tot_med, 
+                group=highlighted_ssn, color=highlighted_ssn)) +
+  scale_color_manual(values = c("cyan", "maroon", "grey")) +
+  labs(title="Total Monthly Rainfall by Province", x="Month", y="Total Monthly Rainfall(mm)") + 
+  facet_wrap(~ADM1_PT)
 ## NDVI
 
