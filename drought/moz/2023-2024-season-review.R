@@ -43,9 +43,24 @@ moz_rain_adm1 <- moz_rain_data %>%
 
 ggplot(data = moz_rain_adm1) +
   geom_line(aes(x=month_name, y=adm1_tot_med, 
-                group=highlighted_ssn, color=highlighted_ssn)) +
+                group=season, color=highlighted_ssn)) +
   scale_color_manual(values = c("cyan", "maroon", "grey")) +
+  scale_size_manual(values = c(3, 3, 1)) +
   labs(title="Total Monthly Rainfall by Province", x="Month", y="Total Monthly Rainfall(mm)") + 
   facet_wrap(~ADM1_PT)
+
+moz_subsets <- split(moz_rain_adm1, moz_rain_adm1$ADM1_PT)
+line_width <- c("2015/2016" = 1, "2023/2024" = 1, "Other Seasons" = 0.5)
+map(moz_subsets, 
+    ~ ggplot(.x) +
+      geom_line(aes(x=month_name, y=adm1_tot_med, 
+                    group=season, color=highlighted_ssn, size=highlighted_ssn)) +
+      scale_color_manual(values = c("darkred", "navyblue", "grey")) +
+      scale_size_manual(values = line_width, guide = "none") +
+      labs(title=paste("Total Monthly Rainfall for ", unique(.x$ADM1_PT)), 
+           x="Month", y="Total Monthly Rainfall(mm)",
+           color = "Seasons") +
+      guides(colour = guide_legend(override.aes = list(size = 3)))) 
+
 ## NDVI
 
