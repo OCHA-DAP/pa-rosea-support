@@ -31,6 +31,7 @@ moz_rain_adm1 <- moz_rain_data %>%
   mutate(dekad_start = substr(date, 9, 10),
          month = substr(date, 6, 7),
          month_name = month.name[as.numeric(month)],
+         month_abb = month.abb[as.numeric(month)],
          yr = as.numeric(substr(date, 1, 4)),
          season = case_when(
            month %in% c("10", "11", "12") ~ paste0(yr, "/", yr+1),
@@ -38,11 +39,12 @@ moz_rain_adm1 <- moz_rain_data %>%
   filter(dekad_start == "21" & 
            month_name %in% moz_ssn) %>%
   mutate(month_name = factor(month_name, levels = moz_ssn),
+         month_abb = factor(month_abb, levels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar")),
          highlighted_ssn = case_when(
            season == "2015/2016" ~ season,
            season == "2022/2023" ~ season,
            season == "2023/2024" ~ season,
-           .default = "Other Seasons"),
+           .default = "Long Term Average"),
          ssn_values = case_when(
            season == "2015/2016" ~ adm1_tot_med,
            season == "2022/2023" ~ adm1_tot_med,
@@ -50,13 +52,13 @@ moz_rain_adm1 <- moz_rain_data %>%
            .default = adm1_avg_med))
 
 moz_subsets <- split(moz_rain_adm1, moz_rain_adm1$ADM1_PT)
-line_width <- c("2015/2016" = 0.8, "2022/2023" = 0.8, "2023/2024" = 0.8, "Other Seasons" = 0.5)
+line_width <- c("2015/2016" = 1, "2022/2023" = 1, "2023/2024" = 1, "Long Term Average" = 0.8)
 
 ggplot(data = moz_rain_adm1) +
-  geom_line(aes(x=month_name, y=adm1_tot_med, 
+  geom_line(aes(x=month_abb, y=adm1_tot_med, 
                 group=season, color=highlighted_ssn, 
                 size=highlighted_ssn)) +
-  scale_color_manual(values = c("maroon", "steelblue", "#8B8000", "grey")) +
+  scale_color_manual(values = c("maroon", "steelblue", "#8B8000", "darkgrey")) +
   scale_size_manual(values = line_width, guide = "none") +
   labs(title="Total Monthly Rainfall by Province", 
        x="Month", y="Total Monthly Rainfall (mm)", color = "Seasons") + 
@@ -64,11 +66,12 @@ ggplot(data = moz_rain_adm1) +
   guides(color = guide_legend(override.aes = list(size = 10)), size = "none")
 
 ggplot(data = moz_rain_adm1) +
-  geom_line(aes(x=month_name, y=ssn_values, 
+  geom_line(aes(x=month_abb, y=ssn_values, 
                 group=highlighted_ssn, color=highlighted_ssn, 
                 size=highlighted_ssn)) +
   scale_color_manual(values = c("maroon", "steelblue", "#8B8000", "grey")) +
   scale_size_manual(values = line_width, guide = "none") +
+  guides(color = guide_legend(override.aes = list(size = 2))) +
   labs(title="Total Monthly Rainfall by Province", 
        x="Month", y="Total Monthly Rainfall (mm)", color = "Seasons") + 
   facet_wrap(~ADM1_PT)
@@ -150,17 +153,19 @@ moz_ndvi_adm1 <- moz_ndvi_data %>%
   mutate(dekad_start = substr(date, 9, 10),
          month = substr(date, 6, 7),
          month_name = month.name[as.numeric(month)],
+         month_abb = month.abb[as.numeric(month)],
          yr = as.numeric(substr(date, 1, 4)),
          season = case_when(
            month %in% c("10", "11", "12") ~ paste0(yr, "/", yr+1),
            month %in% c("01", "02", "03") ~ paste0(yr-1, "/", yr))) %>%
   filter(month_name %in% moz_ssn) %>%
   mutate(month_name = factor(month_name, levels = moz_ssn),
+         month_abb = factor(month_abb, levels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar")),
          highlighted_ssn = case_when(
            season == "2015/2016" ~ season,
            season == "2022/2023" ~ season,
            season == "2023/2024" ~ season,
-           .default = "Other Seasons"),
+           .default = "Long Term Average"),
          ssn_values = case_when(
            season == "2015/2016" ~ adm1_val_med,
            season == "2022/2023" ~ adm1_val_med,
@@ -187,7 +192,7 @@ ggplot(data = moz_ndvi_adm1) +
   geom_line(aes(x=mon_dekad, y=ssn_values, 
                 group=highlighted_ssn, color=highlighted_ssn, 
                 size=highlighted_ssn)) +
-  scale_color_manual(values = c("maroon", "steelblue", "#8B8000", "grey")) +
+  scale_color_manual(values = c("maroon", "steelblue", "#8B8000", "darkgrey")) +
   scale_size_manual(values = line_width, guide = "none") +
   labs(title="NDVI Over the Season by Province", 
        x="Date", y="NDVI", color = "Seasons") + 
@@ -213,12 +218,6 @@ moz_ndvi_adm1 %>%
   ggplot() +
   geom_line(aes(x=mon_dekad, y=adm1_anom_med, 
                 group=ADM1_PT, color=ADM1_PT), size = 1) +
-  geom_text_repel(data = moz_ndvi_adm1 %>%
-                    filter(season == "2023/2024") %>%
-                    filter(date == "2024-02-21"), 
-                  aes(x = "February", y = adm1_anom_med, label = ADM1_PT), 
-                  size = 3, hjust = 0, color = "black",
-                  position = position_nudge(x = 0, y = 1), max.overlaps = 20) +
   labs(title="NDVI Over the 2023/2024 Season by Province", 
        x="Date", y="NDVI Anomaly", color = "Provinces") +
   scale_x_discrete(breaks = x_labs) +
@@ -248,4 +247,15 @@ adm1_ndvi <- moz_ndvi_adm1 %>%
          sd = sd(adm1_ssn_avg),
          prob = pnorm(adm1_ssn_avg, mean = mean, sd = sd),
          rp = paste("1 in ", round(1/prob), " yr"),
-         rp_rank = paste("1 in ", round(45 / rank), " yr"))
+         rp_rank = paste("1 in ", round(23 / rank), " yr"))
+
+adm1_dkd_ndvi <- moz_ndvi_adm1 %>%
+  filter(mon_dekad == "Feb 21") %>%
+  group_by(ADM1_PT, mon_dekad) %>%
+  #summarise(adm1_ssn_avg = mean(adm1_val_med, na.rm = T)) %>%
+  mutate(rank = rank(adm1_val_med),
+         mean = mean(adm1_val_med),
+         sd = sd(adm1_val_med),
+         prob = pnorm(adm1_val_med, mean = mean, sd = sd),
+         rp = paste("1 in ", round(1/prob), " yr"),
+         rp_rank = paste("1 in ", round(23 / rank), " yr"))
