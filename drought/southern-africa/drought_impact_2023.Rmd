@@ -34,7 +34,7 @@ sa_ipc_data <- ipc_country_data %>%
 shp_path <- file.path(
   Sys.getenv("AA_DATA_DIR"), 
   "public", "raw", "esa", "cod_ab", 
-  "esa_admin1_region", "ESA_admin1_region.shp")
+  "esa_admin_region", "ESA_admin1_region.shp")
 esa_shp <- st_read(shp_path)
 
 sa_country_shp <- esa_shp %>%
