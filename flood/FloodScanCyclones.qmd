@@ -1,0 +1,807 @@
+---
+title: "FloodScan Cyclone Viz"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    self-contained: true
+    embed-resoures: true
+    smooth-scroll: true
+execute:
+  echo: false
+  warning: false
+  message: false
+  eval: false
+  results: "asis"
+  out.width: "100%"
+editor: visual
+project:
+     execute-dir: project
+---
+
+## Intro
+
+Adhoc exploratory analysis to support ongoing discussions happening during AA CERF/CHD mission to MOZ.
+
+
+```{r ,eval=T, echo=F, results='hide'}
+library(targets)
+library(tidyverse)
+library(here)
+library(scales)
+library(sf)
+library(gghdx)
+library(glue)
+library(exactextractr)
+library(leaflet)
+library(patchwork)
+library(janitor)
+library(tidync)
+library(terra)
+tar_source()
+gghdx()
+
+```
+
+```{r ,eval=T}
+# Load  a bunch of targets so it's easy to make visuals
+tar_load(fp_fs,store = here("flood_target_store"))
+tar_load(lgdf_adm,store = here("flood_target_store"))
+
+fp_cyclones
+DIR_IBTRACTS <- file.path(
+  Sys.getenv("AA_DATA_DIR_NEW"),
+  "public",
+  "processed",
+  "moz",
+  "ibtracs"
+)
+DIR_CHIRPS <- file.path(
+  Sys.getenv("AA_DATA_DIR_NEW"),
+  "public",
+  "processed",
+  "moz",
+  "chirps"
+)
+dir(DIR_CHIRPS)
+df_chirps <-  read_csv(
+  file.path(
+    DIR_CHIRPS,
+    "20240305_chirps_daily_historical.csv"
+  )
+)
+
+
+
+df_cyclones_all_250km <- arrow::read_parquet(
+  file.path(DIR_IBTRACTS,
+  "cyclones_within250km_moz_adm1.parquet"
+  )
+  ) 
+
+
+df_cyclones_closest <- arrow::read_parquet(
+  file.path(DIR_IBTRACTS,
+  "closest_passes_within100km_moz_adm1.parquet"
+  )
+  ) %>% 
+  clean_names()
+
+unique_cyclone_catalogue_all_250km <- df_cyclones %>% 
+  mutate(
+    date = as_date(time)
+  ) %>% 
+  distinct(
+    adm1_pcode,date
+  )
+
+df_wfp_chirps <-  read_csv(
+  file.path(
+  DIR_CHIRPS,
+  "wfp-moz-rainfall-adm2-full.csv"
+  ),skip = 1)
+df_wfp_chirps %>% glimpse()
+df_wfp_chirps %>% 
+  filter(
+    `#adm2+code`=="MZ1112"
+  )
+
+df_wfp_chirps_anom <- df_wfp_chirps %>% 
+  select(
+    date= `#date`,
+    adm2_pcode= `#adm2+code`,
+    rainfall_mm = `#indicator+rfh+num`,
+    rainfall_anom= `#indicator+rfq+pct`,
+    rainfall_avg= `#indicator+rfh_avg+num`
+  ) 
+
+
+
+gdf_adm2 <- lgdf_adm$adm2 %>% 
+  filter(adm0_en=="Mozambique") %>% 
+  select(adm0_en, adm0_pcode,adm1_en, adm1_pcode,adm2_en ,adm2_pcode
+         ) %>%
+  mutate(
+    area= as.numeric(st_area(.))
+  ) %>%
+  group_by(
+    adm1_en, adm1_pcode
+  ) %>%
+  mutate(
+    adm1_area = sum(area),
+    pct_adm1_area= area/adm1_area
+  ) %>%
+  ungroup() 
+  
+
+
+
+df_wfp_chirps_adm1<- df_wfp_chirps_anom %>% 
+  left_join(
+  gdf_adm2 %>% 
+  st_drop_geometry()  
+  ) %>% 
+  group_by(date,adm1_en,adm1_pcode) %>% 
+  summarise(
+    rainfall_anom_weighted =weighted.mean(rainfall_anom, w= pct_adm1_area),
+    rainfall_mm_weighted =weighted.mean(rainfall_mm, w= pct_adm1_area),
+  ) %>% 
+  ungroup()
+  
+
+
+```
+
+```{r}
+df_wfp_chirps_adm1 %>% 
+  ggplot(
+    aes(x= rainfall_anom_weighted)
+  )+
+  geom_histogram()
+
+df_wfp_chirps_anom %>% 
+  ggplot(
+    aes(x= rainfall_anom)
+  )+
+  geom_histogram()+
+  labs(
+    title = "WFP Rainfall (rfq) Histogram",
+    xlab = "rfq"
+    
+  )
+df_wfp_chirps_anom %>% 
+  ggplot(
+    aes(x= rainfall_mm)
+  )+
+  geom_histogram()+
+  labs(
+    title = "WFP Rainfall (rfq) Histogram",
+    xlab = "rfq"
+    
+  )
+```
+
+
+```{r}
+gdf_adm1 <- lgdf_adm$adm1 %>% filter(adm0_en=="Mozambique")
+
+# add adm1 names to cyclone catalogue
+unique_cyclone_catalogue_all_250km <- unique_cyclone_catalogue_all_250km %>% 
+  left_join(
+    gdf_adm1 %>% 
+      st_drop_geometry() %>% 
+      select(adm1_pcode, adm1_en)
+    
+  )
+df_cyclones_closest <- df_cyclones_closest %>% 
+  left_join(
+    gdf_adm1 %>% 
+      st_drop_geometry() %>% 
+      select(adm1_pcode, adm1_en)
+    
+  )
+
+
+# should bench mark this -- only 10 s
+moz_adm1_floodscan_unprocessed <-  zonal_floodscan(
+  floodscan_path = fp_fs,
+  adm = gdf_adm1,
+  cols_keep = c("adm0_en","adm0_pcode","adm1_en","adm1_pcode"),
+  zonal_stat= c("mean","median")
+)
+```
+
+```{r}
+leaflet() %>% 
+  addTiles() %>% 
+  addPolygons(data = gdf_adm1,label = ~adm1_en)
+
+m <- ggplot()+
+  geom_sf(
+    data= gdf_adm1
+  )+
+  geom_sf_text(data= gdf_adm1, aes(label= adm1_en))+
+  theme_void()
+```
+
+
+```{r}
+df_moz_adm1_rolls <- moz_adm1_floodscan_unprocessed %>%  
+  group_by(
+    adm1_en,adm1_pcode, stat
+  ) %>% 
+  arrange(date) %>% 
+  mutate(
+    roll7_mean = zoo::rollmean(flood_frac,k=7,na.pad=T,align = "center"),
+    roll7_max = zoo::rollmax(flood_frac,k=7,na.pad=T,align = "center")
+  ) %>% 
+  ungroup()
+
+df_chirps_rolls <- df_chirps %>%  
+  group_by(
+    adm1_en,adm1_pcode
+  ) %>% 
+  arrange(date) %>% 
+  mutate(
+    roll7_sum = zoo::rollsum(value,k=7,na.pad=T,align = "center"),
+    roll3_sum = zoo::rollsum(value,k=3,na.pad=T,align = "center"),
+    roll3_max = zoo::rollmax(value,k=3,na.pad=T,align = "center")
+  ) %>% 
+  ungroup()
+
+```
+
+## Calculate anomalies
+```{r}
+## FloodScan
+df_moz_adm1_rolls_anom <- df_moz_adm1_rolls %>% 
+  filter(stat=="mean") %>% 
+  mutate(
+    doy = yday(date)
+  ) %>% 
+  group_by(
+    adm1_en,adm1_pcode,doy
+  ) %>% 
+  mutate(
+    avg_roll7_mean = mean(roll7_mean,na.rm=T),
+    # abs_anom = flood_frac - avg_roll7_mean # this was a mistake
+    abs_anom = roll7_mean - avg_roll7_mean
+  ) %>% 
+  ungroup()
+
+df_moz_adm1_rolls_anom$abs_anom %>% range(na.rm=T)
+
+
+## CHIRPS
+df_chirps_roll_anom <- df_chirps_rolls %>% 
+  mutate(
+    doy = yday(date)
+  ) %>% 
+  group_by(
+    adm1_en,adm1_pcode,doy
+  ) %>% 
+  mutate(
+    avg_roll7_mean = mean(roll7_sum,na.rm=T),
+    abs_anom = roll7_sum - avg_roll7_mean
+  ) %>% 
+  ungroup()
+```
+
+```{r}
+
+scaler <-  2000
+
+df_moz_adm1_rolls_anom %>%
+  ggplot(
+    
+  )+
+  geom_vline(
+    data= df_cyclones_closest %>% 
+      filter(date>="1998-01-01"),
+    aes(xintercept = date),
+    color="tomato",
+    alpha=0.7,
+    lwd=0.3
+  )+
+  geom_line(
+    aes(x=date, y= abs_anom),
+    alpha=1
+    )+
+  geom_point(
+    data = df_cyclones_closest %>% 
+      filter(date>="1998-01-01"),
+    aes(x= date, y=max_wind_within_100km/scaler),
+    color="tomato",
+    alpha=0.5, size=1
+  )+
+  scale_x_date(
+    breaks = "1 year",date_labels = "%Y",
+    limits = c(as_date("1998-01-01"),as_date("2022-12-31")),expand = c(0,0)
+  )+
+  scale_y_continuous(
+    labels= scales::label_percent(),
+                     sec.axis = sec_axis(
+                       name = "windspeed",
+                       trans = ~.*scaler
+                       )
+                     )+
+  facet_wrap(~adm1_en,ncol = 1)+
+  labs(
+    title = "Flood Fraction Anomaly vs Reported Cyclones with 100 km",
+    subtitle = "Red lines indicate date of closest pass of cyclone and dots indicate maximum windspeed",
+    y= "Flood Fraction Anomaly",
+    caption = "Calculations as follows:
+    1. Average daily flood fraction: mean zonal statistic calculated at admin 1 for each day of FloodScan (SFED) data
+    2. 7 Day rolling average flood fraction calculated per admin zone: alignment centered (3 days ahead , 3 days behind)
+    3. Anomaly: historical 7 day rolling sum average calculated for each day of year (1-365) and subtracted from each historical 7 day rolling flood fraction mean
+    4. Cyclones: IBTRACS database filtered to cyclones which passed within 100 km of admin 1 unit and the date of the closest pass was extracted along with the maximum windspeed"
+  )+
+  theme(plot.caption = element_text(hjust=0),
+        legend.position = "none",
+        axis.text.x = element_text(angle=90),
+        strip.text = element_text(size=7),
+        axis.title.x =element_blank(),
+        panel.border = element_rect(fill=NA, color="grey")
+  )
+  
+
+```
+
+```{r}
+library(ggtext)
+scaler <-  1
+
+df_chirps_roll_anom %>%
+  ggplot(
+    
+  )+
+  geom_vline(
+    data= df_cyclones_closest %>% 
+      filter(date>="1981-01-01"),
+    aes(xintercept = date),
+    color="tomato",
+    alpha=0.7,
+    lwd=0.3
+  )+
+  geom_line(
+    aes(x=date, y= abs_anom),
+    alpha=1
+    )+
+  geom_point(
+    data = df_cyclones_closest %>% 
+      filter(date>="1981-01-01"),
+    aes(x= date, y=max_wind_within_100km/scaler),
+    color="tomato",
+    alpha=0.5, size=1
+  )+
+  scale_x_date(
+    breaks = "1 year",date_labels = "%Y",
+    limits = c(as_date("1981-01-01"),as_date("2022-12-31")),expand = c(0,0)
+  )+
+  scale_y_continuous(
+    # labels= scales::label_percent(),
+                     sec.axis = sec_axis(
+                       name = "windspeed",
+                       trans = ~.*scaler
+                       )
+                     )+
+  facet_wrap(~adm1_en,ncol = 1,scales = "free_y")+
+  labs(
+    title = "Rainfall Anomaly vs Reported Cyclones with 100 km",
+    subtitle = "Red lines indicate date of closest pass of cyclone and dots indicate maximum windspeed",
+    y= "Absolute Rainfall Anomaly (mm)",
+    caption = "Calculations as follows:
+    1. Average daily rainfall calculated for each zone via weighted mean zonal statistic (CHIRPS)
+    2. 7 Day rolling sum of rainfall calculated per admin zone: alignment centered (3 days ahead , 3 days behind)
+    3. Anomaly: historical 7 day rolling sum average calculated for each day of year (1-365) and subtracted from each historical 7 day rolling sum
+    4. Cyclones: IBTRACS database filtered to cyclones which passed within 100 km of admin 1 unit and the date of the closest pass was extracted along with the maximum windspeed
+    Note: y axis scale flexible to show relative anomaly for each admin"
+  )+
+  theme(plot.caption = element_text(hjust=0),
+        legend.position = "none",
+        axis.text.x = element_text(angle=90),
+        strip.text = element_text(size=7),
+        axis.title.x =element_blank(),
+        panel.border = element_rect(fill=NA, color="grey"),
+        
+  )
+  
+
+```
+
+- Get 3 day rainfall associated with each closest pass date
+- Get max 24 hr rainfall within +/- 1 day of closest pass
+
+```{r}
+df_cyclones_closest %>% 
+      filter(date>="1981-01-01") %>% 
+  left_join(
+    df_chirps_roll_anom %>% 
+      select(date,adm1_pcode, adm1_en,roll3_sum, roll3_max),
+    by = c("date","adm1_pcode","adm1_en")
+  ) %>% 
+  ggplot(
+    aes(x=max_wind_within_100km,y=roll3_sum)
+  )+
+  geom_point()+
+  facet_wrap(~adm1_en)+
+  theme(
+    panel.border = element_rect(color="grey",fill=NA)
+  )+
+  labs(
+    x = "Max windspeed (within 100km)",
+    y= "Total rainfall (mm) within +/1 day",
+    title= "Correlation between cyclone maximum windspeed and 3 day rainfall",
+   caption = "Calculations as follows:
+    1. Max windspeed: IBTRACS database filtered to cyclones which passed within 100 km of each admin 1 unit and the date of the closest pass was extracted along with the maximum windspeed.
+   2. Rainfall: CHIRPS daily data extracted for each admin 1 via weighted zonal statistic in GEE.
+   3. 3-day Rainfall: For each cyclone closest pass date/event extracted, the 3 rainfall sum within +/-1 day of closest pass extracted from CHIRPS daily"
+  )+
+  theme(
+    plot.caption = element_text(hjust=0)
+  )
+
+```
+
+```{r}
+df_cyclones_closest %>% 
+      filter(date>="1981-01-01") %>% 
+  left_join(
+    df_chirps_roll_anom %>% 
+      select(date,adm1_pcode, adm1_en,roll3_sum, roll3_max),
+    by = c("date","adm1_pcode","adm1_en")
+  ) %>% 
+  ggplot(
+    aes(x=max_wind_within_100km,y=roll3_max)
+  )+
+  geom_point()+
+  facet_wrap(~adm1_en)+
+  theme(
+    panel.border = element_rect(color="grey",fill=NA)
+  )+
+  labs(
+    x = "Max windspeed (within 100km)",
+    y= "Maximum 24-hr rainfall (mm) within +/1 day",
+    title= "Correlation between cyclone maximum windspeed and max 24-hr rainfall",
+   caption = "Calculations as follows:
+    1. Max windspeed: IBTRACS database filtered to cyclones which passed within 100 km of each admin 1 unit and the date of the closest pass was extracted along with the maximum windspeed.
+   2. Rainfall: CHIRPS daily data extracted for each admin 1 via weighted zonal statistic in GEE.
+   3. Max 24 hour rainfall: For each cyclone closest pass date/event extracted, the the maximum rainfall within +/-1 day of closest pass extracted from CHIRPS daily"
+  )+
+  theme(
+    plot.caption = element_text(hjust=0)
+  )
+
+```
+
+
+## Not stacked
+```{r}
+df_moz_adm1_rolls_anom %>%
+  ggplot(
+    
+  )+
+  geom_vline(
+    data= df_cyclones_closest,
+    aes(xintercept = date),
+    color="tomato",
+    alpha=0.7,
+    lwd=0.3
+  )+
+  geom_line(
+    aes(x=date, y= abs_anom),
+    alpha=1
+    )+
+  geom_point(
+    data = df_cyclones_closest %>% 
+      filter(date>="1998-01-01"),
+    aes(x= date, y=max_wind_within_100km/scaler),
+    color="tomato",
+    alpha=0.5, size=1
+  )+
+  scale_y_continuous(
+    labels= scales::label_percent(),
+                     sec.axis = sec_axis(
+                       name = "windspeed",
+                       trans = ~.*scaler
+                       )
+                     )+
+  facet_wrap(~adm1_en)+
+  labs(
+    title = "Flood Fraction Anomaly vs Reported Cyclones with 100 km",
+    subtitle = "Red lines indicate date of closest pass of cyclone and dots indicate maximum windspeed",
+    y= "Flood Fraction Anomaly",
+    caption = "Calculations as follows:
+    1. Average daily flood fraction: mean zonal statistic calculated at admin 1 for each day of FloodScan (SFED) data
+    2. 7 Day rolling average flood fraction calculated per admin zone: alignment centered (3 days ahead , 3 days behind)
+    3. Anomaly: historical 7 day rolling sum average calculated for each day of year (1-365) and subtracted from each historical 7 day rolling flood fraction mean
+    4. Cyclones: IBTRACS database filtered to cyclones which passed within 100 km of admin 1 unit and the date of the closest pass was extracted along with the maximum windspeed"
+  )+
+  theme(plot.caption = element_text(hjust=0),
+        legend.position = "none",
+        axis.title.x =element_blank(),
+        panel.border = element_rect(fill=NA, color="grey")
+  )
+
+```
+
+
+
+```{r}
+df_chirps_roll_anom %>% 
+  arrange(adm1_en)
+
+
+df_moz_adm1_rolls_anom %>%
+  ggplot(
+    aes(x=date, y= roll7_mean, color =stat)
+  )+
+      geom_vline(
+    data= unique_cyclone_catalogue_all_250km,
+    aes(xintercept = date),
+    color="tomato",
+    # linetype="dashed", 
+    alpha=0.3,lwd=0.3
+  )+
+  # geom_point(alpha=0.2)+
+  geom_line(alpha=1)+
+  scale_y_continuous(labels=scales::label_percent())+
+  facet_wrap(~adm1_en)+
+  labs(
+    title = "Flood Fraction - 7 Day Rolling Average With All IBTRACS reported cyclones with 250 km of admin zone"
+  )
+
+df_moz_adm1_rolls_anom %>%
+  ggplot(
+    aes(x=date, y= abs_anom, color =stat)
+  )+
+  geom_vline(
+    data= unique_cyclone_catalogue,
+    aes(xintercept = date),
+    color="tomato",
+    alpha=0.4,
+    lwd=0.3
+  )+
+  # geom_point(alpha=0.2)+
+  geom_line(alpha=1)+
+  scale_y_continuous(labels=scales::label_percent())+
+  facet_wrap(~adm1_en)+
+  labs(
+    title = "Flood Fraction Anomaly vs Reported Cyclones",
+    y= "Flood Fraction Anomaly",
+    caption = "Calculations as follows:
+    1. Average daily flood fraction: mean zonal statistic calculated at admin 1 for each day of FloodScan (SFED) data
+    2. 7 Day rolling average flood fraction calculated per admin zone: alignment centered (3 days ahead , 3 days behind)
+    3. Anomaly: historical 7 day rolling sum average calculated for each day of year (1-365) and subtracted from each historical 7 day rolling flood fraction mean
+    4. Cyclones: Any cyclone contained in IBTRACs database that past with 250 m of admin zone has been included in chart."
+  )+
+  theme(plot.caption = element_text(hjust=0),
+        legend.position = "none",
+        axis.title.x =element_blank()
+  )
+  
+```
+
+```{r}
+df_cyclones_closest <- df_cyclones_closest %>% 
+  mutate(
+    date= as_date(closest_date)
+  )
+
+df_moz_adm1_rolls_anom %>%
+  ggplot(
+    aes(x=date, y= abs_anom, color =stat)
+  )+
+  geom_vline(
+    data= df_cyclones_closest,
+    aes(xintercept = date),
+    color="tomato",
+    alpha=0.7,
+    lwd=0.3
+  )+
+  # geom_point(alpha=0.2)+
+  geom_line(alpha=1)+
+  scale_y_continuous(labels=scales::label_percent())+
+  facet_wrap(~adm1_en)+
+  labs(
+    title = "Flood Fraction Anomaly vs Reported Cyclones",
+    y= "Flood Fraction Anomaly",
+    caption = "Calculations as follows:
+    1. Average daily flood fraction: mean zonal statistic calculated at admin 1 for each day of FloodScan (SFED) data
+    2. 7 Day rolling average flood fraction calculated per admin zone: alignment centered (3 days ahead , 3 days behind)
+    3. Anomaly: historical 7 day rolling sum average calculated for each day of year (1-365) and subtracted from each historical 7 day rolling flood fraction mean
+    4. Cyclones: Any cyclone contained in IBTRACs database that past with 250 m of admin zone has been included in chart."
+  )+
+  theme(plot.caption = element_text(hjust=0),
+        legend.position = "none",
+        axis.title.x =element_blank()
+  )
+
+
+```
+
+# CHIRPS
+same as above, but just using CHIRPS
+
+use WFP to get started
+```{r}
+
+
+df_wfp_chirps_adm1 <- df_wfp_chirps_adm1 %>% 
+  mutate(
+    dekad= paste0(month(date,label=T,abbr=T),"_",mday(date))
+  ) %>% 
+  group_by(
+    dekad ,adm1_en
+  ) %>% 
+  mutate(
+    mean_mm = mean(rainfall_mm_weighted),
+    abs_anom_mm=rainfall_mm_weighted -mean_mm
+  ) %>% 
+  ungroup()
+  # filter(year(date)==1982)
+  count(day) %>% 
+  print(n=nrow(.))
+
+scaler <- 1
+df_wfp_chirps_adm1 %>%
+  ggplot(
+  )+
+  geom_vline(
+    data= df_cyclones_closest ,
+    aes(xintercept = date),
+    color="tomato",
+    alpha=0.7,
+    lwd=0.3
+  )+
+  geom_line(
+    aes(x=date, y= rainfall_mm_weighted),
+    alpha=1
+    )+
+  geom_point(
+    data = df_cyclones_closest,
+    aes(x= date, y=max_wind_within_100km/scaler),
+    color="tomato",
+    alpha=0.5, size=1
+  )+
+  scale_x_date(
+    breaks = "1 year",date_labels = "%Y",
+    limits = c(as_date("1981-01-01"),as_date("2022-12-31")),expand = c(0,0)
+  )+
+  scale_y_continuous(
+    # labels= scales::label_percent(),
+                     sec.axis = sec_axis(
+                       name = "windspeed",
+                       trans = ~.*scaler
+                       )
+                     )+
+  facet_wrap(~adm1_en,ncol = 1, scales="free_y")+
+  labs(
+    title = "CHIRPS Dekadal Anomaly vs Reported Cyclones within 100 km",
+    subtitle = "Red lines indicate date of closest pass of cyclone and dots indicate maximum windspeed",
+    y= "Chirps Anomaly",
+    caption = "Calculations as follows:
+    1. Average daily flood fraction: mean zonal statistic calculated at admin 1 for each day of FloodScan (SFED) data
+    2. 7 Day rolling average flood fraction calculated per admin zone: alignment centered (3 days ahead , 3 days behind)
+    3. Anomaly: historical 7 day rolling sum average calculated for each day of year (1-365) and subtracted from each historical 7 day rolling flood fraction mean
+    4. Cyclones: IBTRACS database filtered to cyclones which passed within 100 km of admin 1 unit and the date of the closest pass was extracted along with the maximum windspeed"
+  )+
+  theme(plot.caption = element_text(hjust=0),
+        legend.position = "none",
+        axis.text.x = element_text(angle=90),
+        strip.text = element_text(size=7),
+        axis.title.x =element_blank(),
+        panel.border = element_rect(fill=NA, color="grey")
+  )
+df_wfp_chirps_adm1 %>%
+  ggplot(
+  )+
+  geom_vline(
+    data= df_cyclones_closest ,
+    aes(xintercept = date),
+    color="tomato",
+    alpha=0.7,
+    lwd=0.3
+  )+
+  geom_line(
+    aes(x=date, y= abs_anom_mm),
+    alpha=1
+    )+
+  geom_point(
+    data = df_cyclones_closest,
+    aes(x= date, y=max_wind_within_100km/scaler),
+    color="tomato",
+    alpha=0.5, size=1
+  )+
+  scale_x_date(
+    breaks = "1 year",date_labels = "%Y",
+    limits = c(as_date("1981-01-01"),as_date("2022-12-31")),expand = c(0,0)
+  )+
+  scale_y_continuous(
+    # labels= scales::label_percent(),
+                     sec.axis = sec_axis(
+                       name = "windspeed",
+                       trans = ~.*scaler
+                       )
+                     )+
+  facet_wrap(~adm1_en,ncol = 1, scales="free_y")+
+  labs(
+    title = "CHIRPS Dekadal Anomaly vs Reported Cyclones within 100 km",
+    subtitle = "Red lines indicate date of closest pass of cyclone and dots indicate maximum windspeed",
+    y= "Chirps Anomaly",
+    caption = "Calculations as follows:
+    1. CHIRPS 10-Day admin 2 level data downloaded from HDX (WFP)
+    2. Admin 2 level rainfall data aggregated to admin 1 by weighted mean statistic.
+    3. Admin 1 level rainfall anomaly calculated by subtracting average dekad value from each reported 10d dekadal value
+    4. Cyclones: IBTRACS database filtered to cyclones which passed within 100 km of admin 1 unit and the date of the closest pass was extracted along with the maximum windspeed"
+  )+
+  theme(plot.caption = element_text(hjust=0),
+        legend.position = "none",
+        axis.text.x = element_text(angle=90),
+        strip.text = element_text(size=7),
+        axis.title.x =element_blank(),
+        panel.border = element_rect(fill=NA, color="grey")
+  )
+```
+
+```{r}
+"/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/Collaborations/GoogleFloodForecasting/data/inputs/hybas_af_lev01-12_v1c/hybas_af_lev01_v1c.shp"
+```
+
+
+
+
+```{r}
+p_mean_flood_frac_7d_rollmean <- df_moz_adm1_rolls %>% 
+  ggplot(
+    aes(x=date, y= roll7_mean, color =stat)
+  )+
+  # geom_point(alpha=0.2)+
+  geom_line(alpha=0.2)+
+  scale_y_continuous(labels=scales::label_percent())+
+  geom_vline(
+    data= unique_cyclone_catalogue,aes(xintercept = date),
+    color="red",linetype="dashed", alpha=0.5
+  )+
+  facet_wrap(~adm1_en)
+
+p_mean_flood_frac_7d_rollmean <- df_moz_adm1_rolls %>% 
+  ggplot(
+    aes(x=date, y= roll7_mean, color =stat)
+  )+
+  # geom_point(alpha=0.2)+
+  geom_line(alpha=0.8)+
+  scale_y_continuous(labels=scales::label_percent())+
+  facet_wrap(~adm1_en)
+
+
+
+
+m +
+  p_mean_flood_frac_7d_rollmean+
+  plot_layout(
+    ncol = 2,
+    nrow = 1,
+    widths = c(2,6),
+    
+  )+
+  patchwork::plot_annotation(
+    title = "FloodScan Flood Fraction (SFED): 1998-2022" ,
+    subtitle = "Mozambique: admin 1 - smoothed to 7 day average"
+    )
+
+df_moz_adm1_rolls %>% 
+  ggplot(
+    aes(x=date, y= roll7_max)
+  )+
+  geom_point()+
+  geom_line()+
+  scale_y_continuous(labels=scales::label_percent())+
+  facet_wrap(~adm1_en)
+
+
+
+```
+
+
