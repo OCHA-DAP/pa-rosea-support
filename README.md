@@ -13,7 +13,7 @@ The repository is organized into subdirectories, each representing a specific an
 
 ## Getting Started
 
-1. Clone the Repository: Use git clone https://github.com/your-username/ocha-rosea-analysis.git to clone the repository locally.
+1. Clone the Repository: Use git clone https://github.com/OCHA-DAP/pa-rosea-support.git to clone the repository locally.
 2. Install Dependencies: Install any required R packages using install.packages("package_name") within R.
 3. Run Analyses: Navigate to the relevant subdirectory and run the R script(s) using source("script_name.R") in R.
 
