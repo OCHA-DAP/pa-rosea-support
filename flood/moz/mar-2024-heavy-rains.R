@@ -26,7 +26,7 @@ moz_maputo_shp <- moz_shp %>%
   filter(ADM1_PT %in% c("Maputo", "Maputo City"))
 username <- Sys.getenv("GPM_USERNAME")
 
-dates <- c("20240322", "20240323", "20240324", "20240325")
+dates <- c("20240322", "20240323", "20240324", "20240325", "20240326")
 time_steps <- c("-S000000", "-S120000")
 date_time_step <- outer(dates, time_steps, FUN = paste, sep = "")
 date_time_step <- c(t(date_time_step))
@@ -54,10 +54,10 @@ map(file_paths, gpm_download, username = username, download_dir = data_dir)
 # reading in files
 tif_files <- list.files(data_dir, full.names = TRUE, pattern = "min.tif")
 raster_list <- list()
-file_end <- c(24*c(1, 2, 3, 4, 5), 138)
+file_end <- c(24*c(1, 2, 3, 4, 5, 6, 7, 8))
 file_start <- (file_end - 23)
-file_start[6] <- 121
-for(i in 1:length(date_time_step[1:6])){
+#file_start[6] <- 121
+for(i in 1:length(date_time_step[1:8])){
   for(j in (file_start[i]):(file_end[i])){
     raster_list[[date_time_step[i]]][[j]] <- raster(tif_files[j])
     #print(paste(i, j))
@@ -85,7 +85,7 @@ plot_fxn <- function(data, fill_col, title){
     scale_fill_gradient(low="#ffffff", high="steelblue") +
     labs(x="", y="", fill = "Precipitation Accumulation", 
          title = title,
-         subtitle = "Precipitation Accumulation over 9 hours")
+         subtitle = "Precipitation Accumulation over 12 hours")
   
 }
 plots_all <- list(
