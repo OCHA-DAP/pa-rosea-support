@@ -120,7 +120,6 @@ r_mean_yr_moz = mean(r_max_moz)
 r_median_yr_moz = median(r_max_moz)
 ```
 
-
 ```{r}
 
 r_mean_yr_moz[r_mean_yr_moz<0.1] <- NA
@@ -136,7 +135,6 @@ r_median_yr_moz <- terra::mask(x = r_median_yr_moz, mask = gdf_moz_adm0)
 
 ### East Africa (KEN, ETH, SOM)
 
-```{r map-meanFlood}
 ```{r map-meanFlood}
 # idea - make big, bring in topography w/ blender, bring in some degree of admin labeling.... 
 # could go slippy map direction w/ mapgl, but need to gauge interest first.
@@ -180,7 +178,6 @@ ggplot()+
 
 ```
 
-
 ```{r map-medianFlood}
 ggplot()+
   geom_spatraster(data = r_median_yr)+
@@ -202,7 +199,6 @@ ggplot()+
        subtitle = "East Africa: Median Flood Susceptibility")+
   theme_bw() #+
 ```
-
 
 ### MOZ
 
