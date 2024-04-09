@@ -18,11 +18,11 @@ The repository is organized into subdirectories, each representing a specific an
 3. Run Analyses: Navigate to the relevant subdirectory and run the R script(s) using source("script_name.R") in R.
 
 ### Subdirectory Structure
-
+```
 pa-rosea-support/
 ├── R/                            # Scripts for running targets pipeline
 ├── drought/
 │   ├── moz                        # Scripts for MOZ analyses
 │   └── southern-africa            # Scripts for Southern Africa region
 └── flood/                        # Scripts for flood risk mapping
-
+```
