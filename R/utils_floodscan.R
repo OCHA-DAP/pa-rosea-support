@@ -154,7 +154,7 @@ tar_flood_exposure <- function(fp_floodscan,
   # specific for OCHA ADM CODs
   retain_col_names <- sf_zone %>%
     st_drop_geometry() %>%
-    select(matches("^ADM\\d_[EP]")) %>%
+    dplyr::select(matches("^ADM\\d_[EP]")) %>%
     colnames()
 
   if(aggregate_binary_flood){

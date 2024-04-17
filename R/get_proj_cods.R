@@ -55,7 +55,7 @@ load_proj_cods <-  function(){
             get_resource(2) %>%
             read_resource(layer = .x) %>%
             clean_names() %>%
-            select(matches("^adm\\d_[ep]"))
+            dplyr::select(matches("^adm\\d_[ep]"))
         )
     }
     

@@ -100,7 +100,93 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
 
 }
 
-
+zonal_pop_exposure_ssn <- function(floodscan_path=fp_fs,
+                               worldpop_inputs =fp_wp,
+                               flood_frac_thresh=0.005,
+                               binarize_floodscan = T,
+                               adm = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"),
+                               cols_keep = c("adm1_en", "adm1_pcode","adm0_en")
+){
+  tnc_fs <- tidync(floodscan_path)
+  tnc_fs_filt <- fs_filter_bounds(fs_obj = tnc_fs,geometry = adm)
+  r_fs <- fs_to_raster(fs_obj = tnc_fs_filt,band = "SFED_AREA")
+  r_wp <-  mosaic_worldpop(worldpop_inputs,from_path=F)
+  fs_lookup <-  floodscan_lookup(r_fs) 
+  
+  # do the same, but this time by AMJ season
+  lr_max <- unique(fs_lookup$fs_seas) %>%
+    map(
+      \(ssn_tmp){
+        rname_temp<- fs_lookup %>%
+          filter(fs_seas==ssn_tmp) %>%
+          pull(fs_name)
+        r_fs_tmp <- r_fs[[names(r_fs) %in% rname_temp]]
+        r_max <- max(r_fs_tmp)
+        r_max %>%
+          set.names(rname_temp[1])
+        return(r_max)
+      }
+    )
+  r_max <- rast(lr_max)
+  
+  r_fs_max_crop <- crop(r_max, r_wp)
+  ext(r_fs_max_crop) <- ext(r_wp)
+  
+  cat("resampling floodscan to worldpop\n")
+  r_fs_resampled <- terra::resample(x = r_fs_max_crop,r_wp)
+  
+  if(binarize_floodscan){
+    lgl_thresh_mask <- ifel(r_fs_resampled>=flood_frac_thresh,1,0) 
+    r_fs_resampled_masked <- mask(r_fs_resampled,lgl_thresh_mask)
+    r_exposure <- r_fs_resampled_masked * r_wp
+    
+    ret <- exact_extract(x = r_exposure,
+                         y = adm,
+                         fun ="sum",
+                         append_cols= cols_keep,
+                         force_df = TRUE
+    ) %>%
+      pivot_longer(cols = starts_with("sum"),
+                   names_to = "sum_date",
+                   values_to = "pop_exposed") %>%
+      separate(col = sum_date, "\\.",into = c("stat","date")) %>%
+      mutate(
+        date= as_date(date)
+      )
+  }
+  if(!binarize_floodscan){
+    if(length(flood_frac_thresh)>1){
+      
+      ret <- flood_frac_thresh %>%
+        map( \(thresh_tmp){
+          cat(thresh_tmp,"\n")
+          r_fs_resampled_copy <- deepcopy(r_fs_resampled)
+          lgl_thresh_mask <- ifel(r_fs_resampled_copy>=thresh_tmp,1,0)
+          r_exposure <- lgl_thresh_mask * r_wp
+          
+          exact_extract(x = r_exposure,
+                        y = adm,
+                        fun ="sum",
+                        append_cols= cols_keep,
+                        force_df = TRUE
+          ) %>%
+            pivot_longer(cols = starts_with("sum"),
+                         names_to = "sum_date",
+                         values_to = "pop_exposed") %>%
+            separate(col = sum_date, "\\.",into = c("stat","date")) %>%
+            mutate(
+              date= as_date(date),
+              thresh=thresh_tmp
+            )
+        }
+        ) %>%
+        list_rbind()
+    }
+    
+  }
+  return(ret)
+  
+}
 
 #' floodscan_lookup
 #' @description
@@ -124,8 +210,9 @@ floodscan_lookup <-  function(r_fs){
       # this is left over from SOM analysis... it's not used here... but we could add 
       # seasons at some point if we want
       fs_seas = paste0(case_when(
-        month(fs_mo) %in% c(3,4,5) ~ "MAM",
+        #month(fs_mo) %in% c(3,4,5) ~ "MAM",
         month(fs_mo) %in% c(10,11,12) ~ "OND",
+        month(fs_mo) %in% c(4,5,6) ~ "AMJ",
         .default ="other"
 
       ),"_",year(fs_yr))
