@@ -210,6 +210,8 @@ list(
       mutate(
         pct_exposed = pop_exposed_wp / total_pop_wp
       ) %>%
+      mutate(season = case_when(month(date) %in% c(4) ~ "AMJ",
+                                .default = "")) %>%
       filter(adm0_en == "Ethiopia")
   ),
 
@@ -354,6 +356,7 @@ list(
   tar_target(
     name = lgt_eth_ssn_adm2_bin_method,
     command = df_eth_ssn_adm2_mean_stat %>%
+      filter(season == "AMJ") %>%
       split(.$adm0_en) %>%
       imap(\(dft, country_name){
         dft %>%
@@ -444,6 +447,7 @@ list(
   tar_target(
     name = lgt_eth_ssn_adm1_bin_method,
     command = df_eth_ssn_adm1_mean_stat %>%
+      filter(season == "AMJ") %>%
       split(.$adm0_en) %>%
       imap(\(dft, country_name){
         dft %>%
