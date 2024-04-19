@@ -6,3 +6,4 @@
 .scrapy/*
 *.html
 flood_target_store/*
+flood_target_store/meta/*
