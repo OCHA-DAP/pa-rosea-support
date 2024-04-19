@@ -50,7 +50,8 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
  if(binarize_floodscan){
    lgl_thresh_mask <- ifel(r_fs_resampled>=flood_frac_thresh,1,0) 
    r_fs_resampled_masked <- mask(r_fs_resampled,lgl_thresh_mask)
-   r_exposure <- r_fs_resampled_masked * r_wp
+   # r_exposure <- r_fs_resampled_masked * r_wp
+   r_exposure <- lgl_thresh_mask * r_wp
    
    ret <- exact_extract(x = r_exposure,
                  y = adm,
@@ -138,7 +139,8 @@ zonal_pop_exposure_ssn <- function(floodscan_path=fp_fs,
   if(binarize_floodscan){
     lgl_thresh_mask <- ifel(r_fs_resampled>=flood_frac_thresh,1,0) 
     r_fs_resampled_masked <- mask(r_fs_resampled,lgl_thresh_mask)
-    r_exposure <- r_fs_resampled_masked * r_wp
+    # r_exposure <- r_fs_resampled_masked * r_wp
+    r_exposure <- lgl_thresh_mask * r_wp
     
     ret <- exact_extract(x = r_exposure,
                          y = adm,
@@ -199,7 +201,12 @@ zonal_pop_exposure_ssn <- function(floodscan_path=fp_fs,
 floodscan_lookup <-  function(r_fs){
   # make a lookup table to be used for raster manipulations
   fs_mos<- floor_date(as_date(names(r_fs)),"month")
-
+  # defining start and end months of seasons
+  seasons <- tibble(
+    season = c("MAM", "AMJ", "OND", "Annual"),
+    start_month = c(3, 4, 10, 1),
+    end_month = c(5, 6, 12, 12)
+  )
   fs_lookup <- tibble(
     fs_name = as_date(names(r_fs))
   ) %>%
@@ -209,14 +216,26 @@ floodscan_lookup <-  function(r_fs){
       yr_int= year(fs_yr),
       # this is left over from SOM analysis... it's not used here... but we could add 
       # seasons at some point if we want
-      fs_seas = paste0(case_when(
+      #fs_seas = paste0(case_when(
         #month(fs_mo) %in% c(3,4,5) ~ "MAM",
-        month(fs_mo) %in% c(10,11,12) ~ "OND",
-        month(fs_mo) %in% c(4,5,6) ~ "AMJ",
-        .default ="other"
+        #month(fs_mo) %in% c(10,11,12) ~ "OND",
+        #month(fs_mo) %in% c(4,5,6) ~ "AMJ",
+        #.default = "other"
 
-      ),"_",year(fs_yr))
-    )
+      #),"_",year(fs_yr))
+      ### -- Adding some dynamic way of dealing with seasons
+    ) %>%
+    rowwise() %>%
+    mutate(season = list(seasons %>%
+                           filter((start_month <= end_month & 
+                                     month(fs_mo) >= start_month & 
+                                     month(fs_mo) <= end_month) |
+                                    (start_month > end_month & 
+                                       (month(fs_mo) >= start_month | 
+                                          month(fs_mo) <= end_month))) %>%
+                           pull(season))) %>%
+    unnest(season) %>%
+    mutate(fs_seas = paste0(season,"_",year(fs_yr)))
   return(fs_lookup)
 
 }
