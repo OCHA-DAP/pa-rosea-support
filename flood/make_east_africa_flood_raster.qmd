@@ -8,9 +8,13 @@ editor: visual
 
 ## Intro/Overview
 
-Currently we have produced estimates of population exposed to flooding at admins 0-2 for KEN, ETH, SOM, and MOZ. The methodology can be found [here](insert%20link). These outputs are tabular and therefore well suited for tables and choropleth maps. However, to make a more interesting and potentially useful spatial maps we should also produce raster approximations.
+Currently we have produced estimates of population exposed to flooding at admins 0-2 for KEN, ETH,  SOM, and MOZ. The methodology can be found [here](insert link).  These outputs are tabular and therefore well suited for tables and choropleth maps. However, to make a more interesting and potentially useful spatial maps we should also produce raster approximations. 
 
-Therefore, this document creates the raster approximations for: - Flooded fraction (historical mean + median) - Flood Exposure (flood fraction mean/median + pop density)
+Therefore, this document creates the raster approximations for:
+  - Flooded fraction (historical mean + median)
+  - Flood Exposure (flood fraction mean/median + pop density)
+
+
 
 ```{r}
 library(targets)
@@ -132,6 +136,7 @@ r_median_yr_moz <- terra::mask(x = r_median_yr_moz, mask = gdf_moz_adm0)
 ### East Africa (KEN, ETH, SOM)
 
 ```{r map-meanFlood}
+
 # idea - make big, bring in topography w/ blender, bring in some degree of admin labeling.... 
 # could go slippy map direction w/ mapgl, but need to gauge interest first.
 
@@ -174,6 +179,7 @@ ggplot()+
 
 ```
 
+
 ```{r map-medianFlood}
 ggplot()+
   geom_spatraster(data = r_median_yr)+
@@ -195,6 +201,7 @@ ggplot()+
        subtitle = "East Africa: Median Flood Susceptibility")+
   theme_bw() #+
 ```
+
 
 ### MOZ
 
@@ -225,7 +232,6 @@ ggplot()+
 ```
 
 median flood frac
-
 ```{r}
 ggplot()+
   geom_spatraster(data = r_median_yr_moz)+
@@ -249,3 +255,6 @@ ggplot()+
     legend.text = element_text(angle=90)
   )
 ```
+
+
+
