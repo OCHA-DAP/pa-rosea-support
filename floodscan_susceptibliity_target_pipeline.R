@@ -86,11 +86,16 @@ if(re_download_worldpop){
 fp_wp_moz <- file.path(
   "public",
   "raw",
-  "ken",
+  "moz",
   "worldpop",
-  "ken_ppp_2020_1km_Aggregated_UNadj.tif"
+  "moz_ppp_2020_1km_Aggregated_UNadj.tif"
 )
 
+## defining countries and seasons
+cntry_ssn <- tibble("Somalia" = c("MAM", "OND", "Annual"),
+                    "Ethiopia" = c("MAM", "AMJ", "OND", "Annual"),
+                    "Kenya" = c("MAM", "OND", "Annual"),
+                    "Mozambique" = c("NDJ", "Annual"))
 
 list(
   # Load Inputs -------------------------------------------------------------
@@ -152,6 +157,7 @@ list(
   ### Admin 2 - method 1: binary reclassification ####
   
   # need to separate Mozambique from the rest as running into memory issues
+  ## Doing this by country and season
   tar_target(
     name = df_ken_eth_som_adm2_stats_binary,
     command = zonal_pop_exposure(

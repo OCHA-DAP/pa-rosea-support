@@ -114,7 +114,7 @@ zonal_pop_exposure_ssn <- function(floodscan_path=fp_fs,
   r_wp <-  mosaic_worldpop(worldpop_inputs,from_path=F)
   fs_lookup <-  floodscan_lookup(r_fs) 
   
-  # do the same, but this time by AMJ season
+  # do the same, but this time by season
   lr_max <- unique(fs_lookup$fs_seas) %>%
     map(
       \(ssn_tmp){
@@ -203,9 +203,9 @@ floodscan_lookup <-  function(r_fs){
   fs_mos<- floor_date(as_date(names(r_fs)),"month")
   # defining start and end months of seasons
   seasons <- tibble(
-    season = c("MAM", "AMJ", "OND", "Annual"),
-    start_month = c(3, 4, 10, 1),
-    end_month = c(5, 6, 12, 12)
+    season = c("MAM", "AMJ", "OND", "NDJ", "Annual"),
+    start_month = c(3, 4, 10, 1, 11),
+    end_month = c(5, 6, 12, 12, 1)
   )
   fs_lookup <- tibble(
     fs_name = as_date(names(r_fs))
