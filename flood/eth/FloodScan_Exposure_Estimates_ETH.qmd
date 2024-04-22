@@ -43,12 +43,12 @@ gghdx()
 ```{r ,eval=T}
 
 # Load  a bunch of targets so it's easy to make visuals
-tar_load(lgt_eth_ssn_adm1_bin_method,store = here("flood_target_store"))
-tar_load(lgt_eth_ssn_adm2_bin_method,store = here("flood_target_store"))
+tar_load(lgt_adm1_bin_method,store = here("flood_target_store"))
+tar_load(lgt_adm2_bin_method,store = here("flood_target_store"))
 tar_load(lgdf_adm,store = here("flood_target_store"))
-tar_load(df_eth_ssn_adm1_mean_stat,store = here("flood_target_store"))
-tar_load(df_eth_ssn_adm2_mean_stat,store = here("flood_target_store"))
-tar_load(df_eth_ssn_adm2_stats_bin_method,store = here("flood_target_store"))
+tar_load(df_adm1_mean_stat,store = here("flood_target_store"))
+tar_load(df_adm2_mean_stat,store = here("flood_target_store"))
+tar_load(df_adm2_stats_bin_method,store = here("flood_target_store"))
 ```
 
 ## Admin 1
@@ -60,7 +60,7 @@ tar_load(df_eth_ssn_adm2_stats_bin_method,store = here("flood_target_store"))
 ## Ethiopia
 
 ```{r ,eval=T}
-lgt_eth_ssn_adm1_bin_method$Ethiopia
+lgt_adm1_bin_method$Ethiopia
 ```
 
 ## Map (Absolute)
@@ -68,7 +68,7 @@ lgt_eth_ssn_adm1_bin_method$Ethiopia
 ```{r, eval=T, warning=FALSE}
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
   filter(adm0_pcode == "ET") %>%
-  left_join(df_eth_ssn_adm1_mean_stat %>%
+  left_join(df_adm1_mean_stat %>%
               filter(season == "AMJ"))
 
 gdf_adm1_stat %>% 
@@ -97,7 +97,7 @@ gdf_adm1_stat %>%
 ```{r, eval=T, warning=FALSE}
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
   filter(adm0_pcode == "ET") %>%
-  left_join(df_eth_ssn_adm1_mean_stat %>%
+  left_join(df_adm1_mean_stat %>%
               filter(season == "AMJ"))
 
 gdf_adm1_stat %>% 
@@ -131,7 +131,7 @@ gdf_adm1_stat %>%
 ## Ethiopia
 
 ```{r ,eval=T}
-lgt_eth_ssn_adm2_bin_method$Ethiopia
+lgt_adm2_bin_method$Ethiopia
 ```
 
 ## Map (Absolute)
@@ -139,7 +139,7 @@ lgt_eth_ssn_adm2_bin_method$Ethiopia
 ```{r, eval=T, warning=FALSE}
 gdf_adm2_stat<- lgdf_adm$adm2 %>% 
   filter(adm0_pcode == "ET") %>%
-  left_join(df_eth_ssn_adm2_mean_stat %>%
+  left_join(df_adm2_mean_stat %>%
               filter(season == "AMJ"))
 
 gdf_adm2_stat %>% 
@@ -198,10 +198,10 @@ Calculating range estimates using the confidence interval at admin 2.
 #| eval: true
 
 
-adm0_map <- df_eth_ssn_adm2_stats_bin_method$adm0_en %>% unique()
+adm0_map <- df_adm2_stats_bin_method$adm0_en %>% unique()
 
 p_adm2_distribution_estimates <- map(set_names(adm0_map,adm0_map),
-  ~ df_eth_ssn_adm2_stats_bin_method %>% 
+  ~ df_adm2_stats_bin_method %>% 
   filter(season == "AMJ") %>%
   group_by(across(matches("adm"))) %>% 
   mutate(

@@ -92,10 +92,15 @@ fp_wp_moz <- file.path(
 )
 
 ## defining countries and seasons
-cntry_ssn <- tibble("Somalia" = c("MAM", "OND", "Annual"),
+ssn_by_country <- list("Somalia" = c("MAM", "OND", "Annual"),
                     "Ethiopia" = c("MAM", "AMJ", "OND", "Annual"),
                     "Kenya" = c("MAM", "OND", "Annual"),
                     "Mozambique" = c("NDJ", "Annual"))
+seasons <- tibble(
+  season = c("MAM", "AMJ", "OND", "Annual", "NDJ"),
+  start_month = c(3, 4, 10, 1, 11),
+  end_month = c(5, 6, 12, 12, 1)
+)
 
 list(
   # Load Inputs -------------------------------------------------------------
@@ -158,45 +163,62 @@ list(
   
   # need to separate Mozambique from the rest as running into memory issues
   ## Doing this by country and season
+  #tar_target(
+  #  name = df_adm2_stats_binary_test,
+  #  command = c("Kenya", "Ethiopia", "Somalia", "Mozambique") %>%
+  #    map_df(
+  #      \(country_name){
+  #        zonal_pop_exposure(
+  #          floodscan_path = fp_fs,
+  #          worldpop_inputs = keep_at(lr_wp, country_name),
+  #          flood_frac_thresh = 0.2,
+  #          binarize_floodscan = T,
+  #          adm = lgdf_adm$adm2 %>% 
+  #            filter(adm0_en == country_name),
+  #          country_seasons = pluck(ssn_by_country, country_name),
+  #          cols_keep = c("adm0_en", "adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
+  #        )
+  #        print(paste0("Completed processing for: ", country_name))
+  #      }
+  #    ) %>%
+  #    bind_rows()
+  #),
+  
   tar_target(
-    name = df_ken_eth_som_adm2_stats_binary,
+    name = df_eth_som_adm2_stats_binary,
     command = zonal_pop_exposure(
       floodscan_path = fp_fs,
-      worldpop_inputs = discard_at(lr_wp,"Mozambique"),
+      worldpop_inputs = discard_at(lr_wp, c("Kenya", "Mozambique")),
       flood_frac_thresh = 0.2,
       binarize_floodscan = T,
       adm = lgdf_adm$adm2 %>% 
-        filter(adm0_pcode!="MZ"),
+        filter(adm0_pcode %in% c("ET", "SO")),
+      country_seasons = c("MAM", "AMJ", "OND", "Annual"),
       cols_keep = c("adm0_en", "adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
     )
   ),
   tar_target(
-    name = df_eth_ssn_adm2_stats_binary,
-    command = zonal_pop_exposure_ssn(
-      floodscan_path = fp_fs,
-      worldpop_inputs = keep_at(lr_wp,"Ethiopia"),
-      flood_frac_thresh = 0.2,
-      binarize_floodscan = T,
-      adm = lgdf_adm$adm2 %>% 
-        filter(adm0_pcode=="ET"),
-      cols_keep = c("adm0_en", "adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
-    )
-  ),
-  tar_target(
-    name = df_moz_adm2_stats_binary,
+    name = df_ken_moz_adm2_stats_binary,
     command = zonal_pop_exposure(
       floodscan_path = fp_fs,
-      worldpop_inputs = keep_at(lr_wp,"Mozambique"),
+      worldpop_inputs = keep_at(lr_wp, c("Kenya", "Mozambique")),
       flood_frac_thresh = 0.2,
       binarize_floodscan = T,
       adm = lgdf_adm$adm2 %>% 
-        filter(adm0_pcode=="MZ"),
+        filter(adm0_pcode %in% c("KE", "MZ")),
+      country_seasons = c("MAM", "OND", "Annual"),
       cols_keep = c("adm0_en", "adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
     )
   ),
   tar_target(
     name= df_adm2_stats_binary,
-    command= bind_rows(df_ken_eth_som_adm2_stats_binary,df_moz_adm2_stats_binary)
+    command= bind_rows(df_eth_som_adm2_stats_binary,df_ken_moz_adm2_stats_binary) %>%
+      mutate(season = case_when(
+        month(date) == 1 ~ "Annual",
+        month(date) == 3 ~ "MAM",
+        month(date) == 4 ~ "AMJ",
+        month(date) == 10 ~ "OND",
+        .default = "Other"))
   ),
   # Join w/ world pop zonal stats (adm2) to calculate % populations
   tar_target(
@@ -210,21 +232,6 @@ list(
         pct_exposed = pop_exposed_wp / total_pop_wp
       )
   ),
-  tar_target(
-    name = df_eth_ssn_adm2_stats_bin_method,
-    command = left_join(df_adm2_worldpop_summary, 
-                        df_eth_ssn_adm2_stats_binary) %>%
-      rename(
-        total_pop_wp = pop,
-        pop_exposed_wp = pop_exposed
-      ) %>%
-      mutate(
-        pct_exposed = pop_exposed_wp / total_pop_wp
-      ) %>%
-      mutate(season = case_when(month(date) %in% c(4) ~ "AMJ",
-                                .default = "")) %>%
-      filter(adm0_en == "Ethiopia")
-  ),
 
   ## Admin 1 Level ####
   ### Admin 1 - method 1: binary reclassification ####
@@ -234,7 +241,7 @@ list(
     name = df_adm1_stats_bin_method,
     command = df_adm2_stats_bin_method %>%
       group_by(
-        across(matches("^adm[01]")), date
+        across(matches("^adm[01]")), date, season
       ) %>%
       summarise(
         total_pop_wp = sum(total_pop_wp, na.rm = T),
@@ -245,22 +252,6 @@ list(
         pct_exposed = pop_exposed_wp / total_pop_wp
       )
   ),
-  tar_target(
-    name = df_eth_ssn_adm1_stats_bin_method,
-    command = df_eth_ssn_adm2_stats_bin_method %>%
-      group_by(
-        across(matches("^adm[01]")), date
-      ) %>%
-      summarise(
-        total_pop_wp = sum(total_pop_wp, na.rm = T),
-        pop_exposed_wp = sum(pop_exposed_wp, na.rm = T),
-        .groups = "drop"
-      ) %>%
-      mutate(
-        pct_exposed = pop_exposed_wp / total_pop_wp
-      )
-  ),
-
 
   # Temporal Summarization --------------------------------------------------
 
@@ -268,19 +259,6 @@ list(
   tar_target(
     name = df_adm1_mean_stat,
     df_adm1_stats_bin_method %>%
-      group_by(across(matches("adm"))) %>%
-      summarise(
-        mean_exposed = mean(pop_exposed_wp),
-        total_pop = unique(total_pop_wp),
-        .groups = "drop"
-      ) %>%
-      mutate(pct_exposed = mean_exposed / total_pop)
-  ),
-  tar_target(
-    name = df_eth_ssn_adm1_mean_stat,
-    df_eth_ssn_adm1_stats_bin_method %>%
-      mutate(season = case_when(month(date) %in% c(4) ~ "AMJ",
-                                .default = "")) %>%
       group_by(across(matches("adm")), season) %>%
       summarise(
         mean_exposed = mean(pop_exposed_wp),
@@ -294,19 +272,6 @@ list(
   tar_target(
     name = df_adm2_mean_stat,
     df_adm2_stats_bin_method %>%
-      group_by(across(matches("adm"))) %>%
-      summarise(
-        mean_exposed = mean(pop_exposed_wp),
-        total_pop = unique(total_pop_wp),
-        .groups = "drop"
-      ) %>%
-      mutate(pct_exposed = mean_exposed / total_pop)
-  ),
-  tar_target(
-    name = df_eth_ssn_adm2_mean_stat,
-    df_eth_ssn_adm2_stats_bin_method %>%
-      mutate(season = case_when(month(date) %in% c(4) ~ "AMJ",
-                                .default = "")) %>%
       group_by(across(matches("adm")), season) %>%
       summarise(
         mean_exposed = mean(pop_exposed_wp),
@@ -322,55 +287,12 @@ list(
   tar_target(
     name = lgt_adm2_bin_method,
     command = df_adm2_mean_stat %>%
-      split(.$adm0_en) %>%
+      split(.$adm0_en, .$season) %>%
       imap(\(dft, country_name){
         dft %>%
-          dplyr::select(adm0_en, adm1_en, adm2_en, mean_exposed, total_pop, pct_exposed) %>%
-          group_by(adm1_en) %>%
-          gt() %>%
-          cols_hide(columns = "adm0_en") %>%
-          cols_label(
-            # adm0_en = "Country",
-            adm1_en = "Region",
-            adm2_en = "District",
-            mean_exposed = "Average population exposed",
-            total_pop = "Total population",
-            pct_exposed = "Percent population exposed"
-          ) %>%
-          fmt_number(
-            columns = c(
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            decimals = 0, n_sigfig = 3
-          ) %>%
-          fmt_percent(columns = pct_exposed, decimals = 0) %>%
-          data_color(
-            columns = c(
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            method = "numeric",
-            palette = "YlOrRd",
-            reverse = F
-          ) %>%
-          tab_options(
-            row_group.as_column = TRUE
-          ) %>%
-          tab_header(
-            title = paste0("Approximate population susceptible to flooding ", country_name)
-          )
-      })
-  ),
-  tar_target(
-    name = lgt_eth_ssn_adm2_bin_method,
-    command = df_eth_ssn_adm2_mean_stat %>%
-      filter(season == "AMJ") %>%
-      split(.$adm0_en) %>%
-      imap(\(dft, country_name){
-        dft %>%
+          filter(case_when(
+            country_name %in% c("Ethiopia", "Somalia") ~ season == "AMJ",
+            T ~ season == "Annual")) %>%
           dplyr::select(adm0_en, adm1_en, adm2_en, mean_exposed, total_pop, pct_exposed) %>%
           group_by(adm1_en) %>%
           gt() %>%
@@ -415,9 +337,12 @@ list(
   tar_target(
     name = lgt_adm1_bin_method,
     command = df_adm1_mean_stat %>%
-      split(.$adm0_en) %>%
+      split(.$adm0_en, .$season) %>%
       imap(\(dft, country_name){
         dft %>%
+          filter(case_when(
+            country_name %in% c("Ethiopia", "Somalia") ~ season == "AMJ",
+            T ~ season == "Annual")) %>%
           dplyr::select(adm0_en, adm1_en, mean_exposed, total_pop, pct_exposed) %>%
           gt() %>%
           cols_hide(columns = "adm0_en") %>%
@@ -454,59 +379,16 @@ list(
             title = paste0("Approximate population susceptible to flooding ", country_name)
           )
       })
-  ),
-  tar_target(
-    name = lgt_eth_ssn_adm1_bin_method,
-    command = df_eth_ssn_adm1_mean_stat %>%
-      filter(season == "AMJ") %>%
-      split(.$adm0_en) %>%
-      imap(\(dft, country_name){
-        dft %>%
-          dplyr::select(adm0_en, adm1_en, mean_exposed, total_pop, pct_exposed) %>%
-          gt() %>%
-          cols_hide(columns = "adm0_en") %>%
-          cols_label(
-            # adm0_en = "Country",
-            adm1_en = "Region",
-            mean_exposed = "Average population exposed",
-            total_pop = "Total population",
-            pct_exposed = "Percent population exposed"
-          ) %>%
-          fmt_number(
-            columns = c(
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            decimals = 0, n_sigfig = 3
-          ) %>%
-          fmt_percent(columns = pct_exposed, decimals = 0) %>%
-          data_color(
-            columns = c(
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            method = "numeric",
-            palette = "YlOrRd",
-            reverse = F
-          ) %>%
-          tab_options(
-            row_group.as_column = TRUE
-          ) %>%
-          tab_header(
-            title = paste0("Approximate population susceptible to flooding ", country_name)
-          )
-      })
-  ),
-  # quick flood scan analysis for cyclones
-  tar_target(
-    name = moz_adm1_floodscan_unprocessed,
-    command= zonal_floodscan(floodscan_path = fp_fp,
-                             geom = lgdf_adm$adm1 %>% filter(adm0_en=="Mozambique"),
-                             cols_keep = c("adm0_en","adm0_pcode","adm1_en","adm1_pcode"),
-                             zonal_stat= c("mean","median")
-                             )
-    
   )
+  
+  # quick flood scan analysis for cyclones
+  #tar_target(
+  #  name = moz_adm1_floodscan_unprocessed,
+  #  command= zonal_floodscan(floodscan_path = fp_fp,
+  #                           geom = lgdf_adm$adm1 %>% filter(adm0_en=="Mozambique"),
+  #                           cols_keep = c("adm0_en","adm0_pcode","adm1_en","adm1_pcode"),
+  #                           zonal_stat= c("mean","median")
+  #                           )
+    
+  #)
 )

@@ -17,20 +17,21 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
                                flood_frac_thresh=0.005,
                                binarize_floodscan = T,
                                adm = lgdf_adm$adm0,
+                               country_seasons = c("MAM", "OND", "Annual"),
                                cols_keep = c("adm1_en", "adm1_pcode","adm0_en")
 ){
   tnc_fs <- tidync(floodscan_path)
   tnc_fs_filt <- fs_filter_bounds(fs_obj = tnc_fs,geometry = adm)
   r_fs <- fs_to_raster(fs_obj = tnc_fs_filt,band = "SFED_AREA")
   r_wp <-  mosaic_worldpop(worldpop_inputs,from_path=F)
-  fs_lookup <-  floodscan_lookup(r_fs) 
+  fs_lookup <-  floodscan_lookup(r_fs, country_seasons) 
 
   # do the same, but this time per year
-  lr_max <- unique(fs_lookup$yr_int) %>%
+  lr_max <- unique(fs_lookup$fs_seas) %>%
     map(
-      \(yr_tmp){
+      \(ssn_tmp){
         rname_temp<- fs_lookup %>%
-          filter(yr_int==yr_tmp) %>%
+          filter(fs_seas==ssn_tmp) %>%
           pull(fs_name)
         r_fs_tmp <- r_fs[[names(r_fs) %in% rname_temp]]
         r_max <- max(r_fs_tmp)
@@ -101,112 +102,26 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
 
 }
 
-zonal_pop_exposure_ssn <- function(floodscan_path=fp_fs,
-                               worldpop_inputs =fp_wp,
-                               flood_frac_thresh=0.005,
-                               binarize_floodscan = T,
-                               adm = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"),
-                               cols_keep = c("adm1_en", "adm1_pcode","adm0_en")
-){
-  tnc_fs <- tidync(floodscan_path)
-  tnc_fs_filt <- fs_filter_bounds(fs_obj = tnc_fs,geometry = adm)
-  r_fs <- fs_to_raster(fs_obj = tnc_fs_filt,band = "SFED_AREA")
-  r_wp <-  mosaic_worldpop(worldpop_inputs,from_path=F)
-  fs_lookup <-  floodscan_lookup(r_fs) 
-  
-  # do the same, but this time by season
-  lr_max <- unique(fs_lookup$fs_seas) %>%
-    map(
-      \(ssn_tmp){
-        rname_temp<- fs_lookup %>%
-          filter(fs_seas==ssn_tmp) %>%
-          pull(fs_name)
-        r_fs_tmp <- r_fs[[names(r_fs) %in% rname_temp]]
-        r_max <- max(r_fs_tmp)
-        r_max %>%
-          set.names(rname_temp[1])
-        return(r_max)
-      }
-    )
-  r_max <- rast(lr_max)
-  
-  r_fs_max_crop <- crop(r_max, r_wp)
-  ext(r_fs_max_crop) <- ext(r_wp)
-  
-  cat("resampling floodscan to worldpop\n")
-  r_fs_resampled <- terra::resample(x = r_fs_max_crop,r_wp)
-  
-  if(binarize_floodscan){
-    lgl_thresh_mask <- ifel(r_fs_resampled>=flood_frac_thresh,1,0) 
-    r_fs_resampled_masked <- mask(r_fs_resampled,lgl_thresh_mask)
-    # r_exposure <- r_fs_resampled_masked * r_wp
-    r_exposure <- lgl_thresh_mask * r_wp
-    
-    ret <- exact_extract(x = r_exposure,
-                         y = adm,
-                         fun ="sum",
-                         append_cols= cols_keep,
-                         force_df = TRUE
-    ) %>%
-      pivot_longer(cols = starts_with("sum"),
-                   names_to = "sum_date",
-                   values_to = "pop_exposed") %>%
-      separate(col = sum_date, "\\.",into = c("stat","date")) %>%
-      mutate(
-        date= as_date(date)
-      )
-  }
-  if(!binarize_floodscan){
-    if(length(flood_frac_thresh)>1){
-      
-      ret <- flood_frac_thresh %>%
-        map( \(thresh_tmp){
-          cat(thresh_tmp,"\n")
-          r_fs_resampled_copy <- deepcopy(r_fs_resampled)
-          lgl_thresh_mask <- ifel(r_fs_resampled_copy>=thresh_tmp,1,0)
-          r_exposure <- lgl_thresh_mask * r_wp
-          
-          exact_extract(x = r_exposure,
-                        y = adm,
-                        fun ="sum",
-                        append_cols= cols_keep,
-                        force_df = TRUE
-          ) %>%
-            pivot_longer(cols = starts_with("sum"),
-                         names_to = "sum_date",
-                         values_to = "pop_exposed") %>%
-            separate(col = sum_date, "\\.",into = c("stat","date")) %>%
-            mutate(
-              date= as_date(date),
-              thresh=thresh_tmp
-            )
-        }
-        ) %>%
-        list_rbind()
-    }
-    
-  }
-  return(ret)
-  
-}
-
 #' floodscan_lookup
 #' @description
 #' helper function used within `zonal_pop_exposure()` to help organize, group, and aggregate FloodScan raster
 #' 
 #' @param r_fs `spatRaster` object returned from fs_to_raster() (floodScan to raster)
-#'
+#' @param country_seasons `character vector` seasons for each country
+#' 
 #' @return `tibble` lookup table with dates and months of floodscan data to be used to group and summarise FloodScan raster
 
-floodscan_lookup <-  function(r_fs){
+floodscan_lookup <-  function(r_fs, country_seasons){
   # make a lookup table to be used for raster manipulations
   fs_mos<- floor_date(as_date(names(r_fs)),"month")
   # defining start and end months of seasons
   seasons <- tibble(
-    season = c("MAM", "AMJ", "OND", "NDJ", "Annual"),
+    season = c("MAM", "AMJ", "OND", "Annual", "NDJ"),
     start_month = c(3, 4, 10, 1, 11),
     end_month = c(5, 6, 12, 12, 1)
   )
+  season_tbl <- seasons %>% filter(season %in% country_seasons)
+  
   fs_lookup <- tibble(
     fs_name = as_date(names(r_fs))
   ) %>%
@@ -226,7 +141,7 @@ floodscan_lookup <-  function(r_fs){
       ### -- Adding some dynamic way of dealing with seasons
     ) %>%
     rowwise() %>%
-    mutate(season = list(seasons %>%
+    mutate(season = list(season_tbl %>%
                            filter((start_month <= end_month & 
                                      month(fs_mo) >= start_month & 
                                      month(fs_mo) <= end_month) |
