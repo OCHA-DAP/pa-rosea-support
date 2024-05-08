@@ -69,7 +69,7 @@ lgt_adm1_bin_method$Ethiopia
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
   filter(adm0_pcode == "ET") %>%
   left_join(df_adm1_mean_stat %>%
-              filter(season == "AMJ"))
+              filter(season == "AMJ"), by = "adm1_pcode")
 
 gdf_adm1_stat %>% 
   ggplot()+
@@ -85,7 +85,7 @@ gdf_adm1_stat %>%
     labels=scales::label_comma()
   )+
   geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1) +
-  geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
+  # geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
   # scale_fill_viridis_c()+
   theme_void()
 ```
@@ -98,7 +98,7 @@ gdf_adm1_stat %>%
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
   filter(adm0_pcode == "ET") %>%
   left_join(df_adm1_mean_stat %>%
-              filter(season == "AMJ"))
+              filter(season == "AMJ"), by = "adm1_pcode")
 
 gdf_adm1_stat %>% 
   ggplot()+
@@ -110,12 +110,12 @@ gdf_adm1_stat %>%
     
     high="red",
     
-    breaks= c(seq(0,0.1,by=0.02),seq(0.15,0.25, by=0.05)),
+    breaks= c(seq(0.1, 0.5, by=0.1)),
     # breaks= c(seq(0,0.2,by=0.04)),
     labels=scales::label_percent()
   )+
   geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1)+
-  geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
+  #geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
   # scale_fill_viridis_c()+
   theme_void()
 ```
@@ -140,7 +140,7 @@ lgt_adm2_bin_method$Ethiopia
 gdf_adm2_stat<- lgdf_adm$adm2 %>% 
   filter(adm0_pcode == "ET") %>%
   left_join(df_adm2_mean_stat %>%
-              filter(season == "AMJ"))
+              filter(season == "AMJ"), by = "adm2_pcode")
 
 gdf_adm2_stat %>% 
   ggplot()+
@@ -150,7 +150,7 @@ gdf_adm2_stat %>%
     low="white",
     # midpoint="white",
     high="red",
-    breaks= c(10,50,100,10000,50000,75000,100000, 200000),
+    breaks= c(seq(0, 10000000, 500000)),
     labels=scales::label_comma()
   )+
   geom_sf(data= lgdf_adm$adm1 %>% filter(adm0_pcode == "ET") ,fill=NA,color="black",lwd=0.5)+
@@ -174,7 +174,7 @@ gdf_adm2_stat %>%
     # midpoint="white",
     high="red",
     
-    breaks= c(seq(0,0.1,by=0.02),seq(0.15,0.25, by=0.05)),
+    breaks= c(seq(0,0.8,by=0.2)),
     # breaks= c(seq(0,0.2,by=0.04)),
     labels=scales::label_percent()
   )+
@@ -186,74 +186,8 @@ gdf_adm2_stat %>%
 :::
 :::
 
-## Range Estimates
-
-Calculating range estimates using the confidence interval at admin 2.
-
-```{r}
-#| column: screen
-#| out.width: 60%
-#| fig.height: 5
-#| fig.align: center
-#| eval: true
-
-
-adm0_map <- df_adm2_stats_bin_method$adm0_en %>% unique()
-
-p_adm2_distribution_estimates <- map(set_names(adm0_map,adm0_map),
-  ~ df_adm2_stats_bin_method %>% 
-  filter(season == "AMJ") %>%
-  group_by(across(matches("adm"))) %>% 
-  mutate(
-    mean_exposed = mean(pop_exposed_wp),
-    sd_exposed = sd(pop_exposed_wp),
-    se = 1.96*sd_exposed,
-    lower_ci = mean_exposed-se,
-    upper_ci = mean_exposed+se
-  ) %>% 
-  filter(
-   adm0_en ==.x
-  ) %>% 
-  ggplot(
-    aes(x=pop_exposed_wp,y=adm2_en)
-  )+
-  geom_jitter(alpha=0.3, size=1)+
-  stat_summary(fun.data = mean_cl_normal,  
-                 geom = "errorbar",color="black",
-               lwd=0.5,alpha=1, width =0.5
-               ) +
-      stat_summary(
-    fun=mean,
-    geom="point",
-    shape=10, alpha=0.5,
-    size=2,
-    color="red"
-  )+
-  facet_wrap(
-    ~adm1_en,scale="free_y"
-  )+
-  scale_x_continuous(
-    labels = scales::label_comma()
-  )+
-  labs(
-    y= "Admin 2",
-    x= "Population Exposed",
-    title = glue("{.x}: Distribution of population exposed to flooding yearly")
-  )+
-    theme(
-      axis.text.x = element_text(angle=90, size=6),
-      axis.text.y = element_text(size=6),
-      strip.text = element_text(size=8),
-      plot.title = element_text(size= 12)
-    )
-)
-
-p_adm2_distribution_estimates$Ethiopia
-
-```
-
 ## Method Note
 
-Yearly maximum composite flood composite rasters were made for each year of available FloodScan Data (1998-2022). The yearly maximum composites were then re-sampled to the [World Pop 2020 UN Adjusted (1 km) Population Count Grid](https://hub.worldpop.org/). Flood fraction was then combined with world population folllowing 2 methods to get population exposure estimates:
+Yearly maximum composite flood composite rasters were made for each year of available FloodScan Data (1998-2022). The seasonal maximum composites were then re-sampled to the [World Pop 2020 UN Adjusted (1 km) Population Count Grid](https://hub.worldpop.org/). Flood fraction was then combined with world population following the method described below:
 
-**Method 1** All flood fractions \> 20 % were assumed to be "flooded". The entire population beneath any "flooded" pixel was then considered flooded
+**Method** A minimum flood fraction of 1% was used and it is assumed that flood fractions above this are "flooded". The number of people exposed to flooding is calculated as the population beneath any "flooded" pixel multiplied by the flood fraction.
