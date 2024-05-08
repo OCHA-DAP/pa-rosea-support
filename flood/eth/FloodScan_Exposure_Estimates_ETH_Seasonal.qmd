@@ -22,7 +22,9 @@ project:
 
 ## Introduction
 
-This analysis uses FloodScan (1998-2022) & WorldPop (2022) to generate annual flood estimates for Ethiopia.
+The Gu rains typically occur from April to June in the Somali region, while the Ganna rains occur during the same period in the Oromia region.
+
+This analysis uses FloodScan (1998-2022) & WorldPop (2022) to generate flood estimates for Ethiopia.
 
 -   Analysis is performed at admin 1 & admin 2
 
@@ -41,8 +43,8 @@ gghdx()
 ```{r ,eval=T}
 
 # Load  a bunch of targets so it's easy to make visuals
-tar_load(lgt_adm1_bin_method_annual,store = here("flood_target_store"))
-tar_load(lgt_adm2_bin_method_annual,store = here("flood_target_store"))
+tar_load(lgt_adm1_bin_method,store = here("flood_target_store"))
+tar_load(lgt_adm2_bin_method,store = here("flood_target_store"))
 tar_load(lgdf_adm,store = here("flood_target_store"))
 tar_load(df_adm1_mean_stat,store = here("flood_target_store"))
 tar_load(df_adm2_mean_stat,store = here("flood_target_store"))
@@ -58,7 +60,7 @@ tar_load(df_adm2_stats_bin_method,store = here("flood_target_store"))
 ## Ethiopia
 
 ```{r ,eval=T}
-lgt_adm1_bin_method_annual$Ethiopia
+lgt_adm1_bin_method$Ethiopia
 ```
 
 ## Map (Absolute)
@@ -67,7 +69,7 @@ lgt_adm1_bin_method_annual$Ethiopia
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
   filter(adm0_pcode == "ET") %>%
   left_join(df_adm1_mean_stat %>%
-              filter(season == "Annual"))
+              filter(season == "AMJ"))
 
 gdf_adm1_stat %>% 
   ggplot()+
@@ -96,7 +98,7 @@ gdf_adm1_stat %>%
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
   filter(adm0_pcode == "ET") %>%
   left_join(df_adm1_mean_stat %>%
-              filter(season == "Annual"))
+              filter(season == "AMJ"))
 
 gdf_adm1_stat %>% 
   ggplot()+
@@ -129,7 +131,7 @@ gdf_adm1_stat %>%
 ## Ethiopia
 
 ```{r ,eval=T}
-lgt_adm2_bin_method_annual$Ethiopia
+lgt_adm2_bin_method$Ethiopia
 ```
 
 ## Map (Absolute)
@@ -138,7 +140,7 @@ lgt_adm2_bin_method_annual$Ethiopia
 gdf_adm2_stat<- lgdf_adm$adm2 %>% 
   filter(adm0_pcode == "ET") %>%
   left_join(df_adm2_mean_stat %>%
-              filter(season == "Annual"))
+              filter(season == "AMJ"))
 
 gdf_adm2_stat %>% 
   ggplot()+
@@ -183,6 +185,72 @@ gdf_adm2_stat %>%
 ```
 :::
 :::
+
+## Range Estimates
+
+Calculating range estimates using the confidence interval at admin 2.
+
+```{r}
+#| column: screen
+#| out.width: 60%
+#| fig.height: 5
+#| fig.align: center
+#| eval: true
+
+
+adm0_map <- df_adm2_stats_bin_method$adm0_en %>% unique()
+
+p_adm2_distribution_estimates <- map(set_names(adm0_map,adm0_map),
+  ~ df_adm2_stats_bin_method %>% 
+  filter(season == "AMJ") %>%
+  group_by(across(matches("adm"))) %>% 
+  mutate(
+    mean_exposed = mean(pop_exposed_wp),
+    sd_exposed = sd(pop_exposed_wp),
+    se = 1.96*sd_exposed,
+    lower_ci = mean_exposed-se,
+    upper_ci = mean_exposed+se
+  ) %>% 
+  filter(
+   adm0_en ==.x
+  ) %>% 
+  ggplot(
+    aes(x=pop_exposed_wp,y=adm2_en)
+  )+
+  geom_jitter(alpha=0.3, size=1)+
+  stat_summary(fun.data = mean_cl_normal,  
+                 geom = "errorbar",color="black",
+               lwd=0.5,alpha=1, width =0.5
+               ) +
+      stat_summary(
+    fun=mean,
+    geom="point",
+    shape=10, alpha=0.5,
+    size=2,
+    color="red"
+  )+
+  facet_wrap(
+    ~adm1_en,scale="free_y"
+  )+
+  scale_x_continuous(
+    labels = scales::label_comma()
+  )+
+  labs(
+    y= "Admin 2",
+    x= "Population Exposed",
+    title = glue("{.x}: Distribution of population exposed to flooding yearly")
+  )+
+    theme(
+      axis.text.x = element_text(angle=90, size=6),
+      axis.text.y = element_text(size=6),
+      strip.text = element_text(size=8),
+      plot.title = element_text(size= 12)
+    )
+)
+
+p_adm2_distribution_estimates$Ethiopia
+
+```
 
 ## Method Note
 

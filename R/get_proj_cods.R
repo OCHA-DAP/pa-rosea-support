@@ -48,14 +48,33 @@ load_proj_cods <-  function(){
   lnames <- get_proj_cod_layer_names()
   lnames %>% 
     imap(\(ds,nm_cod){
+      ## adding this here for now before the CODAB is added to HDX
       ds %>% 
         map(
-          ~ search_datasets(glue("{nm_cod} - Subnational Administrative Boundaries") )%>%
-            pluck(1) %>%
-            get_resource(2) %>%
-            read_resource(layer = .x) %>%
-            clean_names() %>%
-            dplyr::select(matches("^adm\\d_[ep]"))
+          if(nm_cod == "Ethiopia"){
+            ~ st_read(
+              file.path(
+                Sys.getenv("AA_DATA_DIR"),
+                "public", "raw", "eth", "cod_ab", "Admin_2024.gdb.zip"), 
+              layer = .x) %>%
+              rename_with(~ str_replace_all(., 
+                                            pattern = "^admin(\\d)Name_en$", 
+                                            replacement = "adm\\1_en"), 
+                          .cols = matches("^admin\\dName_en$")) %>%
+              rename_with(~ str_replace_all(., 
+                                            pattern = "^admin(\\d)Pcode$",
+                                            replacement = "adm\\1_pcode"), 
+                          .cols = contains("Pcode")) %>%
+              rename(geometry = Shape)
+          } else {
+            ~ search_datasets(glue("{nm_cod} - Subnational Administrative Boundaries") )%>%
+              pluck(1) %>%
+              get_resource(2) %>%
+              read_resource(layer = .x) %>%
+              clean_names() %>%
+              dplyr::select(matches("^adm\\d_[ep]"))
+          }
+          
         )
     }
     
@@ -80,9 +99,12 @@ load_proj_cods <-  function(){
 #' }
 
 compile_proj_cods <-  function(lgdf){
-  adm0= bind_rows(lgdf$Kenya$adm0,lgdf$Somalia$adm0,lgdf$Ethiopia$adm0, lgdf$Mozambique$adm0)  
-  adm1= bind_rows(lgdf$Kenya$adm1,lgdf$Somalia$adm1,lgdf$Ethiopia$adm1,lgdf$Mozambique$adm1)  
-  adm2= bind_rows(lgdf$Kenya$adm2,lgdf$Somalia$adm2,lgdf$Ethiopia$adm2,lgdf$Mozambique$adm2)  
+  adm0= bind_rows(lgdf$Kenya$adm0,lgdf$Somalia$adm0,lgdf$Ethiopia$adm0 %>%
+                    st_transform(st_crs(lgdf$Somalia$adm0)), lgdf$Mozambique$adm0)  
+  adm1= bind_rows(lgdf$Kenya$adm1,lgdf$Somalia$adm1,lgdf$Ethiopia$adm1 %>%
+                    st_transform(st_crs(lgdf$Somalia$adm1)),lgdf$Mozambique$adm1)  
+  adm2= bind_rows(lgdf$Kenya$adm2,lgdf$Somalia$adm2,lgdf$Ethiopia$adm2 %>%
+                    st_transform(st_crs(lgdf$Somalia$adm2)),lgdf$Mozambique$adm2)  
   return(
     lst(adm0,adm1,adm2)
   )
@@ -102,9 +124,9 @@ get_proj_cod_layer_names <- function(){
   )
   
   eth <- list(
-    adm0="eth_admbnda_adm0_csa_bofedb_itos_2021",
-    adm1="eth_admbnda_adm1_csa_bofedb_2021",
-    adm2= "eth_admbnda_adm2_csa_bofedb_2021"
+    adm0="eth_admbnda_adm0_csa_bofedb_2024",
+    adm1="eth_admbnda_adm1_csa_bofedb_2024",
+    adm2= "eth_admbnda_adm2_csa_bofedb_2024"
   )
   
   ken <- list(

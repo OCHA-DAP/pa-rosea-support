@@ -69,8 +69,6 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
      )
  }
   if(!binarize_floodscan){
-    if(length(flood_frac_thresh)>1){
-      
       ret <- flood_frac_thresh %>%
         map( \(thresh_tmp){
           cat(thresh_tmp,"\n")
@@ -95,11 +93,8 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
         }
         ) %>%
         list_rbind()
-    }
-    
   }
   return(ret)
-
 }
 
 #' floodscan_lookup
@@ -116,9 +111,9 @@ floodscan_lookup <-  function(r_fs, country_seasons){
   fs_mos<- floor_date(as_date(names(r_fs)),"month")
   # defining start and end months of seasons
   seasons <- tibble(
-    season = c("MAM", "AMJ", "OND", "Annual", "NDJ"),
-    start_month = c(3, 4, 10, 1, 11),
-    end_month = c(5, 6, 12, 12, 1)
+    season = c("MAM", "AMJ", "OND", "Annual", "NDJ", "JJA"),
+    start_month = c(3, 4, 10, 1, 11, 6),
+    end_month = c(5, 6, 12, 12, 1, 8)
   )
   season_tbl <- seasons %>% filter(season %in% country_seasons)
   
