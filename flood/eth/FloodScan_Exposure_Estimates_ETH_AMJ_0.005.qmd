@@ -1,0 +1,193 @@
+---
+title: "Ethiopia Flood Susceptibility"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    self-contained: true
+    embed-resoures: true
+    smooth-scroll: true
+execute:
+  echo: false
+  warning: false
+  message: false
+  eval: false
+  results: "asis"
+  out.width: "100%"
+editor: visual
+project:
+     execute-dir: project
+---
+
+## Introduction
+
+The Gu rains typically occur from April to June in the Somali region, while the Ganna rains occur during the same period in the Oromia region.
+
+This analysis uses FloodScan (1998-2022) & WorldPop (2022) to generate flood estimates for Ethiopia.
+
+-   Analysis is performed at admin 1 & admin 2
+
+```{r ,eval=T, echo=F, results='hide'}
+library(targets)
+library(tidyverse)
+library(here)
+library(scales)
+library(sf)
+library(gghdx)
+library(glue)
+gghdx()
+
+```
+
+```{r ,eval=T}
+
+# Load  a bunch of targets so it's easy to make visuals
+tar_load(lgt_adm1_bin_method,store = here("flood_target_store"))
+tar_load(lgt_adm2_bin_method,store = here("flood_target_store"))
+tar_load(lgdf_adm,store = here("flood_target_store"))
+tar_load(df_adm1_mean_stat,store = here("flood_target_store"))
+tar_load(df_adm2_mean_stat,store = here("flood_target_store"))
+tar_load(df_adm2_stats_bin_method,store = here("flood_target_store"))
+```
+
+## Admin 1
+
+::: panel-tabset
+## Method: Flooded Fraction is 20% and above
+
+::: panel-tabset
+## Ethiopia
+
+```{r ,eval=T}
+lgt_adm1_bin_method$Ethiopia
+```
+
+## Map (Absolute)
+
+```{r, eval=T, warning=FALSE}
+gdf_adm1_stat<- lgdf_adm$adm1 %>% 
+  filter(adm0_pcode == "ET") %>%
+  left_join(df_adm1_mean_stat %>%
+              filter(season == "AMJ"), by = "adm1_pcode")
+
+gdf_adm1_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=mean_exposed))+
+  scale_fill_gradient(
+    trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    
+    high="red",
+    
+    breaks= c(1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e11),
+    labels=scales::label_comma()
+  )+
+  geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1) +
+  # geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+
+## Map (%)
+
+\% district potentially exposed
+
+```{r, eval=T, warning=FALSE}
+gdf_adm1_stat<- lgdf_adm$adm1 %>% 
+  filter(adm0_pcode == "ET") %>%
+  left_join(df_adm1_mean_stat %>%
+              filter(season == "AMJ"), by = "adm1_pcode")
+
+gdf_adm1_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=pct_exposed))+
+  scale_fill_gradient(
+    # trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    
+    high="red",
+    
+    breaks= c(seq(0.1, 0.5, by=0.1)),
+    # breaks= c(seq(0,0.2,by=0.04)),
+    labels=scales::label_percent()
+  )+
+  geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1)+
+  #geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+:::
+:::
+
+## Admin 2
+
+::: panel-tabset
+## Method 1
+
+::: panel-tabset
+## Ethiopia
+
+```{r ,eval=T}
+lgt_adm2_bin_method$Ethiopia
+```
+
+## Map (Absolute)
+
+```{r, eval=T, warning=FALSE}
+gdf_adm2_stat<- lgdf_adm$adm2 %>% 
+  filter(adm0_pcode == "ET") %>%
+  left_join(df_adm2_mean_stat %>%
+              filter(season == "AMJ"), by = "adm2_pcode")
+
+gdf_adm2_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=mean_exposed))+
+  scale_fill_gradient(
+    # trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    high="red",
+    breaks= c(seq(0, 10000000, 500000)),
+    labels=scales::label_comma()
+  )+
+  geom_sf(data= lgdf_adm$adm1 %>% filter(adm0_pcode == "ET") ,fill=NA,color="black",lwd=0.5)+
+  geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1)+
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+
+## Map (%)
+
+\% district potentially exposed
+
+```{r, eval=T}
+
+gdf_adm2_stat %>% 
+  ggplot()+
+  geom_sf(aes(fill=pct_exposed))+
+  scale_fill_gradient(
+    # trans="pseudo_log",
+    low="white",
+    # midpoint="white",
+    high="red",
+    
+    breaks= c(seq(0,0.8,by=0.2)),
+    # breaks= c(seq(0,0.2,by=0.04)),
+    labels=scales::label_percent()
+  )+
+  geom_sf(data= lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=0.5)+
+  geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1)+
+  # scale_fill_viridis_c()+
+  theme_void()
+```
+:::
+:::
+
+## Method Note
+
+Yearly maximum composite flood composite rasters were made for each year of available FloodScan Data (1998-2022). The seasonal maximum composites were then re-sampled to the [World Pop 2020 UN Adjusted (1 km) Population Count Grid](https://hub.worldpop.org/). Flood fraction was then combined with world population following the method described below:
+
+**Method** A minimum flood fraction of 1% was used and it is assumed that flood fractions above this are "flooded". The number of people exposed to flooding is calculated as the population beneath any "flooded" pixel multiplied by the flood fraction.

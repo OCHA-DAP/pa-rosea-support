@@ -202,7 +202,7 @@ list(
     command = zonal_pop_exposure(
       floodscan_path = fp_fs,
       worldpop_inputs = keep_at(lr_wp, c("Kenya", "Mozambique")),
-      flood_frac_thresh = 0.01,
+      flood_frac_thresh = 0.005,
       binarize_floodscan = F,
       adm = lgdf_adm$adm2 %>% 
         filter(adm0_pcode %in% c("KE", "MZ")),

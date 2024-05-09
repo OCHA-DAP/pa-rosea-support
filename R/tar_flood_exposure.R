@@ -69,30 +69,50 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
      )
  }
   if(!binarize_floodscan){
-      ret <- flood_frac_thresh %>%
-        map( \(thresh_tmp){
-          cat(thresh_tmp,"\n")
-          r_fs_resampled_copy <- deepcopy(r_fs_resampled)
-          lgl_thresh_mask <- ifel(r_fs_resampled_copy>=thresh_tmp,1,0)
-          r_exposure <- lgl_thresh_mask * r_wp
-          
-          exact_extract(x = r_exposure,
-                        y = adm,
-                        fun ="sum",
-                        append_cols= cols_keep,
-                        force_df = TRUE
-          ) %>%
-            pivot_longer(cols = starts_with("sum"),
-                         names_to = "sum_date",
-                         values_to = "pop_exposed") %>%
-            separate(col = sum_date, "\\.",into = c("stat","date")) %>%
-            mutate(
-              date= as_date(date),
-              thresh=thresh_tmp
-            )
-        }
-        ) %>%
-        list_rbind()
+    lgl_thresh_mask <- ifel(r_fs_resampled>=flood_frac_thresh,r_fs_resampled,0) 
+    r_fs_resampled_masked <- mask(r_fs_resampled,lgl_thresh_mask)
+    r_exposure <- r_fs_resampled_masked * r_wp
+    # r_exposure <- lgl_thresh_mask * r_wp
+    
+    ret <- exact_extract(x = r_exposure,
+                         y = adm,
+                         fun ="sum",
+                         append_cols= cols_keep,
+                         force_df = TRUE
+    ) %>%
+      pivot_longer(cols = starts_with("sum"),
+                   names_to = "sum_date",
+                   values_to = "pop_exposed") %>%
+      separate(col = sum_date, "\\.",into = c("stat","date")) %>%
+      mutate(
+        date= as_date(date)
+      )
+      
+    
+    #ret <- flood_frac_thresh %>%
+    #    map( \(thresh_tmp){
+    #      cat(thresh_tmp,"\n")
+    #      r_fs_resampled_copy <- deepcopy(r_fs_resampled)
+    #      lgl_thresh_mask <- ifel(r_fs_resampled_copy>=thresh_tmp,1,0)
+    #      r_exposure <- lgl_thresh_mask * r_wp
+    #      
+    #      exact_extract(x = r_exposure,
+    #                    y = adm,
+    #                    fun ="sum",
+    #                    append_cols= cols_keep,
+    #                    force_df = TRUE
+    #      ) %>%
+    #        pivot_longer(cols = starts_with("sum"),
+    #                     names_to = "sum_date",
+    #                     values_to = "pop_exposed") %>%
+    #        separate(col = sum_date, "\\.",into = c("stat","date")) %>%
+    #        mutate(
+    #          date= as_date(date),
+    #          thresh=thresh_tmp
+    #        )
+    #    }
+    #    ) %>%
+    #    list_rbind()
   }
   return(ret)
 }
