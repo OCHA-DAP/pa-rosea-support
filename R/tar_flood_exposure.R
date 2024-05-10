@@ -131,9 +131,9 @@ floodscan_lookup <-  function(r_fs, country_seasons){
   fs_mos<- floor_date(as_date(names(r_fs)),"month")
   # defining start and end months of seasons
   seasons <- tibble(
-    season = c("MAM", "AMJ", "OND", "Annual", "NDJ", "JJA"),
+    season = c("MAM", "AMJ", "OND", "Annual", "NDJ", "JJAS"),
     start_month = c(3, 4, 10, 1, 11, 6),
-    end_month = c(5, 6, 12, 12, 1, 8)
+    end_month = c(5, 6, 12, 12, 1, 9)
   )
   season_tbl <- seasons %>% filter(season %in% country_seasons)
   

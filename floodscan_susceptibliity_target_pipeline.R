@@ -93,13 +93,13 @@ fp_wp_moz <- file.path(
 
 ## defining countries and seasons
 ssn_by_country <- list("Somalia" = c("MAM", "OND", "Annual"),
-                    "Ethiopia" = c("MAM", "AMJ", "OND", "Annual"),
+                    "Ethiopia" = c("MAM", "AMJ", "OND", "Annual", "JJAS"),
                     "Kenya" = c("MAM", "OND", "Annual"),
                     "Mozambique" = c("NDJ", "Annual"))
 seasons <- tibble(
-  season = c("MAM", "AMJ", "OND", "Annual", "NDJ", "JJA"),
+  season = c("MAM", "AMJ", "OND", "Annual", "NDJ", "JJAS"),
   start_month = c(3, 4, 10, 1, 11, 6),
-  end_month = c(5, 6, 12, 12, 1, 8)
+  end_month = c(5, 6, 12, 12, 1, 9)
 )
 
 list(
@@ -193,7 +193,7 @@ list(
       binarize_floodscan = F,
       adm = lgdf_adm$adm2 %>% 
         filter(adm0_pcode %in% c("ET", "SO")),
-      country_seasons = c("MAM", "AMJ", "OND", "Annual"),
+      country_seasons = c("MAM", "AMJ", "OND", "Annual", "JJAS"),
       cols_keep = c("adm0_en", "adm1_en", "adm1_pcode", "adm2_en", "adm2_pcode")
     )
   ),
@@ -218,6 +218,7 @@ list(
         month(date) == 3 ~ "MAM",
         month(date) == 4 ~ "AMJ",
         month(date) == 10 ~ "OND",
+        month(date) == 6 ~ "JJAS",
         .default = "Other"))
   ),
   # Join w/ world pop zonal stats (adm2) to calculate % populations
