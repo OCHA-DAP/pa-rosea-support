@@ -24,19 +24,17 @@ project:
 
 The seasons covered under this are:
 
--   AMJ:
+-   **AMJ**: Coinciding with the Gu/Ganna rainy season in Somali and Orormia regions. This period overlaps with the end of the Sugum rains in Afar region and the Belg rains.
 
--   Annual:
+-   **Annual**: This looks at the entire year, and is expected to be the highest value overall.
 
--   JJAS:
+-   **JJAS**: This produces flood exposure estimates based on the Kiremt rainy season. It also overlaps with the Karma rains in the Afar region and the Karran rains in Somali region.
 
--   MAM:
+-   **MAM**: This looks at the Belf rainy season and overlaps with the beginning of the Gu/Ganna rains in Somali and Oromia as well as the Sugum rains in Afar region.
 
--   OND:
+-   **OND**: This looks at the Deyr rains in Somali region, Hageya rains in Oromia region and part of the Hageya/Hagayita rains in Segen and rains in South Omo.
 
-This analysis uses FloodScan (1998-2022) & WorldPop (2022) to generate flood estimates for Ethiopia.
-
--   Analysis is performed at admin 1 & admin 2
+This analysis uses FloodScan (1998-2022) & WorldPop (2022) to generate flood estimates for Ethiopia. Analysis is performed at regional & zonal level.
 
 ```{r ,eval=T, echo=F, results='hide'}
 library(targets)
@@ -154,19 +152,21 @@ lgt_adm2_bin_method <- df_adm2_mean_stat %>%
 
 ```
 
-## Admin 1
+## By Region
 
 ::: panel-tabset
-## Method: Flooded Fraction above threshold multiplied by the population
+## **Method: Flooded Fraction multiplied by the population**
 
 ::: panel-tabset
-## Ethiopia
+## **Ethiopia**
 
 ```{r ,eval=T}
 lgt_adm1_bin_method$Ethiopia
 ```
 
-## Map (Absolute)
+## **Map (Population)**
+
+Population in regions potentially exposed
 
 ```{r, eval=T, warning=FALSE}
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
@@ -194,9 +194,9 @@ gdf_adm1_stat %>%
   theme_void()
 ```
 
-## Map (%)
+## **Map (Percentage of Population)**
 
-\% district potentially exposed
+Percent of population in regions potentially exposed
 
 ```{r, eval=T, warning=FALSE}
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
@@ -227,19 +227,21 @@ gdf_adm1_stat %>%
 :::
 :::
 
-## Admin 2
+## By Zone
 
 ::: panel-tabset
-## Method
+## **Method: Flooded Fraction multiplied by the population**
 
 ::: panel-tabset
-## Ethiopia
+## **Ethiopia**
 
 ```{r ,eval=T}
 lgt_adm2_bin_method$Ethiopia
 ```
 
-## Map (Absolute)
+## **Map (Population)**
+
+Population in zones potentially exposed
 
 ```{r, eval=T, warning=FALSE}
 gdf_adm2_stat<- lgdf_adm$adm2 %>% 
@@ -265,9 +267,9 @@ gdf_adm2_stat %>%
   theme_void()
 ```
 
-## Map (%)
+## **Map (Percentage of Population)**
 
-\% district potentially exposed
+Percent of population in zones potentially exposed
 
 ```{r, eval=T}
 
