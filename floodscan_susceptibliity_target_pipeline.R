@@ -189,7 +189,7 @@ list(
     command = zonal_pop_exposure(
       floodscan_path = fp_fs,
       worldpop_inputs = discard_at(lr_wp, c("Kenya", "Mozambique")),
-      flood_frac_thresh = 0.01,
+      flood_frac_thresh = c(0.005, 0.01, 0.05, 0.1, 0.15, 0.2),
       binarize_floodscan = F,
       adm = lgdf_adm$adm2 %>% 
         filter(adm0_pcode %in% c("ET", "SO")),
@@ -241,7 +241,7 @@ list(
     name = df_adm1_stats_bin_method,
     command = df_adm2_stats_bin_method %>%
       group_by(
-        across(matches("^adm[01]")), date, season
+        across(matches("^adm[01]")), date, season, thresh
       ) %>%
       summarise(
         total_pop_wp = sum(total_pop_wp, na.rm = T),
@@ -259,7 +259,7 @@ list(
   tar_target(
     name = df_adm1_mean_stat,
     df_adm1_stats_bin_method %>%
-      group_by(across(matches("adm")), season) %>%
+      group_by(across(matches("adm")), season, thresh) %>%
       summarise(
         mean_exposed = mean(pop_exposed_wp),
         total_pop = unique(total_pop_wp),
@@ -272,7 +272,7 @@ list(
   tar_target(
     name = df_adm2_mean_stat,
     df_adm2_stats_bin_method %>%
-      group_by(across(matches("adm")), season) %>%
+      group_by(across(matches("adm")), season, thresh) %>%
       summarise(
         mean_exposed = mean(pop_exposed_wp),
         total_pop = unique(total_pop_wp),
@@ -293,7 +293,7 @@ list(
           filter(case_when(
             country_name %in% c("Ethiopia", "Somalia") ~ season == "AMJ",
             T ~ season == "Annual")) %>%
-          dplyr::select(adm0_en, adm1_en, adm2_en, mean_exposed, total_pop, pct_exposed) %>%
+          dplyr::select(adm0_en, adm1_en, adm2_en, thresh, mean_exposed, total_pop, pct_exposed) %>%
           group_by(adm1_en) %>%
           gt() %>%
           cols_hide(columns = "adm0_en") %>%
@@ -301,12 +301,14 @@ list(
             # adm0_en = "Country",
             adm1_en = "Region",
             adm2_en = "District",
+            thresh = "Threshold",
             mean_exposed = "Average population exposed",
             total_pop = "Total population",
             pct_exposed = "Percent population exposed"
           ) %>%
           fmt_number(
             columns = c(
+              "thresh",
               "mean_exposed",
               "total_pop",
               "pct_exposed"
@@ -314,6 +316,7 @@ list(
             decimals = 0, n_sigfig = 3
           ) %>%
           fmt_percent(columns = pct_exposed, decimals = 0) %>%
+          fmt_percent(columns = thresh, decimals = 1) %>%
           data_color(
             columns = c(
               "mean_exposed",
@@ -343,18 +346,20 @@ list(
           filter(case_when(
             country_name %in% c("Ethiopia", "Somalia") ~ season == "AMJ",
             T ~ season == "Annual")) %>%
-          dplyr::select(adm0_en, adm1_en, mean_exposed, total_pop, pct_exposed) %>%
+          dplyr::select(adm0_en, adm1_en, thresh, mean_exposed, total_pop, pct_exposed) %>%
           gt() %>%
           cols_hide(columns = "adm0_en") %>%
           cols_label(
             # adm0_en = "Country",
             adm1_en = "Region",
+            thresh = "Threshold",
             mean_exposed = "Average population exposed",
             total_pop = "Total population",
             pct_exposed = "Percent population exposed"
           ) %>%
           fmt_number(
             columns = c(
+              "thresh",
               "mean_exposed",
               "total_pop",
               "pct_exposed"
@@ -362,6 +367,7 @@ list(
             decimals = 0, n_sigfig = 3
           ) %>%
           fmt_percent(columns = pct_exposed, decimals = 0) %>%
+          fmt_percent(columns = thresh, decimals = 1) %>%
           data_color(
             columns = c(
               "mean_exposed",
@@ -387,13 +393,14 @@ list(
       imap(\(dft, country_name){
         dft %>%
           filter(season == "Annual") %>%
-          dplyr::select(adm0_en, adm1_en, adm2_en, mean_exposed, total_pop, pct_exposed) %>%
+          dplyr::select(adm0_en, adm1_en, adm2_en, thresh, mean_exposed, total_pop, pct_exposed) %>%
           group_by(adm1_en) %>%
           gt() %>%
           cols_hide(columns = "adm0_en") %>%
           cols_label(
             # adm0_en = "Country",
             adm1_en = "Region",
+            thresh = "Threshold",
             adm2_en = "District",
             mean_exposed = "Average population exposed",
             total_pop = "Total population",
@@ -401,6 +408,7 @@ list(
           ) %>%
           fmt_number(
             columns = c(
+              "thresh",
               "mean_exposed",
               "total_pop",
               "pct_exposed"
@@ -408,6 +416,7 @@ list(
             decimals = 0, n_sigfig = 3
           ) %>%
           fmt_percent(columns = pct_exposed, decimals = 0) %>%
+          fmt_percent(columns = thresh, decimals = 1) %>%
           data_color(
             columns = c(
               "mean_exposed",

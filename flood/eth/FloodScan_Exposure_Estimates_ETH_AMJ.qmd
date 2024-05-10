@@ -34,6 +34,7 @@ library(tidyverse)
 library(here)
 library(scales)
 library(sf)
+library(gt)
 library(gghdx)
 library(glue)
 gghdx()
@@ -51,10 +52,109 @@ tar_load(df_adm2_mean_stat,store = here("flood_target_store"))
 tar_load(df_adm2_stats_bin_method,store = here("flood_target_store"))
 ```
 
+```{r, eval=TRUE}
+lgt_adm1_bin_method <- df_adm1_mean_stat %>%
+      split(.$adm0_en, .$season) %>%
+      imap(\(dft, country_name){
+        dft %>%
+          filter(case_when(
+            country_name %in% c("Ethiopia", "Somalia") ~ season == "AMJ",
+            T ~ season == "Annual")) %>%
+          dplyr::select(adm0_en, adm1_en, thresh, mean_exposed, total_pop, pct_exposed) %>%
+          gt() %>%
+          cols_hide(columns = "adm0_en") %>%
+          cols_label(
+            # adm0_en = "Country",
+            adm1_en = "Region",
+            thresh = "Threshold",
+            mean_exposed = "Average population exposed",
+            total_pop = "Total population",
+            pct_exposed = "Percent population exposed"
+          ) %>%
+          fmt_number(
+            columns = c(
+              "thresh",
+              "mean_exposed",
+              "total_pop",
+              "pct_exposed"
+            ),
+            decimals = 0, n_sigfig = 3
+          ) %>%
+          fmt_percent(columns = pct_exposed, decimals = 0) %>%
+          fmt_percent(columns = thresh, decimals = 1) %>%
+          data_color(
+            columns = c(
+              "mean_exposed",
+              "total_pop",
+              "pct_exposed"
+            ),
+            method = "numeric",
+            palette = "YlOrRd",
+            reverse = F
+          ) %>%
+          tab_options(
+            row_group.as_column = TRUE
+          ) %>%
+          tab_header(
+            title = paste0("Approximate population susceptible to flooding ", country_name)
+          )
+      })
+lgt_adm2_bin_method <- df_adm2_mean_stat %>%
+      split(.$adm0_en, .$season) %>%
+      imap(\(dft, country_name){
+        dft %>%
+          filter(case_when(
+            country_name %in% c("Ethiopia", "Somalia") ~ season == "AMJ",
+            T ~ season == "Annual")) %>%
+          dplyr::select(adm0_en, adm1_en, adm2_en, thresh, mean_exposed, total_pop, pct_exposed) %>%
+          group_by(adm1_en) %>%
+          gt() %>%
+          cols_hide(columns = "adm0_en") %>%
+          cols_label(
+            # adm0_en = "Country",
+            adm1_en = "Region",
+            adm2_en = "District",
+            thresh = "Threshold",
+            mean_exposed = "Average population exposed",
+            total_pop = "Total population",
+            pct_exposed = "Percent population exposed"
+          ) %>%
+          fmt_number(
+            columns = c(
+              "thresh",
+              "mean_exposed",
+              "total_pop",
+              "pct_exposed"
+            ),
+            decimals = 0, n_sigfig = 3
+          ) %>%
+          fmt_percent(columns = pct_exposed, decimals = 0) %>%
+          fmt_percent(columns = thresh, decimals = 1) %>%
+          data_color(
+            columns = c(
+              "mean_exposed",
+              "total_pop",
+              "pct_exposed"
+            ),
+            method = "numeric",
+            palette = "YlOrRd",
+            reverse = F
+          ) %>%
+          tab_options(
+            row_group.as_column = TRUE
+          ) %>%
+          tab_header(
+            title = paste0("Approximate population susceptible to flooding ", country_name)
+          )
+      })
+
+
+```
+
 ## Admin 1
 
 ::: panel-tabset
-## Method: Flooded Fraction is 20% and above
+## Method: Flooded Fraction above threshold multiplied by the population
 
 ::: panel-tabset
 ## Ethiopia
@@ -85,6 +185,7 @@ gdf_adm1_stat %>%
     labels=scales::label_comma()
   )+
   geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1) +
+  facet_wrap(~thresh) +
   # geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
   # scale_fill_viridis_c()+
   theme_void()
@@ -110,11 +211,12 @@ gdf_adm1_stat %>%
     
     high="red",
     
-    breaks= c(seq(0.1, 0.5, by=0.1)),
+    breaks= c(seq(0, 0.8, by=0.05)),
     # breaks= c(seq(0,0.2,by=0.04)),
     labels=scales::label_percent()
   )+
   geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1)+
+  facet_wrap(~thresh) +
   #geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
   # scale_fill_viridis_c()+
   theme_void()
@@ -125,7 +227,7 @@ gdf_adm1_stat %>%
 ## Admin 2
 
 ::: panel-tabset
-## Method 1
+## Method
 
 ::: panel-tabset
 ## Ethiopia
@@ -150,11 +252,12 @@ gdf_adm2_stat %>%
     low="white",
     # midpoint="white",
     high="red",
-    breaks= c(seq(0, 10000000, 500000)),
+    breaks= c(seq(0, 1000000, 50000)),
     labels=scales::label_comma()
   )+
   geom_sf(data= lgdf_adm$adm1 %>% filter(adm0_pcode == "ET") ,fill=NA,color="black",lwd=0.5)+
   geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1)+
+  facet_wrap(~thresh) +
   # scale_fill_viridis_c()+
   theme_void()
 ```
@@ -174,12 +277,13 @@ gdf_adm2_stat %>%
     # midpoint="white",
     high="red",
     
-    breaks= c(seq(0,0.8,by=0.2)),
+    breaks= c(seq(0,0.8,by=0.05)),
     # breaks= c(seq(0,0.2,by=0.04)),
     labels=scales::label_percent()
   )+
   geom_sf(data= lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=0.5)+
   geom_sf(data= lgdf_adm$adm0 %>% filter(adm0_pcode == "ET"),fill=NA,color="black",lwd=1)+
+  facet_wrap(~thresh) +
   # scale_fill_viridis_c()+
   theme_void()
 ```
@@ -190,4 +294,4 @@ gdf_adm2_stat %>%
 
 Yearly maximum composite flood composite rasters were made for each year of available FloodScan Data (1998-2022). The seasonal maximum composites were then re-sampled to the [World Pop 2020 UN Adjusted (1 km) Population Count Grid](https://hub.worldpop.org/). Flood fraction was then combined with world population following the method described below:
 
-**Method** A minimum flood fraction of 1% was used and it is assumed that flood fractions above this are "flooded". The number of people exposed to flooding is calculated as the population beneath any "flooded" pixel multiplied by the flood fraction.
+**Method** A minimum flood fraction threshold was used and it is assumed that flood fractions above this are "flooded". The number of people exposed to flooding is calculated as the population beneath any "flooded" pixel multiplied by the flood fraction.
