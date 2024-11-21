@@ -24,14 +24,15 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
   tnc_fs_filt <- fs_filter_bounds(fs_obj = tnc_fs,geometry = adm)
   r_fs <- fs_to_raster(fs_obj = tnc_fs_filt,band = "SFED_AREA")
   r_wp <-  mosaic_worldpop(worldpop_inputs,from_path=F)
-  fs_lookup <-  floodscan_lookup(r_fs, country_seasons) 
+  fs_lookup <- floodscan_lookup(r_fs)
+  fs_lookup <-  floodscan_lookup_seasons(fs_lookup, country_seasons) 
 
   # do the same, but this time per year
-  lr_max <- unique(fs_lookup$fs_seas) %>%
+  lr_max <- unique(fs_lookup$season) %>%
     map(
       \(ssn_tmp){
         rname_temp<- fs_lookup %>%
-          filter(fs_seas==ssn_tmp) %>%
+          filter(season==ssn_tmp) %>%
           pull(fs_name)
         r_fs_tmp <- r_fs[[names(r_fs) %in% rname_temp]]
         r_max <- max(r_fs_tmp)
@@ -125,36 +126,31 @@ zonal_pop_exposure <- function(floodscan_path=fp_fs,
 #' @param country_seasons `character vector` seasons for each country
 #' 
 #' @return `tibble` lookup table with dates and months of floodscan data to be used to group and summarise FloodScan raster
+floodscan_lookup <- function(r_fs) {
+  # Create a basic lookup table from raster layer names
+  fs_lookup <- dplyr::tibble(
+    fs_name = as_date(names(r_fs))
+  ) |>
+    dplyr::mutate(
+      fs_mo = floor_date(fs_name, "month"),
+      fs_yr = floor_date(fs_name, "year")
+    )
+  return(fs_lookup)
+}
 
-floodscan_lookup <-  function(r_fs, country_seasons){
-  # make a lookup table to be used for raster manipulations
-  fs_mos<- floor_date(as_date(names(r_fs)),"month")
-  # defining start and end months of seasons
+floodscan_lookup_seasons <-  function(fs_lookup, country_seasons) {
+  # Define seasons with their start and end months
   seasons <- tibble(
     season = c("MAM", "AMJ", "OND", "Annual", "NDJ", "JJAS"),
     start_month = c(3, 4, 10, 1, 11, 6),
     end_month = c(5, 6, 12, 12, 1, 9)
   )
+  
+  # Filter seasons relevant to the country
   season_tbl <- seasons %>% filter(season %in% country_seasons)
   
-  fs_lookup <- tibble(
-    fs_name = as_date(names(r_fs))
-  ) %>%
-    mutate(
-      fs_mo = floor_date(fs_name,"month"),
-      fs_yr = floor_date(fs_name,"year"),
-      yr_int= year(fs_yr),
-      # this is left over from SOM analysis... it's not used here... but we could add 
-      # seasons at some point if we want
-      #fs_seas = paste0(case_when(
-        #month(fs_mo) %in% c(3,4,5) ~ "MAM",
-        #month(fs_mo) %in% c(10,11,12) ~ "OND",
-        #month(fs_mo) %in% c(4,5,6) ~ "AMJ",
-        #.default = "other"
-
-      #),"_",year(fs_yr))
-      ### -- Adding some dynamic way of dealing with seasons
-    ) %>%
+  # Add season information to the lookup table
+  fs_lookup_with_seasons <- fs_lookup %>%
     rowwise() %>%
     mutate(season = list(season_tbl %>%
                            filter((start_month <= end_month & 
@@ -164,10 +160,9 @@ floodscan_lookup <-  function(r_fs, country_seasons){
                                        (month(fs_mo) >= start_month | 
                                           month(fs_mo) <= end_month))) %>%
                            pull(season))) %>%
-    unnest(season) %>%
-    mutate(fs_seas = paste0(season,"_",year(fs_yr)))
-  return(fs_lookup)
-
+    unnest(season)
+  
+  return(fs_lookup_with_seasons)
 }
 
 zonal_floodscan <- function(floodscan_path=fp_fs,
