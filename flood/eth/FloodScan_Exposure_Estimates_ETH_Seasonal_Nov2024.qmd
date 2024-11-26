@@ -63,99 +63,6 @@ tar_load(df_adm2_stats_bin_method,store = here("flood_target_store"))
 tar_load(df_adm3_stats_bin_method,store = here("flood_target_store"))
 ```
 
-```{r, eval=TRUE}
-lgt_adm1_bin_method <- df_adm1_mean_stat %>%
-      split(.$adm0_en) %>%
-      imap(\(dft, country_name){
-        dft %>%
-          dplyr::filter(thresh == 0.005) %>%
-          dplyr::select(adm0_en, adm1_en, season, 
-                        mean_exposed, total_pop, pct_exposed) %>%
-          gt() %>%
-          cols_hide(columns = "adm0_en") %>%
-          cols_label(
-            # adm0_en = "Country",
-            adm1_en = "Region",
-            season = "Time Period",
-            mean_exposed = "Average population exposed",
-            total_pop = "Total population",
-            pct_exposed = "Percent population exposed"
-          ) %>%
-          fmt_number(
-            columns = c(
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            decimals = 0, n_sigfig = 3
-          ) %>%
-          fmt_percent(columns = pct_exposed, decimals = 0) %>%
-          data_color(
-            columns = c(
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            method = "numeric",
-            palette = "YlOrRd",
-            reverse = F
-          ) %>%
-          tab_options(
-            row_group.as_column = TRUE
-          ) %>%
-          tab_header(
-            title = paste0("Approximate population susceptible to flooding", country_name)
-          )
-      })
-lgt_adm2_bin_method <- df_adm2_mean_stat %>%
-      split(.$adm0_en) %>%
-      imap(\(dft, country_name){
-        dft %>%
-          dplyr::filter(thresh == 0.005) %>%
-          dplyr::select(adm0_en, adm1_en, adm2_en, season, mean_exposed, total_pop, pct_exposed) %>%
-          group_by(adm1_en) %>%
-          gt() %>%
-          cols_hide(columns = "adm0_en") %>%
-          cols_label(
-            # adm0_en = "Country",
-            adm1_en = "Region",
-            adm2_en = "District",
-            season = "Time Period",
-            mean_exposed = "Average population exposed",
-            total_pop = "Total population",
-            pct_exposed = "Percent population exposed"
-          ) %>%
-          fmt_number(
-            columns = c(
-              "season",
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            decimals = 0, n_sigfig = 3
-          ) %>%
-          fmt_percent(columns = pct_exposed, decimals = 0) %>%
-          data_color(
-            columns = c(
-              "mean_exposed",
-              "total_pop",
-              "pct_exposed"
-            ),
-            method = "numeric",
-            palette = "YlOrRd",
-            reverse = F
-          ) %>%
-          tab_options(
-            row_group.as_column = TRUE
-          ) %>%
-          tab_header(
-            title = paste0("Approximate population susceptible to flooding", country_name)
-          )
-      })
-
-
-```
-
 ## By Region
 
 :::: panel-tabset
@@ -176,7 +83,7 @@ Population in regions potentially exposed
 gdf_adm1_stat<- lgdf_adm$adm1 %>% 
   filter(adm0_pcode == "ET") %>%
   left_join(df_adm1_mean_stat %>%
-              dplyr::filter(thresh == 0.005), 
+              dplyr::filter(thresh == 0.2), 
             by = "adm1_pcode")
 
 gdf_adm1_stat %>% 
@@ -185,26 +92,18 @@ gdf_adm1_stat %>%
   scale_fill_gradient(
     trans="pseudo_log",
     low="white",
-    # midpoint="white",
-    
     high="red",
-    
     breaks= c(1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e11),
     labels=scales::label_comma()) +
   geom_sf(data= lgdf_adm$adm0 %>% 
             dplyr::filter(adm0_pcode == "ET"),
           fill=NA,color="black",lwd=1) +
   facet_wrap(~season) +
-  guides(fill = guide_legend(title = "Mean Pop Exposed")) + 
-  # geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
-  # scale_fill_viridis_c()+
   theme_void() +
   theme(
     strip.text = element_text(size = 18, face = "bold") 
-  ) +
-  labs(
-    fill = "Population Exposed"
-  )
+  ) + 
+  labs(fill = "Population Exposed")
 ```
 
 ## **Map (Percentage of Population)**
@@ -212,30 +111,20 @@ gdf_adm1_stat %>%
 Percent of population in regions potentially exposed
 
 ```{r, eval=T, warning=FALSE}
-gdf_adm1_stat<- lgdf_adm$adm1 %>% 
-  dplyr::filter(adm0_pcode == "ET") %>%
-  left_join(df_adm1_mean_stat %>%
-              dplyr::filter(thresh == 0.005), 
-            by = "adm1_pcode")
 
 gdf_adm1_stat %>% 
   ggplot()+
   geom_sf(aes(fill=pct_exposed))+
   scale_fill_gradient(
-    # trans="pseudo_log",
     low="white",
-    # midpoint="white",
     high="red",
-    breaks= c(seq(0, 0.8, by=0.02)),
-    # breaks= c(seq(0,0.2,by=0.04)),
+    breaks= c(seq(0, 0.8, by=0.05)),
     labels=scales::label_percent()
-  )+
+  ) +
   geom_sf(data= lgdf_adm$adm0 %>% 
             dplyr::filter(adm0_pcode == "ET"),
-          fill=NA,color="black",lwd=1)+
+          fill=NA,color="black",lwd=1) +
   facet_wrap(~season) +
-  #geom_sf_text(data = lgdf_adm$adm1 %>% filter(adm0_pcode == "ET"), aes(label = adm1_en), color = "black", check_overlap = T) +
-  # scale_fill_viridis_c()+
   theme_void() +
   theme(
     strip.text = element_text(size = 18, face = "bold") 
@@ -267,17 +156,15 @@ Population in zones potentially exposed
 gdf_adm2_stat<- lgdf_adm$adm2 %>% 
   dplyr::filter(adm0_pcode == "ET") %>%
   left_join(df_adm2_mean_stat %>%
-              dplyr::filter(thresh == 0.005), by = "adm2_pcode")
+              dplyr::filter(thresh == 0.2), by = "adm2_pcode")
 
 gdf_adm2_stat %>% 
   ggplot()+
   geom_sf(aes(fill=mean_exposed))+
   scale_fill_gradient(
-    # trans="pseudo_log",
     low="white",
-    # midpoint="white",
     high="red",
-    breaks= c(seq(0, 1000000, 50000)),
+    breaks= c(seq(0, 1e7, 1e5)),
     labels=scales::label_comma()
   )+
   geom_sf(data= lgdf_adm$adm1 %>% 
@@ -287,7 +174,6 @@ gdf_adm2_stat %>%
             dplyr::filter(adm0_pcode == "ET"),
           fill=NA,color="black",lwd=1)+
   facet_wrap(~season) +
-  # scale_fill_viridis_c()+
   theme_void() +
   theme(
     strip.text = element_text(size = 18, face = "bold") 
@@ -307,12 +193,9 @@ gdf_adm2_stat %>%
   ggplot()+
   geom_sf(aes(fill=pct_exposed))+
   scale_fill_gradient(
-    # trans="pseudo_log",
     low="white",
-    # midpoint="white",
     high="red",
-    breaks= c(seq(0,0.8,by=0.05)),
-    # breaks= c(seq(0,0.2,by=0.04)),
+    breaks= c(seq(0,0.8,by=0.1)),
     labels=scales::label_percent()
   )+
   geom_sf(data= lgdf_adm$adm1 %>% 
@@ -322,7 +205,6 @@ gdf_adm2_stat %>%
             dplyr::filter(adm0_pcode == "ET"),
           fill=NA,color="black",lwd=1)+
   facet_wrap(~season) +
-  # scale_fill_viridis_c()+
   theme_void() +
   theme(
     strip.text = element_text(size = 18, face = "bold") 
@@ -353,16 +235,12 @@ Population in zones potentially exposed
 ```{r, eval=T, warning=FALSE}
 gdf_adm3_stat <- lgdf_adm$adm3 %>%    
   dplyr::filter(adm0_pcode == "ET") %>%   
-  left_join(df_adm3_mean_stat %>%               
-              dplyr::filter(thresh == 0.005), 
-            by = "adm3_pcode") 
+  left_join(df_adm3_mean_stat, by = "adm3_pcode") 
 gdf_adm3_stat %>%    
   ggplot()+   
   geom_sf(aes(fill=mean_exposed))+   
   scale_fill_gradient(     
-    # trans="pseudo_log",
     low="white",     
-    # midpoint="white",     
     high="red",     
     breaks= c(seq(0, 1000000, 50000)),     
     labels=scales::label_comma())+   
@@ -373,7 +251,6 @@ gdf_adm3_stat %>%
             dplyr::filter(adm0_pcode == "ET"),
           fill=NA,color="black",lwd=1)+   
   facet_wrap(~season) +   
-  # scale_fill_viridis_c()+   
   theme_void() +
   theme(
     strip.text = element_text(size = 18, face = "bold") 
@@ -392,12 +269,9 @@ gdf_adm3_stat %>%
   ggplot()+   
   geom_sf(aes(fill=pct_exposed))+   
   scale_fill_gradient(     
-    # trans="pseudo_log",     
     low="white",     
-    # midpoint="white",     
     high="red",          
-    breaks= c(seq(0,0.8,by=0.05)),     
-    # breaks= c(seq(0,0.2,by=0.04)),     
+    breaks= c(seq(0,0.8,by=0.2)),     
     labels=scales::label_percent())+   
   geom_sf(data= lgdf_adm$adm1 %>% 
             dplyr::filter(adm0_pcode == "ET"),
@@ -406,7 +280,6 @@ gdf_adm3_stat %>%
             dplyr::filter(adm0_pcode == "ET"),
           fill=NA,color="black",lwd=1)+   
   facet_wrap(~season) +   
-  # scale_fill_viridis_c()+   
   theme_void() +
   theme(
     strip.text = element_text(size = 18, face = "bold") 
@@ -422,4 +295,4 @@ gdf_adm3_stat %>%
 
 Yearly maximum composite flood composite rasters were made for each year of available FloodScan Data (1998-2022). The seasonal maximum composites were then re-sampled to the [World Pop 2020 UN Adjusted (1 km) Population Count Grid](https://hub.worldpop.org/). Flood fraction was then combined with world population following the method described below:
 
-**Method** A minimum flood fraction threshold was used and it is assumed that flood fractions above this are "flooded". The number of people exposed to flooding is calculated as the population beneath any "flooded" pixel multiplied by the flood fraction.
+**Method** A minimum flood fraction threshold of 20% was used and it is assumed that flood fractions above this are "flooded". The number of people exposed to flooding is calculated as the population beneath any "flooded" pixel multiplied by the flood fraction.
