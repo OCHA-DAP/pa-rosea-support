@@ -7,6 +7,7 @@ data/*
 .scrapy/*
 *.html
 flood_target_store/*
+flood_target_store/meta/*
 *.json
 *.png
 
@@ -14,3 +15,4 @@ flood_target_store/*
 esa_admin_region/*
 *.tif
 *.gif
+*.qmd

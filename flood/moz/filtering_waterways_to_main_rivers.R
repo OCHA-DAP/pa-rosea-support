@@ -31,8 +31,8 @@ moz_named_rivers <- moz_waterways %>%
 # writing to geopackage
 st_write(moz_rivers, 
          dsn = file.path(waterways_path, "hotosm_moz_rivers_lines_geojson.gpkg"), 
-         layer = "hotosm_moz_rivers_lines_geojson")
+         layer = "hotosm_moz_rivers_lines_geojson", delete_dsn = T)
 
 st_write(moz_rivers, 
          dsn = file.path(waterways_path, "hotosm_moz_named_rivers_lines_geojson.gpkg"), 
-         layer = "hotosm_moz_named_rivers_lines_geojson")
+         layer = "hotosm_moz_named_rivers_lines_geojson", delete_dsn = T)

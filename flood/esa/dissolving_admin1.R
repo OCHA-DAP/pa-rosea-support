@@ -21,4 +21,4 @@ plot(sa_country_shp$geometry)
 # writing out admin 0
 st_write(sa_country_shp, file.path(Sys.getenv("AA_DATA_DIR"), 
   "public", "raw", "esa", "cod_ab", 
-  "esa_admin_region", "ESA_admin0_region.shp"))
+  "esa_admin_region", "ESA_admin0_region.shp"), delete_dsn = T)
