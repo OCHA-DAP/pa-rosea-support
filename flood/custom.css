@@ -1,0 +1,123 @@
+/* Custom CSS for Quarto HTML Document */
+
+/* Define primary and secondary colors */
+:root {
+    --bs-primary: #55b284ff;
+    --bs-secondary: #f8f9fa;
+    --accent: #D62828;
+}
+
+/* Customize headers */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--bs-primary);
+}
+
+/* Title styling */
+.title {
+    color: var(--bs-primary);
+    font-weight: 700;
+}
+
+.subtitle {
+    color: #666;
+}
+
+/* Customize links */
+a {
+    color: var(--bs-primary);
+}
+
+a:hover {
+    color: var(--accent);
+}
+
+/* Customize code blocks */
+pre {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-left: 3px solid var(--bs-primary);
+    border-radius: 4px;
+}
+
+/* Customize inline code styling */
+code {
+    color: var(--bs-primary);
+    background-color: #f8f9fa;
+    padding: 0.1em 0.3em;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+pre code {
+    padding: 0;
+    background-color: transparent;
+}
+
+/* Style for right-side Table of Contents */
+#TOC a,
+.sidebar nav a,
+#quarto-margin-sidebar .nav-link {
+    color: #333;
+}
+
+#TOC a:hover,
+#TOC a.active,
+.sidebar nav a:hover,
+#quarto-margin-sidebar .nav-link:hover,
+#quarto-margin-sidebar .nav-link.active {
+    color: var(--accent);
+}
+
+/* Blockquotes - used for key findings */
+blockquote {
+    border-left: 4px solid var(--bs-primary);
+    padding-left: 1em;
+    margin-left: 0;
+    color: #444;
+    background-color: #f8f9fa;
+    padding: 0.75em 1em;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Method/Key finding callout styling */
+p strong {
+    color: var(--bs-primary);
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th {
+    background-color: var(--bs-primary);
+    color: white;
+    padding: 0.5em;
+}
+
+td {
+    padding: 0.5em;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Figure captions */
+figcaption, .figure-caption {
+    color: #666;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+/* Code fold button */
+.code-fold-btn-row {
+    margin-bottom: 0.5em;
+}
+
+details summary {
+    color: var(--bs-primary);
+    cursor: pointer;
+}
+
+details summary:hover {
+    color: var(--accent);
+}

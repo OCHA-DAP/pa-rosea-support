@@ -1,0 +1,585 @@
+---
+title: "Mozambique January 2026 Flood Event"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Show code"
+    theme: cosmo
+    css: custom.css
+    embed-resources: true
+    self-contained: true
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(tidyverse)
+library(cumulus)
+library(DBI)
+library(zoo)
+library(dbplyr)
+
+con <- pg_con()
+df_lookup <- cumulus::blob_load_admin_lookup()
+
+provinces <- c("Maputo", "Sofala", "Gaza")
+
+df_lookup_aoi <- df_lookup |>
+  filter(
+    ADM_LEVEL == 1,
+    ISO3 == "MOZ",
+    ADM1_NAME %in% provinces
+  )
+
+imerg <- tbl(con, "imerg") |>
+  filter(
+    adm_level == 1,
+    pcode %in% df_lookup_aoi$ADM1_PCODE
+  ) |>
+  collect() |>
+  left_join(
+    df_lookup_aoi |> select(pcode = ADM1_PCODE, adm1_name = ADM1_NAME),
+    by = "pcode"
+  ) |>
+  select(iso3, pcode, adm1_name, valid_date, mean) |>
+  arrange(adm1_name, valid_date)
+```
+
+# Rainfall Analysis (IMERG)
+
+## Recent Rainfall Context
+
+**Method:** Daily IMERG satellite precipitation aggregated to province level.
+
+**Key finding:** Mid-January 2026 shows a distinct rainfall spike across all three provinces, with peak daily totals reaching 30-50+ mm/day.
+
+```{r recent-rainfall}
+#| fig-height: 7
+
+imerg_recent <- imerg |>
+  filter(valid_date >= max(valid_date) - 60)
+
+top_3_days <- imerg_recent |>
+  group_by(adm1_name) |>
+  slice_max(mean, n = 3) |>
+  ungroup()
+
+ggplot(imerg_recent, aes(x = valid_date, y = mean, color = adm1_name)) +
+  geom_line(linewidth = 0.6) +
+  geom_point(size = 1) +
+  geom_point(data = top_3_days, size = 2.5, shape = 21, fill = "white", stroke = 1.2) +
+  geom_text(
+    data = top_3_days,
+    aes(label = format(valid_date, "%b %d")),
+    vjust = -1.2, size = 2.5, show.legend = FALSE
+  ) +
+  facet_wrap(~adm1_name, ncol = 1) +
+  scale_x_date(date_breaks = "2 weeks", date_labels = "%b %d") +
+  labs(
+    title = "Daily Precipitation - Last 60 Days",
+    subtitle = "Top 3 days labeled per province",
+    x = NULL,
+    y = "Precipitation (mm/day)",
+    caption = "Data: IMERG"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    strip.text = element_text(face = "bold", size = 11),
+    panel.grid.minor = element_blank()
+  )
+```
+
+## January 2026 Accumulations
+
+**Method:** Rolling 3-day and 7-day precipitation sums identify peak accumulation windows.
+
+**Key finding:** Maximum accumulations occurred mid-January. Shaded regions show the worst 3-day and 7-day periods per province.
+
+```{r rolling-calcs}
+imerg_rolling <- imerg |>
+  group_by(adm1_name) |>
+  mutate(
+    roll3_sum = rollsum(mean, k = 3, fill = NA, align = "right"),
+    roll7_sum = rollsum(mean, k = 7, fill = NA, align = "right")
+  ) |>
+  ungroup()
+
+jan_2026 <- imerg_rolling |>
+  filter(year(valid_date) == 2026, month(valid_date) == 1)
+
+max_3day <- jan_2026 |>
+  filter(!is.na(roll3_sum)) |>
+  group_by(adm1_name) |>
+  slice_max(roll3_sum, n = 1) |>
+  mutate(
+    start_date = valid_date - 2,
+    period_label = paste0(format(start_date, "%b %d"), "-", format(valid_date, "%d"))
+  ) |>
+  ungroup()
+
+max_7day <- jan_2026 |>
+  filter(!is.na(roll7_sum)) |>
+  group_by(adm1_name) |>
+  slice_max(roll7_sum, n = 1) |>
+  mutate(
+    start_date = valid_date - 6,
+    period_label = paste0(format(start_date, "%b %d"), "-", format(valid_date, "%d"))
+  ) |>
+  ungroup()
+```
+
+```{r jan-timeseries}
+#| fig-height: 7
+
+ggplot(jan_2026, aes(x = valid_date, y = mean)) +
+  geom_rect(
+    data = max_7day,
+    aes(xmin = start_date, xmax = valid_date, ymin = -Inf, ymax = Inf),
+    fill = "steelblue", alpha = 0.15, inherit.aes = FALSE
+  ) +
+  geom_rect(
+    data = max_3day,
+    aes(xmin = start_date, xmax = valid_date, ymin = -Inf, ymax = Inf),
+    fill = "steelblue", alpha = 0.25, inherit.aes = FALSE
+  ) +
+  geom_col(fill = "steelblue", width = 0.8) +
+  geom_label(
+    data = max_3day,
+    aes(x = start_date + 1, y = Inf,
+        label = paste0("3-day: ", round(roll3_sum, 0), " mm")),
+    vjust = 1.2, hjust = 0, size = 3.5, fontface = "bold",
+    color = "grey20", fill = "white", label.size = 0.3, label.r = unit(0.15, "lines")
+  ) +
+  geom_label(
+    data = max_7day,
+    aes(x = start_date + 3, y = Inf,
+        label = paste0("7-day: ", round(roll7_sum, 0), " mm")),
+    vjust = 2.8, hjust = 0, size = 3.5,
+    color = "grey40", fill = "white", label.size = 0.3, label.r = unit(0.15, "lines")
+  ) +
+  facet_wrap(~adm1_name, ncol = 1, scales = "free_y") +
+  scale_x_date(date_breaks = "1 week", date_labels = "%b %d") +
+  labs(
+    title = "January 2026 Daily Precipitation",
+    subtitle = "Shaded: max 3-day (dark) and 7-day (light) accumulation periods",
+    x = NULL,
+    y = "Precipitation (mm/day)"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(face = "bold", size = 11),
+    panel.grid.minor = element_blank()
+  )
+```
+
+## Return Period Analysis
+
+**Method:** Empirical return periods using Weibull plotting position. January 2026 event compared against historical annual maxima from IMERG record.
+
+**Key finding:** The 7-day accumulation shows higher return periods than the 3-day, indicating sustained rainfall over a full week was the more exceptional aspect of this event. 
+
+### 3-Day Sum
+
+```{r rp-3day}
+#| fig-height: 5
+
+annual_max_3day <- imerg_rolling |>
+  filter(!is.na(roll3_sum)) |>
+  mutate(year = year(valid_date)) |>
+  group_by(adm1_name, year) |>
+  slice_max(roll3_sum, n = 1) |>
+  ungroup() |>
+  group_by(adm1_name) |>
+  mutate(
+    n_years = n(),
+    rank = rank(-roll3_sum, ties.method = "first"),
+    return_period = (n_years + 1) / rank
+  ) |>
+  ungroup()
+
+rp_3day <- max_3day |>
+  left_join(
+    annual_max_3day |> select(adm1_name, annual_max = roll3_sum),
+    by = "adm1_name", relationship = "many-to-many"
+  ) |>
+  group_by(adm1_name, start_date, valid_date, roll3_sum, period_label) |>
+  summarise(
+    n_exceeded = sum(roll3_sum > annual_max),
+    n_years = n(),
+    rp_years = (n_years + 1) / pmax(1, n_years - n_exceeded),
+    .groups = "drop"
+  )
+
+top10_3day <- annual_max_3day |>
+  group_by(adm1_name) |>
+  slice_min(rank, n = 10) |>
+  ungroup()
+
+ggplot(annual_max_3day, aes(x = return_period, y = roll3_sum)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 3, alpha = 0.5) +
+  geom_text(
+    data = top10_3day,
+    aes(label = paste0("'", substr(year, 3, 4))),
+    hjust = -0.5, vjust = 0.5, size = 2.5
+  ) +
+  geom_hline(
+    data = rp_3day,
+    aes(yintercept = roll3_sum),
+    color = "#D62828", linetype = "dashed", linewidth = 1
+  ) +
+  geom_label(
+    data = rp_3day,
+    aes(x = Inf, y = roll3_sum,
+        label = paste0(period_label, "\n~", round(rp_years, 1), "-yr")),
+    hjust = 1.05, vjust = 0.5, size = 2.5,
+    label.size = 0, fill = "white", color = "#D62828", fontface = "bold"
+  ) +
+  scale_x_log10(breaks = c(1, 2, 5, 10, 20, 50)) +
+  facet_wrap(~adm1_name, scales = "free_y") +
+  labs(
+    title = "Return Period: 3-Day Sum",
+    subtitle = "January 2026 event in red",
+    x = "Return Period (years)",
+    y = "3-Day Sum (mm)"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(face = "bold", size = 11),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### 7-Day Sum
+
+```{r rp-7day}
+#| fig-height: 5
+
+annual_max_7day <- imerg_rolling |>
+  filter(!is.na(roll7_sum)) |>
+  mutate(year = year(valid_date)) |>
+  group_by(adm1_name, year) |>
+  slice_max(roll7_sum, n = 1) |>
+  ungroup() |>
+  group_by(adm1_name) |>
+  mutate(
+    n_years = n(),
+    rank = rank(-roll7_sum, ties.method = "first"),
+    return_period = (n_years + 1) / rank
+  ) |>
+  ungroup()
+
+rp_7day <- max_7day |>
+  left_join(
+    annual_max_7day |> select(adm1_name, annual_max = roll7_sum),
+    by = "adm1_name", relationship = "many-to-many"
+  ) |>
+  group_by(adm1_name, start_date, valid_date, roll7_sum, period_label) |>
+  summarise(
+    n_exceeded = sum(roll7_sum > annual_max),
+    n_years = n(),
+    rp_years = (n_years + 1) / pmax(1, n_years - n_exceeded),
+    .groups = "drop"
+  )
+
+top10_7day <- annual_max_7day |>
+  group_by(adm1_name) |>
+  slice_min(rank, n = 10) |>
+  ungroup()
+
+ggplot(annual_max_7day, aes(x = return_period, y = roll7_sum)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 3, alpha = 0.5) +
+  geom_text(
+    data = top10_7day,
+    aes(label = paste0("'", substr(year, 3, 4))),
+    hjust = -0.5, vjust = 0.5, size = 2.5
+  ) +
+  geom_hline(
+    data = rp_7day,
+    aes(yintercept = roll7_sum),
+    color = "#D62828", linetype = "dashed", linewidth = 1
+  ) +
+  geom_label(
+    data = rp_7day,
+    aes(x = Inf, y = roll7_sum,
+        label = paste0(period_label, "\n~", round(rp_years, 1), "-yr")),
+    hjust = 1.05, vjust = 0.5, size = 2.5,
+    label.size = 0, fill = "white", color = "#D62828", fontface = "bold"
+  ) +
+  scale_x_log10(breaks = c(1, 2, 5, 10, 20, 50)) +
+  facet_wrap(~adm1_name, scales = "free_y") +
+  labs(
+    title = "Return Period: 7-Day Sum",
+    subtitle = "January 2026 event in red",
+    x = "Return Period (years)",
+    y = "7-Day Sum (mm)"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(face = "bold", size = 11),
+    panel.grid.minor = element_blank()
+  )
+```
+
+## Summary
+
+**Takeaway:** Table summarizes return period estimates by province. Higher return periods = rarer events.
+
+```{r summary-table}
+summary_table <- bind_rows(
+  rp_3day |>
+    mutate(Metric = "3-Day") |>
+    select(Province = adm1_name, Metric, Period = period_label,
+           `Rainfall (mm)` = roll3_sum, `Return Period (yr)` = rp_years),
+  rp_7day |>
+    mutate(Metric = "7-Day") |>
+    select(Province = adm1_name, Metric, Period = period_label,
+           `Rainfall (mm)` = roll7_sum, `Return Period (yr)` = rp_years)
+) |>
+  mutate(`Rainfall (mm)` = round(`Rainfall (mm)`, 1),
+         `Return Period (yr)` = round(`Return Period (yr)`, 1)) |>
+  arrange(Province, Metric)
+
+knitr::kable(summary_table)
+```
+
+# Flood Exposure Analysis (FloodScan)
+
+```{r}
+
+df_lookup_adm2 <- df_lookup |> 
+  filter(
+    ADM1_PCODE %in% df_lookup_aoi$ADM1_PCODE,
+    ADM_LEVEL ==2
+  )
+
+floodscan_adm2_unlabelled <- tbl(con, in_schema("app", "floodscan_exposure")) |>                           
+    filter(pcode %in% df_lookup_adm2$ADM2_PCODE) |>                             
+    collect()
+
+floodscan_adm2 <- floodscan_adm2_unlabelled |> 
+  left_join(
+    df_lookup_adm2 |> 
+      select(adm1_name=ADM1_NAME, adm2_name = ADM2_NAME, pcode = "ADM2_PCODE")
+  )
+
+
+```
+
+## FloodScan Exposure by District
+
+**Method:** FloodScan flood extent crossed with WorldPop population to estimate people exposed per district.
+
+**Key finding:** Heatmap shows temporal evolution of flood exposure. Districts ordered by total exposure - worst-affected at top. Darkest colors = highest population exposure.
+
+[Explore population exposure data interactively here](https://chd-ds-floodexposure-monitoring.azurewebsites.net/)
+
+```{r floodscan-heatmap}
+#| fig-height: 12
+#| fig-width: 10
+
+floodscan_recent <- floodscan_adm2 |>
+  filter(valid_date >= max(valid_date) - 30) |>
+  complete(
+    valid_date = seq.Date(min(valid_date), max(valid_date), by = "day"),
+    nesting(adm1_name, adm2_name),
+    fill = list(sum = NA)
+  )
+
+ggplot(floodscan_recent, aes(x = valid_date, y = reorder(adm2_name, sum, \(x) sum(x, na.rm = TRUE)), fill = sum)) +
+  geom_tile(color = "white", linewidth = 0.3) +
+  scale_fill_viridis_c(
+    option = "inferno",
+    direction = -1,
+    labels = scales::comma,
+    name = "Flood Exposure\n(sum)"
+  ) +
+  scale_x_date(date_breaks = "1 day", date_labels = "%b %d", expand = c(0, 0)) +
+  facet_wrap(~adm1_name, ncol = 1, scales = "free_y") +
+  labs(
+    title = "FloodScan Exposure by District",
+    subtitle = "Last 30 days | Districts ordered by total exposure",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    strip.text = element_text(face = "bold", size = 12),
+    panel.grid = element_blank(),
+    axis.text.y = element_text(size = 9),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7),
+    legend.position = "right",
+    legend.key.height = unit(1.5, "cm")
+  )
+```
+
+### FloodScan Exposure Table
+
+**Takeaway:** Same data in tabular form with exact values. Color intensity indicates exposure magnitude.
+
+```{r floodscan-gt-table}
+library(gt)
+
+floodscan_wide <- floodscan_recent |>
+  mutate(date_label = format(valid_date, "%b %d")) |>
+  select(adm1_name, adm2_name, date_label, sum) |>
+  pivot_wider(
+    names_from = date_label,
+    values_from = sum
+  ) |>
+  arrange(adm1_name, adm2_name)
+
+date_cols <- floodscan_wide |>
+  select(-adm1_name, -adm2_name) |>
+  names()
+
+sum_range <- range(floodscan_recent$sum, na.rm = TRUE)
+
+floodscan_wide |>
+  gt(groupname_col = "adm1_name") |>
+  fmt_number(
+    columns = all_of(date_cols),
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  sub_missing(missing_text = "-") |>
+  data_color(
+    columns = all_of(date_cols),
+    palette = "inferno",
+    reverse = TRUE,
+    na_color = "white",
+    domain = sum_range
+  ) |>
+  cols_label(adm2_name = "District") |>
+  tab_header(
+    title = "FloodScan Exposure by District",
+    subtitle = "Daily values (last 30 days)"
+  ) |>
+  tab_style(
+    style = cell_text(size = px(10)),
+    locations = cells_body()
+  ) |>
+  tab_style(
+    style = cell_text(size = px(9)),
+    locations = cells_column_labels()
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()
+  ) |>
+  tab_options(
+    table.font.size = px(11),
+    row_group.background.color = "#f0f0f0",
+    column_labels.font.weight = "bold"
+  )
+```
+
+## Flood Exposure Maps
+
+**Method:** District-level population exposure mapped for the last 3 days. Gaza, Maputo, and Sofala provinces outlined in red.
+
+**Key finding:** Top 3 most-affected districts labeled per province. Exposure concentrated in southern Mozambique, particularly along river valleys and low-lying coastal areas.
+
+```{r floodscan-choropleth}
+#| fig-height: 36
+#| fig-width: 14
+
+library(sf)
+library(ggrepel)
+
+sf_moz <- cumulus::download_fieldmaps_sf(iso3 = "moz", layer = "moz_adm2")
+
+# Last 3 days of exposure data
+floodscan_last3 <- floodscan_adm2 |>
+  filter(valid_date >= max(valid_date) - 2)
+
+# Join exposure to spatial (all provinces), filter out NA dates
+sf_exposure <- sf_moz$moz_adm2 |>
+  left_join(floodscan_last3, by = c("ADM2_PCODE" = "pcode")) |>
+  filter(!is.na(valid_date))
+
+# All province boundaries (light)
+sf_provinces <- sf_moz$moz_adm2 |>
+  group_by(ADM1_PT) |>
+  summarise(geom = st_union(geom))
+
+# Highlight boundaries for worst-affected provinces
+sf_highlight <- sf_provinces |>
+  filter(ADM1_PT %in% c("Gaza", "Maputo", "Sofala"))
+
+# Province label positions (centroids)
+sf_prov_labels <- sf_highlight |>
+  mutate(
+    centroid = st_centroid(geom),
+    x = st_coordinates(centroid)[, 1],
+    y = st_coordinates(centroid)[, 2],
+    label = toupper(ADM1_PT)
+  )
+
+# Top 3 worst districts per province (for labeling)
+sf_top3 <- sf_exposure |>
+  filter(ADM1_PT %in% c("Gaza", "Maputo", "Sofala")) |>
+  group_by(valid_date, ADM1_PT) |>
+  slice_max(sum, n = 3) |>
+  ungroup() |>
+
+  mutate(centroid = st_centroid(geom)) |>
+  mutate(
+    x = st_coordinates(centroid)[, 1],
+    y = st_coordinates(centroid)[, 2]
+  )
+
+ggplot() +
+  geom_sf(data = sf_exposure, aes(fill = sum), color = "white", linewidth = 0.3) +
+  geom_sf(data = sf_provinces, fill = NA, color = "grey70", linewidth = 0.5) +
+  geom_sf(data = sf_highlight, fill = NA, color = "#D62828", linewidth = 1.5) +
+  geom_text(
+    data = sf_prov_labels,
+    aes(x = x, y = y, label = label),
+    size = 5, color = "grey50", fontface = "bold", alpha = 0.7
+  ) +
+  geom_label_repel(
+    data = sf_top3,
+    aes(x = x, y = y, label = ADM2_PT),
+    size = 4,
+    fill = alpha("white", 0.7),
+    label.size = 0.3,
+    fontface = "bold",
+    segment.color = "grey40",
+    segment.size = 0.4,
+    box.padding = 0.5,
+    point.padding = 0.3,
+    max.overlaps = 20,
+    min.segment.length = 0
+  ) +
+  scale_fill_viridis_c(
+    option = "inferno",
+    direction = -1,
+    labels = scales::comma,
+    na.value = "grey90",
+    name = "Population Exposed"
+  ) +
+  facet_wrap(~valid_date, ncol = 1) +
+  labs(
+    title = "FloodScan Exposure by District",
+    subtitle = "Gaza, Maputo, and Sofala highlighted | Top 3 districts labeled per province",
+    caption = "Data: FloodScan & WorldPop"
+  ) +
+  theme_void(base_size = 14) +
+  theme(
+    strip.text = element_text(face = "bold", size = 18, margin = margin(b = 10)),
+    legend.position = "bottom",
+    legend.key.width = unit(4, "cm"),
+    legend.key.height = unit(0.6, "cm"),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14, face = "bold"),
+    plot.title = element_text(face = "bold", size = 22),
+    plot.subtitle = element_text(color = "grey40", size = 14, margin = margin(b = 20))
+  )
+```
+
