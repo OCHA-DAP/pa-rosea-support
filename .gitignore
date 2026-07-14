@@ -16,3 +16,4 @@ esa_admin_region/*
 *.tif
 *.gif
 *.qmd
+/.venv
