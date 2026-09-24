@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Angola Drought Hotspots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F4F6F7; --surface:#FFFFFF; --ink:#15212A; --ink2:#46555F; --muted:#76838C; --rule:#DDE3E6; --rule2:#EEF1F3;
+  --accent:#1D5B7C; --none:#E6EAED; --hot:#B8641A; --land:#EEF1F3; --border:#FFFFFF;
+  --s0:#F0F2F3; --s1:#F4E6C8; --s2:#E8C584; --s3:#D39A42; --s4:#A96A1B; --s5:#6B400C;
+  --p1:#CDFACD; --p2:#FAE61E; --p3:#E67800; --p4:#C80000; --p5:#640000;
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+  --bg:#11171B; --surface:#182026; --ink:#E6ECEF; --ink2:#AAB6BD; --muted:#7F8C94; --rule:#2B353B; --rule2:#222B31;
+  --accent:#7DB6D6; --none:#273137; --hot:#E09A4E; --land:#222B31; --border:#11171B;
+  --s0:#1F272C; --s1:#453620; --s2:#735522; --s3:#A2742C; --s4:#D09B4A; --s5:#F3CB88;
+  --p1:#9FD89F; --p2:#E8D31A; --p3:#E67800; --p4:#E03A3A; --p5:#A33333;}}
+:root[data-theme="dark"]{color-scheme:dark;
+  --bg:#11171B; --surface:#182026; --ink:#E6ECEF; --ink2:#AAB6BD; --muted:#7F8C94; --rule:#2B353B; --rule2:#222B31;
+  --accent:#7DB6D6; --none:#273137; --hot:#E09A4E; --land:#222B31; --border:#11171B;
+  --s0:#1F272C; --s1:#453620; --s2:#735522; --s3:#A2742C; --s4:#D09B4A; --s5:#F3CB88;
+  --p1:#9FD89F; --p2:#E8D31A; --p3:#E67800; --p4:#E03A3A; --p5:#A33333;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:36px 56px}
+header{padding-bottom:22px;border-bottom:1px solid var(--rule)}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(28px,5vw,42px);line-height:1.08;margin:12px 0;font-weight:700;letter-spacing:-.015em;text-wrap:balance}
+.lede{color:var(--ink2);max-width:72ch;margin:0}
+.meta{font:12px/1.6 var(--mono);color:var(--muted);margin-top:12px}
+section{margin-top:46px}
+h2{font-size:21px;margin:0 0 6px;font-weight:600;letter-spacing:-.005em;text-wrap:balance}
+h3{font-size:15px;margin:0 0 4px;font-weight:600}
+.sub{color:var(--ink2);max-width:74ch;margin:0 0 16px}
+.small{font-size:13px;color:var(--ink2)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin:0 0 18px}
+.fact{background:var(--surface);border:1px solid var(--rule);border-top:3px solid var(--src);border-radius:4px;padding:12px 16px}
+.fact .src{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.fact p{margin:0;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:14px 16px}
+.stat b{display:block;font:600 26px/1.15 var(--sans);font-variant-numeric:tabular-nums}
+.stat span{color:var(--ink2);font-size:13px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:18px}
+.scroll{overflow-x:auto}
+svg{display:block}
+svg text{font-family:var(--sans);fill:var(--ink2);font-size:11px}
+svg .mono{font-family:var(--mono);font-size:10.5px}
+svg .strong{fill:var(--ink);font-weight:600}
+.maps{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.map h3{margin-bottom:2px}
+.map .desc{font-size:12.5px;color:var(--ink2);margin:0 0 8px;min-height:3.2em}
+.map svg{width:100%;height:auto}
+.map .lbl{font:600 13px var(--sans);fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.map path.u{stroke:var(--border);stroke-width:.6}
+.map path.a1{fill:none;stroke:var(--ink2);stroke-width:1.1;pointer-events:none;opacity:.7}
+.map path.u:hover{stroke:var(--ink);stroke-width:1.6}
+.controls{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:10px;align-items:center}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--rule);border-radius:5px;overflow:hidden;background:var(--surface)}
+.seg button{font:500 12.5px var(--sans);background:transparent;color:var(--ink2);border:0;padding:5px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.clabel{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:10px;align-items:center}
+.legend i{display:inline-block;width:13px;height:13px;border-radius:2px;vertical-align:-2px;margin-right:5px}
+.legend .grp{font:500 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.hatch{background:repeating-linear-gradient(135deg,var(--surface) 0 3px,var(--rule) 3px 5px);border:1px solid var(--rule)}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:7px 10px;border-radius:4px;max-width:300px;line-height:1.45;z-index:9;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+table.mx{border-collapse:separate;border-spacing:2px;min-width:880px;width:100%}
+.mx th{font:500 11px/1.3 var(--sans);color:var(--muted);text-align:center;padding:4px 2px;vertical-align:bottom}
+.mx thead tr:first-child th{font:500 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);border-bottom:1px solid var(--rule);padding-bottom:6px}
+.mx th.pv{text-align:left;padding-left:0}
+.mx td{height:28px;text-align:center;border-radius:2px;font:500 11.5px var(--mono);font-variant-numeric:tabular-nums}
+.mx td.pv{text-align:left;font:500 13px var(--sans);color:var(--ink);padding-right:10px;white-space:nowrap}
+.mx td.na{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--rule2) 4px 6px);color:var(--muted);font-weight:400}
+.mx td.gap{width:8px}
+.mx tbody tr:hover td.pv{color:var(--accent)}
+.ipc{display:grid;gap:22px}
+.ipc h4{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0 0 8px}
+.brow{display:grid;grid-template-columns:minmax(120px,210px) 1fr 150px;gap:12px;align-items:center;min-height:26px}
+.brow .lab{font-size:13px;color:var(--ink)}
+.brow .lab small{color:var(--muted);font-size:11.5px}
+.track{position:relative;height:16px;background:var(--rule2);border-radius:2px}
+.f3{position:absolute;left:0;top:0;bottom:0;background:var(--p3);border-radius:2px 0 0 2px}
+.f4{position:absolute;left:0;top:0;bottom:0;background:var(--p4);border-radius:2px 0 0 2px}
+.proj{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.bval{font:12px var(--mono);color:var(--ink2);white-space:nowrap;display:flex;gap:8px;align-items:center}
+.bval b{color:var(--ink);font-weight:500}
+.chip{display:inline-block;min-width:18px;text-align:center;border-radius:3px;font:600 11px var(--mono);padding:1px 4px}
+.axis{display:grid;grid-template-columns:minmax(120px,210px) 1fr 150px;gap:12px;font:10.5px var(--mono);color:var(--muted)}
+.axis div:nth-child(2){display:flex;justify-content:space-between}
+ul.notes{padding-left:18px;margin:0;color:var(--ink2);max-width:80ch}
+ul.notes li{margin-bottom:8px}
+code{font-family:var(--mono);font-size:12.5px}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-size:13px;color:var(--muted)}
+.email{font-family:var(--mono);color:var(--ink);user-select:all}
+@media (max-width:640px){.brow,.axis{grid-template-columns:96px 1fr 104px;gap:8px}.bval{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Angola · drought · acute food insecurity</div>
+  <h1>Angola drought hotspots</h1>
+  <p class="lede">Which areas of Angola JRC ASAP, IPC and FEWS NET have flagged for drought and acute food insecurity, and how often.</p>
+  <div class="meta" id="meta"></div>
+</header>
+
+<section aria-labelledby="h-where">
+  <h2 id="h-where">Where each source places the impacts</h2>
+  <div class="facts" id="facts"></div>
+  <div class="maps">
+    <div class="panel map">
+      <h3>ASAP cropland warnings</h3>
+      <p class="desc">Average share of in-season dekads with a cropland warning at group 2+ (biomass anomaly), by province.</p>
+      <div class="controls"><span class="seg" id="m-asap"><button type="button" id="m-asap-all" data-v="all" aria-pressed="true">All seasons</button><button type="button" id="m-asap-rec" data-v="rec" aria-pressed="false">Last five seasons</button></span></div>
+      <div id="map-asap"></div>
+      <div class="legend" id="lg-asap"></div>
+    </div>
+    <div class="panel map">
+      <h3>IPC area classification</h3>
+      <p class="desc">Overall IPC phase of each analysed area. Grey: not analysed.</p>
+      <div class="controls"><span class="seg" id="m-ipc"><button type="button" id="m-ipc-19C" data-v="2019C" aria-pressed="false">Aug 2019</button><button type="button" id="m-ipc-19P" data-v="2019P" aria-pressed="false">2019 proj.</button><button type="button" id="m-ipc-21C" data-v="2021C" aria-pressed="true">Jun 2021</button><button type="button" id="m-ipc-21P" data-v="2021P" aria-pressed="false">2021 proj.</button></span></div>
+      <div id="map-ipc"></div>
+      <div class="legend" id="lg-ipc"></div>
+    </div>
+    <div class="panel map">
+      <h3>FEWS NET livelihood zones</h3>
+      <p class="desc">Phase of each livelihood zone within each province.</p>
+      <div class="controls"><span class="seg" id="m-fews"><button type="button" id="m-fews-cs" data-v="3" aria-pressed="false">Jun 2026</button><button type="button" id="m-fews-ml1" data-v="4" aria-pressed="false">Jul–Sep 2026</button><button type="button" id="m-fews-ml2" data-v="5" aria-pressed="true">Oct 2026–Jan 2027</button></span></div>
+      <div id="map-fews"></div>
+      <div class="legend" id="lg-fews"></div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="h-mx">
+  <h2 id="h-mx">Province by province</h2>
+  <p class="sub">Each source summarised per province. Rows sorted by the FEWS NET projection, then by the ASAP average for the last five seasons. Hover a cell for detail.</p>
+  <div class="panel scroll"><table class="mx" id="mx"></table>
+    <div class="legend"><span class="grp">ASAP / IPC share</span><span id="mxseq" style="display:contents"></span>
+      <span class="grp" style="margin-left:6px">Phase</span><span id="mxph" style="display:contents"></span>
+      <span><i class="hatch"></i>Not assessed / not analysed</span></div>
+  </div>
+  <p class="small" style="margin-top:10px">ASAP: share of in-season dekads with a cropland warning at group 2+. IPC: share of the analysed population in Phase 3+ in the current period; in 2019 only some communes of each province were analysed. FEWS NET: highest phase across the province's livelihood zones.</p>
+</section>
+
+<section aria-labelledby="h-fews">
+  <h2 id="h-fews">FEWS NET national classification</h2>
+  <p class="sub" id="fews-sub"></p>
+  <div class="panel scroll"><div id="ftl"></div>
+    <div class="legend"><span><i style="background:var(--p2)"></i>2 Stressed</span><span><i style="background:var(--p3)"></i>3 Crisis</span><span><i style="border:1px dashed var(--muted)"></i>No near-term projection published</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-hs">
+  <h2 id="h-hs">ASAP national hotspot status</h2>
+  <p class="sub">ASAP's monthly expert assessment classes each country as no hotspot, hotspot or major hotspot. One row per season, October to September.</p>
+  <div class="stats" id="stats"></div>
+  <div class="panel scroll"><div id="strip"></div>
+    <div class="legend"><span><i style="background:var(--hot)"></i>Hotspot</span><span><i style="background:var(--none)"></i>No hotspot</span><span><i style="border:1px dashed var(--muted)"></i>No assessment that month</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-hm">
+  <h2 id="h-hm">ASAP warnings by province and season</h2>
+  <p class="sub">Share of in-season dekads in which ASAP issued a warning for the province. Columns are seasons, labelled by the year they start in October. Provinces sorted by their average for the selected view.</p>
+  <div class="controls">
+    <div><span class="clabel">Land cover</span><span class="seg" id="lc"><button type="button" id="lc-crop" data-v="crop" aria-pressed="true">Cropland</button><button type="button" id="lc-range" data-v="range" aria-pressed="false">Rangeland</button></span></div>
+    <div><span class="clabel">Warning</span><span class="seg" id="lv"><button type="button" id="lv-2" data-v="2" aria-pressed="true">Group 2+ (biomass anomaly)</button><button type="button" id="lv-1" data-v="1" aria-pressed="false">Any warning</button></span></div>
+  </div>
+  <div class="panel scroll"><div id="heat"></div><div class="legend" id="hlegend"></div></div>
+</section>
+
+<section aria-labelledby="h-ipc">
+  <h2 id="h-ipc">IPC areas</h2>
+  <p class="sub">Share of each area's population in Phase 3+ in the current period (bar; Phase 4 in red) and the projection period (black tick). Chips show the area's overall phase, current then projected.</p>
+  <div class="controls"><span class="seg" id="ipcr"><button type="button" id="ipcr-2021" data-v="2021" aria-pressed="true">Jun 2021 analysis</button><button type="button" id="ipcr-2019" data-v="2019" aria-pressed="false">Aug 2019 analysis</button></span></div>
+  <div class="panel"><div class="ipc" id="ipc"></div></div>
+</section>
+
+<section aria-labelledby="h-src">
+  <h2 id="h-src">Sources and coverage</h2>
+  <ul class="notes" id="src"></ul>
+</section>
+
+<footer>OCHA Centre for Humanitarian Data · Data Science team · <span class="email">ocha-datascience@un.org</span></footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+/*DATA*/
+const NS="http://www.w3.org/2000/svg", tip=document.getElementById("tip");
+const $=id=>document.getElementById(id);
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+function txt(p,x,y,s,a){const t=el("text",Object.assign({x,y},a||{}),p);t.textContent=s;return t}
+function showTip(ev,html){tip.innerHTML=html;tip.hidden=false;const r=tip.getBoundingClientRect();let x=ev.clientX+14,y=ev.clientY+14;if(x+r.width>innerWidth-8)x=ev.clientX-r.width-14;if(y+r.height>innerHeight-8)y=ev.clientY-r.height-14;tip.style.left=x+"px";tip.style.top=y+"px"}
+function hover(n,html){n.addEventListener("mousemove",ev=>showTip(ev,typeof html==="function"?html():html));n.addEventListener("mouseleave",()=>tip.hidden=true)}
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmt=n=>Math.round(n).toLocaleString("en-US"), pct=v=>Math.round(v*100)+"%";
+const sLab=s=>s+"/"+String(s+1).slice(2);
+const md=s=>{const d=new Date(s.slice(0,10)+"T00:00");return MON[d.getMonth()]+" "+d.getFullYear()};
+const PH=["","Minimal","Stressed","Crisis","Emergency","Famine"];
+const phInk=p=>p>=3?"#fff":"#15212A";
+const chip=p=>`<span class="chip" style="background:var(--p${p});color:${phInk(p)}">${p}</span>`;
+const BINS=[[0,"0%"],[0.0001,"<10%"],[0.1,"10–25%"],[0.25,"25–50%"],[0.5,"50–75%"],[0.75,"75–100%"]];
+const bin=v=>{for(let i=BINS.length-1;i>=0;i--)if(v>=BINS[i][0])return i;return 0};
+const seqLegend=()=>BINS.map((b,i)=>`<span><i style="background:var(--s${i})"></i>${b[1]}</span>`).join("");
+const phLegend=ps=>ps.map(p=>`<span><i style="background:var(--p${p})"></i>${p} ${PH[p]}</span>`).join("");
+function seg(id,init,cb){const b=[...document.querySelectorAll(`#${id} button`)];const set=v=>{b.forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===v));cb(v)};b.forEach(x=>x.onclick=()=>set(x.dataset.v));set(init)}
+const list=a=>a.length<=1?a.join(""):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+
+/* ---------- derived ---------- */
+const F=D.facts, A=D.asap;
+const provTab=lc=>{const t={};A[lc].forEach(r=>{(t[r[0]]=t[r[0]]||{})[r[1]]=r});return t};
+const CROP=provTab("crop");
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const asapAvg=(p,seasons)=>{const t=CROP[p];if(!t)return null;return mean(Object.values(t).filter(r=>!seasons||seasons.includes(r[1])).map(r=>r[4]))};
+const PROVS=D.maps.adm1.map(r=>r[0]).sort((a,b)=>a.localeCompare(b));
+const fewsBy={};D.maps.fews.forEach(z=>(fewsBy[z[1]]=fewsBy[z[1]]||[]).push(z));
+const ipcProv={};D.ipc_prov.forEach(r=>{ipcProv[`${r.year}${r.per}|${r.prov}`]=r});
+const seasons=[...new Set(A.crop.map(r=>r[1]))].sort((a,b)=>a-b);
+const IPCP=D.ipc_periods;
+
+/* ---------- header + facts ---------- */
+$("meta").textContent=`Built ${new Date().toISOString().slice(0,10)} from: ASAP hotspots to ${md(A.hs[A.hs.length-1][0])}, ASAP warnings to ${A.warn_last} · FEWS NET ${md(F.fews_first)} to ${md(F.fews_last)} · IPC ${D.ipc_titles.map(t=>t.replace("Angola - Acute Food Insecurity ","")).join(", ")}`;
+(function(){
+  const cz=Object.entries(F.crisis_zones).map(([z,ps])=>`${z} (${list(ps)})`);
+  const ipc21=D.ipc.filter(r=>r[0]===2021&&r[1]==="C"), ipc19=D.ipc.filter(r=>r[0]===2019&&r[1]==="C");
+  const e21=ipc21.filter(r=>r[5]===4).map(r=>r[2]), e19=ipc19.filter(r=>r[5]===4);
+  const e19m=[...new Set(e19.map(r=>r[3]))];
+  const rec=PROVS.map(p=>[p,asapAvg(p,F.recent)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const all=PROVS.map(p=>[p,asapAvg(p)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const runs=F.hs_runs, last=runs[runs.length-1];
+  const nat21=D.ipc_nat["2021C"], nat19=D.ipc_nat["2019C"];
+  $("facts").innerHTML=`
+  <div class="fact" style="--src:var(--p3)"><div class="src">FEWS NET · ${F.fews_docs.map(d=>d[1]+" "+md(d[0])).join(" · ")} (same projections)</div>
+    <p>${list(F.crisis_ph.map(p=>PH[p]+" (Phase "+p+")"))} projected for ${md(IPCPfmt(F.fews_cov.ML2)[0])} – ${md(IPCPfmt(F.fews_cov.ML2)[1])} in ${list(cz)}. Current phase in these zones in ${md(F.fews_cs_round)}: ${list(F.crisis_zones_cs.map(p=>p+" "+PH[p]))}.</p></div>
+  <div class="fact" style="--src:var(--p4)"><div class="src">IPC · ${D.ipc_titles.length} analyses: ${list(D.ipc_titles.map(t=>t.replace("Angola - Acute Food Insecurity ","")))}</div>
+    <p>Jun 2021: ${fmt(nat21.p3)} people in Phase 3+ across ${list([...new Set(ipc21.map(r=>r[4]))].sort())}; ${e21.length} of ${ipc21.length} municipalities classed Emergency (Phase 4): ${list(e21)}. Aug 2019: ${fmt(nat19.p3)} in Phase 3+; ${e19.length} of ${ipc19.length} communes in Phase 4, in ${list(e19m)}.</p></div>
+  <div class="fact" style="--src:var(--s4)"><div class="src">ASAP · warnings ${sLab(seasons[0])} – ${sLab(seasons[seasons.length-1])}, hotspots from ${md(A.hs[0][0])}</div>
+    <p>Highest average cropland warning share, all seasons: ${list(all.map(x=>`${x[0]} ${pct(x[1])}`))}. Last five seasons: ${list(rec.map(x=>`${x[0]} ${pct(x[1])}`))}. National hotspot in ${A.hs.filter(r=>r[1]>=1).length} of ${A.hs.length} monthly assessments; latest spell ${md(last[0])} – ${md(last[1])}.</p></div>`;
+})();
+function IPCPfmt(s){const [a,b]=s.split(" to ");const f=x=>{const [m,y]=x.split("-");return `${y}-${m}-01`};return [f(a),f(b)]}
+
+/* ---------- maps ---------- */
+const M=D.maps;
+function baseMap(id){
+  const box=$(id);box.innerHTML="";
+  const svg=el("svg",{viewBox:`-6 -6 ${M.w+12} ${M.h+12}`,role:"img"},box);
+  const defs=el("defs",{},svg);
+  const pat=el("pattern",{id:id+"-h",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"},defs);
+  el("rect",{width:6,height:6,fill:"var(--land)"},pat);el("line",{x1:0,y1:0,x2:0,y2:6,stroke:"var(--rule)","stroke-width":2.5},pat);
+  el("path",{d:M.outline,fill:"var(--land)"},svg);
+  return svg;
+}
+function overlay(svg,labels){
+  M.adm1.forEach(r=>el("path",{d:r[1],class:"a1"},svg));
+  if(labels)M.labels.filter(l=>labels.includes(l[0])).forEach(l=>txt(svg,l[1],l[2],l[0],{class:"lbl","text-anchor":"middle"}));
+}
+const SOUTH=["Namibe","Huíla","Cunene","Cuando Cubango","Benguela","Huambo","Bié","Luanda","Malanje","Moxico"];
+function drawMapAsap(mode){
+  const svg=baseMap("map-asap");
+  svg.setAttribute("aria-label","ASAP cropland warning share by province");
+  M.adm1.forEach(([p,d])=>{
+    const v=asapAvg(p,mode==="rec"?F.recent:null);
+    const n=el("path",{d,class:"u",fill:v==null?"url(#map-asap-h)":`var(--s${bin(v)})`},svg);
+    hover(n,`<b>${p}</b><br>${v==null?"Not assessed by ASAP (no crop/rangeland)":`${pct(v)} of in-season dekads at group 2+, ${mode==="rec"?"last five seasons":"all seasons "+sLab(seasons[0])+" – "+sLab(seasons[seasons.length-1])}`}`);
+  });
+  overlay(svg,SOUTH);
+  $("lg-asap").innerHTML=seqLegend()+`<span><i class="hatch"></i>Not assessed</span>`;
+}
+function drawMapIpc(k){
+  const svg=baseMap("map-ipc");
+  svg.setAttribute("aria-label","IPC overall phase by area");
+  const y=+k.slice(0,4), per=k.slice(4);
+  const rows=D.ipc.filter(r=>r[0]===y&&r[1]===per);
+  rows.forEach(r=>{
+    const n=el("path",{d:r[11],class:"u",fill:`var(--p${r[5]})`},svg);
+    hover(n,`<b>${r[2]}${y===2019?" ("+r[3]+")":""}, ${r[4]}</b><br>${IPCP[k].frm} – ${IPCP[k].to}: Phase ${r[5]} ${PH[r[5]]}<br>${fmt(r[7])} in Phase 3+ (${pct(r[8])}) of ${fmt(r[6])}`);
+  });
+  overlay(svg,SOUTH);
+  $("lg-ipc").innerHTML=phLegend([1,2,3,4])+`<span class="small">${IPCP[k].frm} – ${IPCP[k].to}</span>`;
+}
+function drawMapFews(ix){
+  ix=+ix;
+  const svg=baseMap("map-fews");
+  svg.setAttribute("aria-label","FEWS NET phase by livelihood zone");
+  const cov={3:F.fews_cov.CS,4:F.fews_cov.ML1,5:F.fews_cov.ML2}[ix];
+  M.fews.forEach(z=>{
+    const n=el("path",{d:z[6],class:"u",fill:`var(--p${z[ix]})`},svg);
+    hover(n,`<b>${z[2]}</b><br>${z[1]} province<br>Phase ${z[ix]} ${PH[z[ix]]} (${cov.replace(/(\d\d)-(\d{4})/g,(m,a,b)=>MON[+a-1]+" "+b)})`);
+  });
+  overlay(svg,SOUTH);
+  $("lg-fews").innerHTML=phLegend([1,2,3]);
+}
+seg("m-asap","all",drawMapAsap);
+seg("m-ipc","2021C",drawMapIpc);
+seg("m-fews","5",drawMapFews);
+
+/* ---------- province matrix ---------- */
+(function(){
+  const maxPh=(p,ix)=>fewsBy[p]?Math.max(...fewsBy[p].map(z=>z[ix])):null;
+  const rows=PROVS.map(p=>({p,all:asapAvg(p),rec:asapAvg(p,F.recent),a:F.recent.map(s=>CROP[p]&&CROP[p][s]||null),
+    i19:ipcProv[`2019C|${p}`],i21:ipcProv[`2021C|${p}`],fc:maxPh(p,3),fm:maxPh(p,5)}))
+    .sort((a,b)=>(b.fm-a.fm)||((b.rec??-1)-(a.rec??-1)));
+  const seqCell=(v,t)=>{const i=bin(v);return `<td style="background:var(--s${i});color:${i>=4?"var(--surface)":"var(--ink)"}" data-tip="${t}">${pct(v)}</td>`};
+  const na=t=>`<td class="na" data-tip="${t}">–</td>`;
+  const phCell=(p,ph,ix,label)=>{const zs=fewsBy[p].map(z=>`${z[2]}: ${z[ix]} ${PH[z[ix]]}`).join("<br>");
+    return `<td style="background:var(--p${ph});color:${phInk(ph)}" data-tip="<b>${p} · ${label}</b><br>${zs}">${ph} ${PH[ph]}</td>`};
+  const ipcCell=(r,p,y)=>r?seqCell(r.share,`<b>${p} · IPC ${y==="2019"?"Aug 2019":"Jun 2021"}</b><br>${fmt(r.p3)} in Phase 3+ (${pct(r.share)} of analysed${r.pop?" "+fmt(r.pop):""})<br>${r.basis}`):na(`<b>${p}</b><br>Not analysed by IPC in ${y}`);
+  const noA=p=>na(`<b>${p}</b><br>Not assessed by ASAP (no crop/rangeland)`);
+  let h=`<thead><tr><th class="pv"></th><th colspan="6">ASAP cropland warnings</th><th class="gap"></th><th colspan="2">IPC Phase 3+</th><th class="gap"></th><th colspan="2">FEWS NET</th></tr>
+  <tr><th class="pv">Province</th><th>${sLab(seasons[0])}–<br>${sLab(seasons[seasons.length-1])}</th>${F.recent.map(s=>`<th>${sLab(s)}</th>`).join("")}<th class="gap"></th><th>Aug 2019</th><th>Jun 2021</th><th class="gap"></th><th>${md(F.fews_cs_round)}<br>current</th><th>${IPCPfmt(F.fews_cov.ML2).map(md).join(" –<br>")}</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    h+=`<tr><td class="pv">${r.p}</td>`;
+    h+=r.all==null?noA(r.p):seqCell(r.all,`<b>${r.p}</b><br>Average over ${seasons.length} seasons: ${pct(r.all)} of in-season dekads at group 2+`);
+    r.a.forEach((c,i)=>{h+=c?seqCell(c[4],`<b>${r.p} · ${sLab(F.recent[i])}</b><br>${pct(c[4])} of ${c[2]} in-season dekads at group 2+<br>Highest group reached: ${c[5]||"none"}`):noA(r.p)});
+    h+=`<td class="gap"></td>`+ipcCell(r.i19,r.p,"2019")+ipcCell(r.i21,r.p,"2021")+`<td class="gap"></td>`;
+    h+=phCell(r.p,r.fc,3,md(F.fews_cs_round)+" current")+phCell(r.p,r.fm,5,"projected "+IPCPfmt(F.fews_cov.ML2).map(md).join(" – "))+`</tr>`;
+  });
+  $("mx").innerHTML=h+"</tbody>";
+  $("mx").querySelectorAll("td[data-tip]").forEach(td=>hover(td,td.dataset.tip));
+  $("mxseq").innerHTML=seqLegend();$("mxph").innerHTML=phLegend([1,2,3]);
+})();
+
+/* ---------- FEWS NET timeline ---------- */
+const TL=D.fews_tl;
+(function(){
+  const docs=[...new Set(TL.map(r=>r[2]))];
+  const nat=TL.filter(r=>r[3]==="national"), zon=TL.filter(r=>r[3]==="zones");
+  $("fews-sub").textContent=`Highest phase in FEWS NET's near-term projection for Angola, by report month. Reports from ${md(nat[0][0])} to ${md(nat[nat.length-1][0])} give one phase for the whole country; from ${md(zon[0][0])} FEWS NET classifies each livelihood zone (map above), and the value shown is the highest zone.`;
+})();
+function drawFews(){
+  const box=$("ftl");box.innerHTML="";
+  const toK=s=>{const d=new Date(s+"T00:00");return d.getFullYear()*12+d.getMonth()};
+  const m0=toK(TL[0][0]), m1=toK(TL[TL.length-1][0]), n=m1-m0+1;
+  const W=Math.max(box.clientWidth,640), cw=(W-16)/n, top=6, ch=30;
+  const svg=el("svg",{width:W,height:top+ch+34,viewBox:`0 0 ${W} ${top+ch+34}`,role:"img","aria-label":"FEWS NET near-term phase for Angola by report month"},box);
+  const by={};TL.forEach(r=>by[toK(r[0])]=r);
+  let gap=null,run=null;
+  for(let k=m0;k<=m1;k++){
+    const x=8+(k-m0)*cw, r=by[k], y=Math.floor(k/12), m=k%12;
+    const rc=el("rect",{x:x+1,y:top,width:Math.max(cw-2,1),height:ch,rx:2},svg);
+    if(r){rc.setAttribute("fill",`var(--p${r[1]})`);run=null}
+    else{rc.setAttribute("fill","none");rc.setAttribute("stroke","var(--muted)");rc.setAttribute("stroke-dasharray","3 2");
+      if(run)run.b=k;else run={a:k,b:k};if(!gap||run.b-run.a>gap.b-gap.a)gap=run}
+    hover(rc,`<b>${MON[m]} ${y} report</b><br>${r?`Phase ${r[1]} ${PH[r[1]]}<br>${r[2]}`:"No near-term projection"}`);
+    if(m===0||k===m0){el("line",{x1:x,x2:x,y1:top+ch+4,y2:top+ch+12,stroke:"var(--muted)"},svg);txt(svg,x+3,top+ch+24,m===0?y:MON[m]+" "+y,{class:"mono"})}
+  }
+  if(gap&&gap.b-gap.a>=3){const gx=8+(gap.a-m0)*cw,gw=(gap.b-gap.a+1)*cw;
+    txt(svg,gx+gw/2,top+ch/2+4,`no projection ${MON[gap.a%12]} ${Math.floor(gap.a/12)} – ${MON[gap.b%12]} ${Math.floor(gap.b/12)}`,{"text-anchor":"middle",class:"mono"})}
+}
+
+/* ---------- hotspot calendar ---------- */
+(function(){
+  const hs=A.hs, runs=F.hs_runs, longest=runs.reduce((a,b)=>b[2]>a[2]?b:a), last=hs[hs.length-1], lr=runs[runs.length-1];
+  const major=hs.filter(r=>r[1]===2).length;
+  $("stats").innerHTML=
+   `<div class="stat"><b>${hs.filter(r=>r[1]>=1).length} of ${hs.length}</b><span>monthly assessments classed hotspot${major?"":"; never a major hotspot"}</span></div>
+    <div class="stat"><b>${runs.length} spells</b><span>separate runs of hotspot months</span></div>
+    <div class="stat"><b>${longest[2]} months</b><span>longest spell, ${md(longest[0])} – ${md(longest[1])}</span></div>
+    <div class="stat"><b>${lr[2]} months</b><span>latest spell, ${md(lr[0])} – ${md(lr[1])}; ${md(last[0])}: ${last[1]?"hotspot":"no hotspot"}</span></div>`;
+})();
+function drawStrip(){
+  const box=$("strip");box.innerHTML="";
+  const by={};A.hs.forEach(r=>{const d=new Date(r[0]+"T00:00");by[d.getFullYear()*12+d.getMonth()]=r});
+  const k0=Math.min(...Object.keys(by).map(Number)), k1=Math.max(...Object.keys(by).map(Number));
+  const s0=Math.floor(k0/12)-(k0%12<9?1:0), s1=Math.floor(k1/12)-(k1%12<9?1:0);
+  const ss=[];for(let s=s0;s<=s1;s++)ss.push(s);
+  const order=[9,10,11,0,1,2,3,4,5,6,7,8];
+  const W=Math.max(box.clientWidth,560), left=62, top=22, g=3, cw=Math.min((W-left-4)/12-g,64), ch=20;
+  const H=top+ss.length*(ch+g)+2;
+  const svg=el("svg",{width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"ASAP hotspot status for Angola by month"},box);
+  order.forEach((m,i)=>txt(svg,left+i*(cw+g)+cw/2,13,MON[m],{"text-anchor":"middle"}));
+  ss.forEach((s,j)=>{
+    const y=top+j*(ch+g);
+    txt(svg,left-10,y+ch/2+4,sLab(s),{"text-anchor":"end",class:"mono"});
+    order.forEach((m,i)=>{
+      const yr=m>=9?s:s+1, k=yr*12+m, x=left+i*(cw+g);
+      if(k<k0||k>k1)return;
+      const r=by[k], rc=el("rect",{x,y,width:cw,height:ch,rx:2},svg);
+      if(r)rc.setAttribute("fill",r[1]>=1?"var(--hot)":"var(--none)");
+      else{rc.setAttribute("fill","none");rc.setAttribute("stroke","var(--muted)");rc.setAttribute("stroke-dasharray","3 2");rc.setAttribute("x",x+.5);rc.setAttribute("y",y+.5);rc.setAttribute("width",cw-1);rc.setAttribute("height",ch-1)}
+      hover(rc,`<b>${MON[m]} ${yr}</b><br>${r?(r[1]>=1?"Hotspot":"No hotspot")+" (assessment dated "+r[0]+")":"No assessment"}`);
+    });
+  });
+}
+
+/* ---------- heatmap ---------- */
+$("hlegend").innerHTML=seqLegend()+`<span style="margin-left:auto;color:var(--muted)">Hover a cell for the highest warning group reached</span>`;
+const hm={lc:"crop",lv:"2"};
+function drawHeat(){
+  const rows=A[hm.lc], idx=hm.lv==="2"?4:3;
+  const provs={};rows.forEach(r=>{(provs[r[0]]=provs[r[0]]||{})[r[1]]=r});
+  const avg=p=>mean(Object.values(provs[p]).map(r=>r[idx]));
+  const order=Object.keys(provs).sort((a,b)=>avg(b)-avg(a));
+  const box=$("heat");box.innerHTML="";
+  const W=Math.max(box.clientWidth,720), left=112, avgW=48, g=2, top=26, ch=22;
+  const cw=(W-left-avgW-14)/seasons.length-g, H=top+order.length*(ch+g)+4;
+  const svg=el("svg",{width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Share of in-season dekads under ASAP warning by province and season"},box);
+  seasons.forEach((s,i)=>{if(cw>=24||i%2===0)txt(svg,left+i*(cw+g)+cw/2,top-9,"’"+String(s).slice(2),{"text-anchor":"middle",class:"mono"})});
+  const ax=left+seasons.length*(cw+g)+14+avgW/2;
+  txt(svg,ax,top-9,"avg",{"text-anchor":"middle"});
+  order.forEach((p,j)=>{
+    const y=top+j*(ch+g);
+    txt(svg,left-10,y+ch/2+4,p,{"text-anchor":"end"});
+    seasons.forEach((s,i)=>{const r=provs[p][s];if(!r)return;const v=r[idx];
+      const rc=el("rect",{x:left+i*(cw+g),y,width:cw,height:ch,rx:2,fill:`var(--s${bin(v)})`},svg);
+      hover(rc,`<b>${p} · ${sLab(s)}</b><br>${pct(v)} of ${r[2]} in-season dekads ${hm.lv==="2"?"at group 2+":"with any warning"}<br>Highest group reached: ${r[5]||"none"}`)});
+    txt(svg,ax,y+ch/2+4,pct(avg(p)),{"text-anchor":"middle",class:"mono strong"});
+  });
+}
+seg("lc","crop",v=>{hm.lc=v;drawHeat()});
+seg("lv","2",v=>{hm.lv=v;drawHeat()});
+
+/* ---------- IPC area bars ---------- */
+seg("ipcr","2021",y=>{
+  y=+y;
+  const C=D.ipc.filter(r=>r[0]===y&&r[1]==="C"), P={};D.ipc.filter(r=>r[0]===y&&r[1]==="P").forEach(r=>P[r[2]]=r);
+  const byP={};C.forEach(r=>(byP[r[4]]=byP[r[4]]||[]).push(r));
+  const kC=`${y}C`,kP=`${y}P`;
+  let h="";
+  Object.keys(byP).sort().forEach(p=>{
+    const pr=ipcProv[`${kC}|${p}`];
+    h+=`<div><h4>${p} · ${fmt(pr.p3)} in Phase 3+ (${pct(pr.share)} of analysed)</h4>${y===2019?`<p class="small" style="margin:-4px 0 8px">Province total: ${pr.basis}.</p>`:""}`;
+    byP[p].sort((a,b)=>b[8]-a[8]).forEach(r=>{const q=P[r[2]];
+      h+=`<div class="brow" data-tip="<b>${r[2]}${y===2019?" ("+r[3]+")":""}, ${p}</b><br>${IPCP[kC].frm} – ${IPCP[kC].to}: Phase ${r[5]}, ${fmt(r[7])} in Phase 3+ (${pct(r[8])}), Phase 4 ${pct(r[10])}<br>${IPCP[kP].frm} – ${IPCP[kP].to}: Phase ${q[5]}, ${fmt(q[7])} in Phase 3+ (${pct(q[8])}), Phase 4 ${pct(q[10])}">
+        <div class="lab">${r[2]}${y===2019?` <small>${r[3]}</small>`:""}</div>
+        <div class="track"><div class="f3" style="width:${r[8]*100}%"></div><div class="f4" style="width:${r[10]*100}%"></div><div class="proj" style="left:calc(${q[8]*100}% - 1px)"></div></div>
+        <div class="bval"><span><b>${pct(r[8])}</b> → ${pct(q[8])}</span>${chip(r[5])}${chip(q[5])}</div></div>`});
+    h+=`</div>`;
+  });
+  h+=`<div class="axis"><div></div><div><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div><div></div></div>`;
+  $("ipc").innerHTML=h;
+  $("ipc").querySelectorAll("[data-tip]").forEach(n=>hover(n,n.dataset.tip));
+});
+
+/* ---------- sources ---------- */
+(function(){
+  const nat=D.ipc_nat;
+  $("src").innerHTML=`
+  <li><b>JRC ASAP</b> (agricultural-production-hotspots.ec.europa.eu): national hotspot assessments, ${A.hs.length} monthly records from ${md(A.hs[0][0])} to ${md(A.hs[A.hs.length-1][0])}; admin-1 cropland and rangeland warnings every dekad, seasons ${sLab(seasons[0])} to ${sLab(seasons[seasons.length-1])}. Warning groups as defined in the ASAP file: 1 rainfall (SPI-3) or water-balance (WSI) anomaly; 2 biomass (zNDVIc) anomaly; 3 biomass plus rainfall or water-balance anomaly; 4 biomass anomaly at senescence. Group 2+ counts groups 2 to 4. Off-season dekads are excluded. ${list(A.never)} are "no crop/rangeland" in every dekad and have no warnings.</li>
+  <li><b>FEWS NET</b> Data Warehouse (fdw.fews.net): records from ${md(F.fews_first)} to ${md(F.fews_last)}; ${TL.length} report months carry a near-term projection (${list([...new Set(TL.map(r=>r[2].replace(", Angola","")))].sort())}). Livelihood-zone maps from the ${md(F.fews_cs_round)} (current) and ${md(F.fews_ml_round)} (projections) packages.</li>
+  <li><b>IPC</b> (api.ipcinfo.org; also on HDX): ${list(D.ipc_titles)}. Area figures from the IPC API; national totals as published (Aug 2019 current ${fmt(nat["2019C"].p3)}, Jun 2021 current ${fmt(nat["2021C"].p3)} in Phase 3+).</li>
+  <li><b>Boundaries</b>: Angola COD-AB (HDX). IPC areas matched to COD municipalities (2021) and communes (2019).</li>
+  <li>Built by <code>drought/ago/build_ago_hotspots.py</code> in OCHA-DAP/pa-rosea-support.</li>`;
+})();
+
+function drawAll(){drawFews();drawStrip();drawHeat()}
+drawAll();
+let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(drawAll,120)});
+</script>
+</body>
+</html>
