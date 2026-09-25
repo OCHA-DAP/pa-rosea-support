@@ -221,6 +221,7 @@ function txt(p,x,y,s,a){const t=el("text",Object.assign({x,y},a||{}),p);t.textCo
 function showTip(ev,html){tip.innerHTML=html;tip.hidden=false;const r=tip.getBoundingClientRect();let x=ev.clientX+14,y=ev.clientY+14;if(x+r.width>innerWidth-8)x=ev.clientX-r.width-14;if(y+r.height>innerHeight-8)y=ev.clientY-r.height-14;tip.style.left=x+"px";tip.style.top=y+"px"}
 function hover(n,html){n.addEventListener("mousemove",ev=>showTip(ev,typeof html==="function"?html():html));n.addEventListener("mouseleave",()=>tip.hidden=true)}
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const short=n=>n>=1e6?(n/1e6).toFixed(2)+"M":Math.round(n/1e3)+"k";
 const fmt=n=>Math.round(n).toLocaleString("en-US"), pct=v=>Math.round(v*100)+"%";
 const sLab=s=>s+"/"+String(s+1).slice(2);
 const md=s=>{const d=new Date(s.slice(0,10)+"T00:00");return MON[d.getMonth()]+" "+d.getFullYear()};
@@ -536,7 +537,7 @@ function drawRain(){
     const i=RS.indexOf(seasonOf(date)); if(i<0)return;
     const x=left+i*cw;
     let t,col,tipT;
-    if(a==="Angola"){const nn=D.ipc_nat[`${yr}C`];t=Math.round(nn.p3/1000)+"k";col="var(--p3)";tipT=`${fmt(nn.p3)} people in Phase 3+ in the current period (areas analysed in ${list([...new Set(D.ipc.filter(r=>r[0]===yr).map(r=>r[4]))].sort())})`}
+    if(a==="Angola"){const nn=D.ipc_nat[`${yr}C`];t=short(nn.p3);col="var(--p3)";tipT=`${fmt(nn.p3)} people in Phase 3+ in the current period (areas analysed in ${list([...new Set(D.ipc.filter(r=>r[0]===yr).map(r=>r[4]))].sort())})`}
     else{const r=ipcProv[`${yr}C|${a}`];
       if(r){t=pct(r.share);col="var(--p3)";tipT=`${fmt(r.p3)} in Phase 3+ (${pct(r.share)} of analysed)<br>${r.basis}`}
       else{t="–";col=null;tipT=`${a} not analysed`}}
