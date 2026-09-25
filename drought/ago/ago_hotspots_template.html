@@ -13,6 +13,7 @@
   --accent:#1D5B7C; --none:#E6EAED; --hot:#B8641A; --land:#EEF1F3; --border:#FFFFFF;
   --s0:#F0F2F3; --s1:#F4E6C8; --s2:#E8C584; --s3:#D39A42; --s4:#A96A1B; --s5:#6B400C;
   --p1:#CDFACD; --p2:#FAE61E; --p3:#E67800; --p4:#C80000; --p5:#640000;
+  --d0:#8C4A0B; --d1:#C27A2C; --d2:#E7BD83; --d3:#E6EAED; --d4:#A7D3CB; --d5:#4E9E94; --d6:#1F6B63;
   --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
@@ -20,12 +21,14 @@
   --bg:#11171B; --surface:#182026; --ink:#E6ECEF; --ink2:#AAB6BD; --muted:#7F8C94; --rule:#2B353B; --rule2:#222B31;
   --accent:#7DB6D6; --none:#273137; --hot:#E09A4E; --land:#222B31; --border:#11171B;
   --s0:#1F272C; --s1:#453620; --s2:#735522; --s3:#A2742C; --s4:#D09B4A; --s5:#F3CB88;
-  --p1:#9FD89F; --p2:#E8D31A; --p3:#E67800; --p4:#E03A3A; --p5:#A33333;}}
+  --p1:#9FD89F; --p2:#E8D31A; --p3:#E67800; --p4:#E03A3A; --p5:#A33333;
+  --d0:#E8A456; --d1:#B67B33; --d2:#6F5329; --d3:#2A343A; --d4:#2E5B55; --d5:#3E8A7F; --d6:#83CBBF;}}
 :root[data-theme="dark"]{color-scheme:dark;
   --bg:#11171B; --surface:#182026; --ink:#E6ECEF; --ink2:#AAB6BD; --muted:#7F8C94; --rule:#2B353B; --rule2:#222B31;
   --accent:#7DB6D6; --none:#273137; --hot:#E09A4E; --land:#222B31; --border:#11171B;
   --s0:#1F272C; --s1:#453620; --s2:#735522; --s3:#A2742C; --s4:#D09B4A; --s5:#F3CB88;
-  --p1:#9FD89F; --p2:#E8D31A; --p3:#E67800; --p4:#E03A3A; --p5:#A33333;}
+  --p1:#9FD89F; --p2:#E8D31A; --p3:#E67800; --p4:#E03A3A; --p5:#A33333;
+  --d0:#E8A456; --d1:#B67B33; --d2:#6F5329; --d3:#2A343A; --d4:#2E5B55; --d5:#3E8A7F; --d6:#83CBBF;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
 .wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:36px 56px}
@@ -81,6 +84,8 @@ table.mx{border-collapse:separate;border-spacing:2px;min-width:880px;width:100%}
 .mx td.pv{text-align:left;font:500 13px var(--sans);color:var(--ink);padding-right:10px;white-space:nowrap}
 .mx td.na{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--rule2) 4px 6px);color:var(--muted);font-weight:400}
 .mx td.gap{width:8px}
+select{font:500 13px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 8px}
+select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .mx tbody tr:hover td.pv{color:var(--accent)}
 .ipc{display:grid;gap:22px}
 .ipc h4{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0 0 8px}
@@ -109,9 +114,21 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 <header>
   <div class="eyebrow">Angola · drought · acute food insecurity</div>
   <h1>Angola drought hotspots</h1>
-  <p class="lede">Which areas of Angola JRC ASAP, IPC and FEWS NET have flagged for drought and acute food insecurity, and how often.</p>
+  <p class="lede">October–March rainfall and NDVI in Angola since 2010/11 (WFP) alongside IPC and FEWS NET food insecurity classifications, and which areas JRC ASAP, IPC and FEWS NET have flagged for drought and acute food insecurity.</p>
   <div class="meta" id="meta"></div>
 </header>
+
+<section aria-labelledby="h-rain">
+  <h2 id="h-rain">October–March rainfall and NDVI, IPC and FEWS NET</h2>
+  <p class="sub" id="rain-sub"></p>
+  <div class="controls"><label class="clabel" for="rarea">Area</label><select id="rarea"></select></div>
+  <div class="facts" id="rfacts"></div>
+  <div class="panel scroll"><div id="rchart"></div><div class="legend" id="rlegend"></div></div>
+  <h3 style="margin-top:24px">By province</h3>
+  <p class="small" style="margin:0 0 10px">October–March rainfall total or mean NDVI as % of WFP's long-term average. Click a row to show that province above.</p>
+  <div class="controls"><span class="clabel">Show</span><span class="seg" id="rds"><button type="button" id="rds-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="rds-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
+  <div class="panel scroll"><div id="rheat"></div><div class="legend" id="rhlegend"></div></div>
+</section>
 
 <section aria-labelledby="h-where">
   <h2 id="h-where">Where each source places the impacts</h2>
@@ -230,7 +247,7 @@ const seasons=[...new Set(A.crop.map(r=>r[1]))].sort((a,b)=>a-b);
 const IPCP=D.ipc_periods;
 
 /* ---------- header + facts ---------- */
-$("meta").textContent=`Built ${new Date().toISOString().slice(0,10)} from: ASAP hotspots to ${md(A.hs[A.hs.length-1][0])}, ASAP warnings to ${A.warn_last} · FEWS NET ${md(F.fews_first)} to ${md(F.fews_last)} · IPC ${D.ipc_titles.map(t=>t.replace("Angola - Acute Food Insecurity ","")).join(", ")}`;
+$("meta").textContent=`Built ${new Date().toISOString().slice(0,10)} from: WFP rainfall ${sLab(D.wfp_meta.rain.first)} to ${sLab(D.wfp_meta.rain.last)} and NDVI ${sLab(D.wfp_meta.ndvi.first)} to ${sLab(D.wfp_meta.ndvi.last)} (Oct–Mar) · ASAP hotspots to ${md(A.hs[A.hs.length-1][0])}, ASAP warnings to ${A.warn_last} · FEWS NET ${md(F.fews_first)} to ${md(F.fews_last)} · IPC ${D.ipc_titles.map(t=>t.replace("Angola - Acute Food Insecurity ","")).join(", ")}`;
 (function(){
   const cz=Object.entries(F.crisis_zones).map(([z,ps])=>`${z} (${list(ps)})`);
   const ipc21=D.ipc.filter(r=>r[0]===2021&&r[1]==="C"), ipc19=D.ipc.filter(r=>r[0]===2019&&r[1]==="C");
@@ -443,6 +460,142 @@ seg("ipcr","2021",y=>{
   $("ipc").querySelectorAll("[data-tip]").forEach(n=>hover(n,n.dataset.tip));
 });
 
+
+
+/* ---------- Oct-Mar rainfall and NDVI (WFP) with IPC and FEWS NET ---------- */
+const WM=D.wfp_meta, R0=2010, RLAST=Math.min(WM.rain.last,WM.ndvi.last), RS=[];for(let y=R0;y<=RLAST;y++)RS.push(y);
+const W={};D.wfp.forEach(r=>{W[`${r[0]}|${r[1]}|${r[2]}`]=r});   // [var, area, season, value, normal, pct, rank]
+const VAR={
+  rain:{label:"Rainfall",unit:"mm",sub:"% of normal",bins:[[0,"under 60%"],[0.6,"60–75%"],[0.75,"75–90%"],[0.9,"90–110%"],[1.1,"110–125%"],[1.25,"125–140%"],[1.4,"over 140%"]],
+    val:r=>`${fmt(r[3])} mm (normal ${fmt(r[4])} mm)`,low:"driest"},
+  ndvi:{label:"NDVI",unit:"",sub:"% of normal",bins:[[0,"under 85%"],[0.85,"85–90%"],[0.9,"90–97%"],[0.97,"97–103%"],[1.03,"103–110%"],[1.1,"110–115%"],[1.15,"over 115%"]],
+    val:r=>`mean NDVI ${r[3].toFixed(3)} (normal ${r[4].toFixed(3)})`,low:"lowest"}};
+const vbin=(k,v)=>{const b=VAR[k].bins;for(let i=b.length-1;i>=0;i--)if(v>=b[i][0])return i;return 0};
+const dInk=i=>(i===0||i===6)?"var(--surface)":"var(--ink)";
+const ord=n=>n+(n%100>=11&&n%100<=13?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th"));
+const seasonOf=d=>{const t=new Date(d.slice(0,10)+"T00:00");return t.getMonth()>=9?t.getFullYear():t.getFullYear()-1};
+const vLegend=k=>VAR[k].bins.map((b,i)=>`<span><i style="background:var(--d${i})"></i>${b[1]}</span>`).join("");
+const baseTxt=k=>{const b=WM[k].base;return `${md(b[0])} – ${md(b[1])}`};
+$("rain-sub").textContent=`October–March rainfall total and mean NDVI for each season from ${sLab(R0)} to ${sLab(RLAST)}, as % of WFP's long-term average (rainfall ${baseTxt("rain")}, NDVI ${baseTxt("ndvi")}). Under each season: the IPC analysis carried out in that October–September year, and FEWS NET's near-term phase for each report month from October to September.`;
+const rsel=$("rarea");
+rsel.innerHTML=["Angola",...PROVS].map(p=>`<option value="${p}">${p==="Angola"?"Angola (national)":p}</option>`).join("");
+let rArea="Angola";
+const IPC_ROUNDS=[[2019,"Aug 2019","2019-08-01"],[2021,"Jun 2021","2021-06-01"]];
+const aName=a=>a==="Angola"?"Angola (national)":a;
+
+function rainFacts(){
+  const a=rArea;
+  const low=k=>RS.map(s=>W[`${k}|${a}|${s}`]).sort((x,y)=>x[5]-y[5]).slice(0,3);
+  const line=k=>list(low(k).map(r=>`${sLab(r[2])} ${pct(r[5])} (${ord(r[6])} ${VAR[k].low} of ${WM[k].n})`));
+  let ipcTxt;
+  if(a==="Angola") ipcTxt=IPC_ROUNDS.map(([y,lab])=>`${lab}: ${fmt(D.ipc_nat[`${y}C`].p3)} people in Phase 3+`).join("; ")+` (${list([...new Set(D.ipc.map(r=>r[4]))].sort())} only).`;
+  else{
+    const rows=IPC_ROUNDS.map(([y,lab])=>[lab,ipcProv[`${y}C|${a}`]]).filter(x=>x[1]);
+    ipcTxt=rows.length?rows.map(([lab,r])=>`${lab}: ${fmt(r.p3)} in Phase 3+ (${pct(r.share)} of analysed)`).join("; ")+".":`${a} was not covered by either IPC analysis.`;
+  }
+  $("rfacts").innerHTML=`
+   <div class="fact" style="--src:var(--d1)"><div class="src">Lowest Oct–Mar seasons since ${sLab(R0)} · ${aName(a)}</div>
+    <p>Rainfall: ${line("rain")}.<br>NDVI: ${line("ndvi")}.<br><span class="small">Ranks among all seasons in each record: rainfall from ${sLab(WM.rain.first)} (${WM.rain.n}), NDVI from ${sLab(WM.ndvi.first)} (${WM.ndvi.n}).</span></p></div>
+   <div class="fact" style="--src:var(--p4)"><div class="src">IPC · ${aName(a)}</div><p>${ipcTxt}</p></div>`;
+}
+
+function barPanel(svg,k,a,left,right,Wd,cw,top,bh){
+  const vals=RS.map(s=>W[`${k}|${a}|${s}`][5]);
+  const step=k==="rain"?0.25:0.05;
+  const span=Math.max(...vals.map(v=>Math.abs(v-1)))*1.1;
+  const half=Math.max(k==="rain"?0.5:0.1,Math.ceil(span/step)*step);
+  const ymax=1+half, ymin=Math.max(0,1-half);
+  const y=v=>top+bh*(ymax-v)/(ymax-ymin);
+  for(let t=ymin;t<=ymax+1e-9;t+=step){
+    const one=Math.abs(t-1)<1e-9;
+    el("line",{x1:left,x2:Wd-right,y1:y(t),y2:y(t),stroke:one?"var(--ink2)":"var(--rule2)","stroke-width":1,...(one?{"stroke-dasharray":"4 3"}:{})},svg);
+    txt(svg,left-8,y(t)+4,Math.round(t*100)+"%",{"text-anchor":"end",class:"mono"});
+  }
+  txt(svg,6,top+10,VAR[k].label,{class:"strong"});txt(svg,6,top+24,"% of normal");
+  RS.forEach((s,i)=>{
+    const r=W[`${k}|${a}|${s}`], x=left+i*cw, bw=Math.min(cw*0.56,34), bx=x+(cw-bw)/2, v=r[5], y1=y(1), yv=y(v);
+    el("rect",{x:bx,y:Math.min(y1,yv),width:bw,height:Math.max(Math.abs(yv-y1),1.5),rx:2,fill:`var(--d${vbin(k,v)})`},svg);
+    txt(svg,x+cw/2,v<1?yv+13:yv-5,pct(v),{"text-anchor":"middle",class:"mono"});
+    const hit=el("rect",{x,y:top,width:cw,height:bh,fill:"transparent"},svg);
+    hover(hit,`<b>${aName(a)} · Oct ${s} – Mar ${s+1}</b><br>${VAR[k].label}: ${VAR[k].val(r)}<br>${pct(v)} of normal · ${ord(r[6])} ${VAR[k].low} of ${WM[k].n} seasons since ${sLab(WM[k].first)}`);
+  });
+}
+
+function drawRain(){
+  const a=rArea, box=$("rchart");box.innerHTML="";
+  const n=RS.length, Wd=Math.max(box.clientWidth,760), left=118, right=8, cw=(Wd-left-right)/n;
+  const t1=14, bh1=170, t2=t1+bh1+22, bh2=110, yLab=t2+bh2+16, iy=yLab+18, ipcH=40, fy=iy+ipcH+12, fewsH=26, H=fy+fewsH+26;
+  const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`October–March rainfall and NDVI as % of normal for ${aName(a)}, with IPC and FEWS NET`},box);
+  barPanel(svg,"rain",a,left,right,Wd,cw,t1,bh1);
+  barPanel(svg,"ndvi",a,left,right,Wd,cw,t2,bh2);
+  RS.forEach((s,i)=>txt(svg,left+i*cw+cw/2,yLab,sLab(s),{"text-anchor":"middle",class:"mono"}));
+  // IPC row: the analysis carried out in each October-September year
+  el("line",{x1:left,x2:Wd-right,y1:iy-6,y2:iy-6,stroke:"var(--rule)"},svg);
+  txt(svg,6,iy+15,"IPC",{class:"strong"});txt(svg,6,iy+29,"Phase 3+");
+  IPC_ROUNDS.forEach(([yr,lab,date])=>{
+    const i=RS.indexOf(seasonOf(date)); if(i<0)return;
+    const x=left+i*cw;
+    let t,col,tipT;
+    if(a==="Angola"){const nn=D.ipc_nat[`${yr}C`];t=Math.round(nn.p3/1000)+"k";col="var(--p3)";tipT=`${fmt(nn.p3)} people in Phase 3+ in the current period (areas analysed in ${list([...new Set(D.ipc.filter(r=>r[0]===yr).map(r=>r[4]))].sort())})`}
+    else{const r=ipcProv[`${yr}C|${a}`];
+      if(r){t=pct(r.share);col="var(--p3)";tipT=`${fmt(r.p3)} in Phase 3+ (${pct(r.share)} of analysed)<br>${r.basis}`}
+      else{t="–";col=null;tipT=`${a} not analysed`}}
+    const g=el("rect",{x:x+2,y:iy,width:cw-4,height:ipcH-6,rx:3,fill:col||"none",stroke:col?"none":"var(--rule)"},svg);
+    txt(svg,x+cw/2,iy+14,t,{"text-anchor":"middle",class:"mono",style:`fill:${col?"#fff":"var(--muted)"};font-weight:600;pointer-events:none`});
+    txt(svg,x+cw/2,iy+27,lab,{"text-anchor":"middle",style:`fill:${col?"#fff":"var(--muted)"};font-size:10px;pointer-events:none`});
+    hover(g,`<b>IPC ${lab} · ${aName(a)}</b><br>${tipT}`);
+  });
+  // FEWS NET row: one cell per report month, October to September
+  txt(svg,6,fy+11,"FEWS NET",{class:"strong"});txt(svg,6,fy+24,"near term");
+  const TLm={};TL.forEach(r=>{const d=new Date(r[0]+"T00:00");TLm[d.getFullYear()*12+d.getMonth()]=r});
+  const provNear=a!=="Angola"&&fewsBy[a]?Math.max(...fewsBy[a].map(z=>z[4])):null;
+  RS.forEach((s,i)=>{
+    const x=left+i*cw, mw=(cw-4)/12;
+    el("rect",{x:x+2,y:fy,width:cw-4,height:fewsH,fill:"none",stroke:"var(--rule2)"},svg);
+    for(let j=0;j<12;j++){
+      const m=(9+j)%12, yr=m>=9?s:s+1, r=TLm[yr*12+m];
+      if(!r)continue;
+      let ph=r[1], note="national phase";
+      if(a!=="Angola"){ if(r[3]==="zones"){ph=provNear;note=`highest livelihood zone in ${a}`} else note="national phase; no province breakdown in this report" }
+      else if(r[3]==="zones") note="highest livelihood zone in Angola";
+      const c=el("rect",{x:x+2+j*mw,y:fy,width:Math.max(mw-0.6,0.8),height:fewsH,fill:`var(--p${ph})`,opacity:(a!=="Angola"&&r[3]==="national")?0.45:1},svg);
+      hover(c,`<b>FEWS NET · ${MON[m]} ${yr} report</b><br>Phase ${ph} ${PH[ph]} (${note})<br>${r[2]}`);
+    }
+  });
+  txt(svg,left,fy+fewsH+16,`Empty: no FEWS NET near-term projection for that report month.${a!=="Angola"?" Faded: national phase, not specific to the province.":""}`,{class:"mono",style:"fill:var(--muted)"});
+  $("rlegend").innerHTML=`<span class="grp">Rainfall</span>`+vLegend("rain")+`<span class="grp" style="margin-left:8px">NDVI</span>`+vLegend("ndvi")+`<span class="grp" style="margin-left:8px">IPC / FEWS NET</span>`+phLegend([2,3]);
+}
+
+const rh={v:"rain"};
+function drawRainHeat(){
+  const box=$("rheat");box.innerHTML="";
+  const k=rh.v, avg=p=>mean(RS.map(s=>W[`${k}|${p}|${s}`][5]));
+  const order=["Angola",...[...PROVS].sort((a,b)=>avg(a)-avg(b))];
+  const Wd=Math.max(box.clientWidth,720), left=124, g=2, top=24, ch=22, avgW=46;
+  const cw=(Wd-left-avgW-14)/RS.length-g, H=top+order.length*(ch+g)+10;
+  const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`October–March ${VAR[k].label} % of normal by province and season`},box);
+  RS.forEach((s,i)=>txt(svg,left+i*(cw+g)+cw/2,top-8,cw>=38?sLab(s):"’"+String(s).slice(2),{"text-anchor":"middle",class:"mono"}));
+  const ax=left+RS.length*(cw+g)+14+avgW/2; txt(svg,ax,top-8,"avg",{"text-anchor":"middle"});
+  order.forEach((p,j)=>{
+    const yy=top+j*(ch+g)+(j>0?6:0);
+    txt(svg,left-10,yy+ch/2+4,aName(p),{"text-anchor":"end",class:p===rArea?"strong":""});
+    RS.forEach((s,i)=>{
+      const r=W[`${k}|${p}|${s}`], b=vbin(k,r[5]), x=left+i*(cw+g);
+      const c=el("rect",{x,y:yy,width:cw,height:ch,rx:2,fill:`var(--d${b})`},svg);
+      if(p===rArea){c.setAttribute("stroke","var(--ink)");c.setAttribute("stroke-width","1.2")}
+      if(cw>=26)txt(svg,x+cw/2,yy+ch/2+4,Math.round(r[5]*100),{"text-anchor":"middle",class:"mono",style:`fill:${dInk(b)};font-size:10px;pointer-events:none`});
+      c.style.cursor="pointer";c.addEventListener("click",()=>{rsel.value=p;setArea(p)});
+      hover(c,`<b>${aName(p)} · Oct ${s} – Mar ${s+1}</b><br>${VAR[k].label}: ${VAR[k].val(r)}<br>${pct(r[5])} of normal · ${ord(r[6])} ${VAR[k].low} of ${WM[k].n} seasons since ${sLab(WM[k].first)}`);
+    });
+    txt(svg,ax,yy+ch/2+4,pct(avg(p)),{"text-anchor":"middle",class:"mono strong"});
+  });
+  $("rhlegend").innerHTML=vLegend(k)+`<span style="margin-left:auto;color:var(--muted)">Numbers: % of normal · avg: ${sLab(R0)}–${sLab(RLAST)}</span>`;
+}
+function setArea(p){rArea=p;rainFacts();drawRain();drawRainHeat()}
+rsel.addEventListener("change",()=>setArea(rsel.value));
+seg("rds","rain",v=>{rh.v=v;drawRainHeat()});
+rainFacts();
+
 /* ---------- sources ---------- */
 (function(){
   const nat=D.ipc_nat;
@@ -450,11 +603,12 @@ seg("ipcr","2021",y=>{
   <li><b>JRC ASAP</b> (agricultural-production-hotspots.ec.europa.eu): national hotspot assessments, ${A.hs.length} monthly records from ${md(A.hs[0][0])} to ${md(A.hs[A.hs.length-1][0])}; admin-1 cropland and rangeland warnings every dekad, seasons ${sLab(seasons[0])} to ${sLab(seasons[seasons.length-1])}. Warning groups as defined in the ASAP file: 1 rainfall (SPI-3) or water-balance (WSI) anomaly; 2 biomass (zNDVIc) anomaly; 3 biomass plus rainfall or water-balance anomaly; 4 biomass anomaly at senescence. Group 2+ counts groups 2 to 4. Off-season dekads are excluded. ${list(A.never)} are "no crop/rangeland" in every dekad and have no warnings.</li>
   <li><b>FEWS NET</b> Data Warehouse (fdw.fews.net): records from ${md(F.fews_first)} to ${md(F.fews_last)}; ${TL.length} report months carry a near-term projection (${list([...new Set(TL.map(r=>r[2].replace(", Angola","")))].sort())}). Livelihood-zone maps from the ${md(F.fews_cs_round)} (current) and ${md(F.fews_ml_round)} (projections) packages.</li>
   <li><b>IPC</b> (api.ipcinfo.org; also on HDX): ${list(D.ipc_titles)}. Area figures from the IPC API; national totals as published (Aug 2019 current ${fmt(nat["2019C"].p3)}, Jun 2021 current ${fmt(nat["2021C"].p3)} in Phase 3+).</li>
+  <li><b>Rainfall and NDVI</b>: WFP on HDX (<code>ago-rainfall-subnational</code>, <code>ago-ndvi-subnational</code>), dekadal values by province. Rainfall from CHIRPS v2; October–March total = sum of the 18 dekads; normal = sum of WFP's dekadal long-term averages (${baseTxt("rain")}). NDVI from MODIS; October–March mean of the 18 dekads; normal = mean of WFP's dekadal long-term averages (${baseTxt("ndvi")}). Angola: provinces weighted by WFP pixel count. WFP's ${list(WM.odd_units)} units cover different areas from the COD provinces of the same name (${list(WM.odd_units.map(p=>WM.rain.km2_per_px[p]+" km² per pixel for "+p))}, against about 30 elsewhere); together they match the combined COD area.</li>
   <li><b>Boundaries</b>: Angola COD-AB (HDX). IPC areas matched to COD municipalities (2021) and communes (2019).</li>
   <li>Built by <code>drought/ago/build_ago_hotspots.py</code> in OCHA-DAP/pa-rosea-support.</li>`;
 })();
 
-function drawAll(){drawFews();drawStrip();drawHeat()}
+function drawAll(){drawRain();drawRainHeat();drawFews();drawStrip();drawHeat()}
 drawAll();
 let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(drawAll,120)});
 </script>

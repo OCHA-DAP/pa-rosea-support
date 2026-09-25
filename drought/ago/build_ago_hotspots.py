@@ -8,6 +8,7 @@ Sources
 - FEWS NET Data Warehouse: ipcphase.csv + ipcphase JSON (cross-check) + ipcpackage shapefiles
 - IPC API (analyses, areas; needs IPC_API_KEY) + HDX IPC area file (cross-check)
 - HDX COD-AB Angola boundaries (maps and area-to-province lookup)
+- WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by province (ago-rainfall-subnational, ago-ndvi-subnational)
 
 Run from the repo root:
     uv run --with pandas --with geopandas --with requests python drought/ago/build_ago_hotspots.py
@@ -388,6 +389,73 @@ def load_ipc(adm):
     return d, prov, periods, nat, an
 
 
+# ---------------------------------------------------------------- rainfall and NDVI (Oct-Mar), WFP on HDX
+WFP_RAIN = (
+    "https://data.humdata.org/dataset/84dbf78f-3d9c-43d4-8a69-64debbd9e582/resource/"
+    "fac00c49-12ca-4a13-9bed-75e829c879ea/download/ago-rainfall-subnat-full.csv"
+)
+WFP_NDVI = (
+    "https://data.humdata.org/dataset/3ca138a8-0832-47be-8908-5f9a95c330d9/resource/"
+    "2284c6e2-d80c-49ab-9931-b8a04236df46/download/ago-ndvi-subnat-full.csv"
+)
+ONDJFM = (10, 11, 12, 1, 2, 3)  # 18 dekads, dated by their start day
+
+
+def load_wfp(adm):
+    """Oct-Mar rainfall (CHIRPS, WFP) and NDVI (MODIS, WFP) per province, plus an Angola pixel-weighted mean."""
+    names = dict(zip(adm[1]["adm1_pcode"], adm[1]["adm1_name"]))
+    area = dict(zip(adm[1]["adm1_pcode"], adm[1]["area_sqkm"]))
+    out, meta = [], {}
+    for var, url, fname, val, avg, base in (
+        ("rain", WFP_RAIN, "wfp_ago_rain.csv", "rfh", "rfh_avg", ("1989-01-01", "2018-12-31")),
+        ("ndvi", WFP_NDVI, "wfp_ago_ndvi.csv", "vim", "vim_avg", ("2002-07-01", "2018-07-01")),
+    ):
+        d = pd.read_csv(fetch(url, fname), parse_dates=["date"])  # no HXL row in these files
+        d = d[d["adm_level"] == 1].copy()
+        check(set(d["PCODE"]) == set(names), f"WFP {var}: the 18 province PCODEs match COD admin1 PCODEs")
+        check(d.groupby("PCODE")["n_pixels"].nunique().eq(1).all(), f"WFP {var}: one pixel count per province")
+        d["md"] = d["date"].dt.strftime("%m-%d")
+        # the long-term average column is the per-dekad mean over the documented reference period (inclusive)
+        lta = d[d["date"].between(*base)].groupby(["PCODE", "md"])[val].mean()
+        got = d.groupby(["PCODE", "md"])[avg].agg(["min", "max"])
+        check((got["max"] - got["min"]).abs().max() == 0, f"WFP {var}: {avg} constant per province and dekad")
+        gap = (got["min"] - lta.reindex(got.index)).abs().max()
+        check(gap < 1e-3 * max(1, lta.abs().max()), f"WFP {var}: {avg} equals the {base[0]} to {base[1]} dekadal mean (max diff {gap:.2g})")
+        d = d[d["date"].dt.month.isin(ONDJFM)].copy()
+        d["season"] = d["date"].map(lambda t: t.year if t.month >= 10 else t.year - 1)
+        full = d.groupby(["PCODE", "season"]).size()
+        seasons = sorted(s for s in full.index.get_level_values(1).unique() if (full.xs(s, level=1) == 18).all())
+        check(seasons == list(range(seasons[0], seasons[-1] + 1)), f"WFP {var}: complete Oct-Mar seasons {seasons[0]}/{seasons[0] + 1} to {seasons[-1]}/{seasons[-1] + 1}, none missing")
+        d = d[d["season"].isin(seasons)]
+        if "version" in d:
+            check((d["version"] == "final").all(), f"WFP {var}: every Oct-Mar dekad used is final (not prelim or forecast)")
+        agg = "sum" if var == "rain" else "mean"
+        s = d.groupby(["PCODE", "season"]).agg(v=(val, agg), n=(avg, agg), px=("n_pixels", "first")).reset_index()
+        nat = s.assign(wv=s.v * s.px, wn=s.n * s.px).groupby("season").agg(wv=("wv", "sum"), wn=("wn", "sum"), px=("px", "sum")).reset_index()
+        nat = nat.assign(PCODE="AO", v=nat.wv / nat.px, n=nat.wn / nat.px)[["PCODE", "season", "v", "n", "px"]]
+        s = pd.concat([s, nat], ignore_index=True)
+        s["area"] = s["PCODE"].map(lambda p: names.get(p, "Angola"))
+        s["pct"] = s["v"] / s["n"]
+        s["rank"] = s.groupby("PCODE")["v"].rank(method="min").astype(int)  # 1 = lowest
+        s["var"] = var
+        out.append(s)
+        px = d.groupby("PCODE")["n_pixels"].first()
+        km2 = {p: area[p] / px[p] for p in px.index}
+        meta[var] = {"first": seasons[0], "last": seasons[-1], "base": base, "n": len(seasons),
+                     "km2_per_px": {names[p]: round(v, 1) for p, v in km2.items()}}
+    # WFP's own units vs COD provinces: area per CHIRPS pixel should be about constant if the units are the same
+    k = meta["rain"]["km2_per_px"]
+    typical = float(pd.Series(k).median())
+    odd = sorted(p for p, v in k.items() if abs(v / typical - 1) > 0.15)
+    CHECKS.append(("NOTE", f"WFP province units whose pixel count does not fit the COD area (km2/pixel, median {typical:.1f}): "
+                           + ", ".join(f"{p} {k[p]}" for p in odd)))
+    both = sum(adm[1].set_index("adm1_name").loc[odd, "area_sqkm"]) / sum(
+        int(round(adm[1].set_index("adm1_name").loc[p, "area_sqkm"] / k[p])) for p in odd)
+    check(abs(both / typical - 1) < 0.1, f"{' + '.join(odd)} together fit the COD area ({both:.1f} km2/pixel)")
+    meta["odd_units"] = odd
+    return pd.concat(out, ignore_index=True), meta
+
+
 # ---------------------------------------------------------------- map paths
 class Proj:
     def __init__(self, bounds, width=560):
@@ -417,6 +485,7 @@ def build():
     asap = load_asap(provinces)
     fews = load_fews(provinces)
     ipc, ipc_prov, ipc_periods, ipc_nat, ipc_an = load_ipc(adm)
+    wfp, wfp_meta = load_wfp(adm)
 
     proj = Proj(adm[0].total_bounds)
     maps = {
@@ -460,6 +529,9 @@ def build():
         "ipc_periods": {f"{y}{p}": v for (y, p), v in ipc_periods.items()},
         "ipc_nat": {f"{y}{p}": v for (y, p), v in ipc_nat.items()},
         "ipc_titles": sorted(a["title"] for a in ipc_an),
+        "wfp": [[r.var, r.area, int(r.season), round(float(r.v), 4 if r.var == "ndvi" else 1), round(float(r.n), 4 if r.var == "ndvi" else 1),
+                 round(float(r.pct), 4), int(r.rank)] for r in wfp.itertuples()],
+        "wfp_meta": wfp_meta,
         "facts": {
             "crisis_zones": crisis, "crisis_zones_cs": [int(x) for x in crisis_cs], "crisis_ph": [int(x) for x in crisis_ph],
             "fews_cs_round": fews["cs_round"], "fews_ml_round": fews["ml_round"],
