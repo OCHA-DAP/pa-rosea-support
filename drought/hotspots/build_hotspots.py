@@ -242,7 +242,13 @@ class Country:
         check(((m["value_csv"] == m["value_json"]) | (m["value_csv"].isna() & m["value_json"].isna())).all(), f"FEWS NET {self.name}: CSV and JSON phases identical")
         check((csv["data_usage_policy"] == "Public").all(), f"FEWS NET {self.name}: all rows public")
         csv["sc"] = csv["scenario_name"].str.strip()
-        csv["doc"] = csv["source_document"]
+        # document labels: keep the type, drop the country suffix; FDW files some reports under another country's name
+        parts = csv["source_document"].str.rsplit(", ", n=1, expand=True)
+        csv["doc"] = parts[0]
+        odd_docs = sorted(set(parts[1].dropna()) - {self.name, "Highest FIC"})
+        if odd_docs:
+            note(f"FEWS NET {self.name}: {int(parts[1].isin(odd_docs).sum())} records whose document label names another country ({odd_docs}); "
+                 "the unit names and IDs are this country's, so the records are used and the label is shown without the country")
         sub = csv[csv["unit_type"].isin(["fsc_admin", "fsc_admin_lhz"])].copy()
         sub["prov"] = sub["geographic_unit_full_name"].str.split(", ").str[-2].map(self.prov_of)
         check(sub["prov"].notna().all(), f"FEWS NET {self.name}: every subnational unit placed in a COD province")
@@ -297,10 +303,10 @@ class Country:
             last = r["reporting_date"].max()
             r = r[r["reporting_date"] == last]
             check(set(r["fnid"]) == set(geo["fnid"]), f"FEWS NET {self.name} {col}: latest round {last} covers the package zones")
-            zones[col] = {"round": last, "doc": sorted(set(r["doc"]))[0].rsplit(", ", 1)[0],
+            zones[col] = {"round": last, "doc": sorted(set(r["doc"]))[0],
                           "from": r["projection_start"].min(), "to": r["projection_end"].max(),
                           "phase": dict(zip(r["fnid"], r["value"].astype(int)))}
-        self.fews = {"monthly": monthly, "geo": geo, "zones": zones,
+        self.fews = {"monthly": monthly, "geo": geo, "zones": zones, "odd_docs": odd_docs,
                      "first": csv["reporting_date"].min(), "last": csv["reporting_date"].max()}
 
     # ------------------------------------------------------------ IPC
@@ -561,7 +567,7 @@ class Country:
         data = {
             "country": {"iso3": self.iso3, "name": self.name}, "built": pd.Timestamp.today().strftime("%Y-%m-%d"),
             "provinces": self.provinces, "asap": self.asap, "maps": maps,
-            "fews": {"monthly": self.fews["monthly"], "first": self.fews["first"], "last": self.fews["last"],
+            "fews": {"monthly": self.fews["monthly"], "first": self.fews["first"], "last": self.fews["last"], "odd_docs": self.fews["odd_docs"],
                      "zones": {k: {x: v[x] for x in ("round", "doc", "from", "to")} for k, v in z.items()},
                      "crisis": {k: sorted(v) for k, v in crisis.items()}},
             "ipc": ipc_rows, "ipc_rounds": self.ipc_rounds, "ipc_prov": self.ipc_prov, "ipc_moved": self.ipc_moved,

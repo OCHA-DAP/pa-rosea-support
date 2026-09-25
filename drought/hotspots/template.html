@@ -269,7 +269,7 @@ function ipcAreaText(a){
     const rs=CUR_ROUNDS;
     if(rs.length<=3) return rs.map(r=>`${r.label}: ${fmt(r.nat.C.p3)} people in Phase 3+.`).join(" ");
     const peak=rs.reduce((x,y)=>y.nat.C.p3>x.nat.C.p3?y:x), last=rs[rs.length-1];
-    return `${rs.length} analyses with a current period, ${rs[0].label} to ${last.label}. Latest (${last.label}): ${fmt(last.nat.C.p3)} people in Phase 3+. Highest: ${fmt(peak.nat.C.p3)} in ${peak.label}.`;
+    return `${ROUNDS.length} analyses, ${ROUNDS[0].label} to ${last.label}. Latest (${last.label}): ${fmt(last.nat.C.p3)} people in Phase 3+. Highest: ${fmt(peak.nat.C.p3)} in ${peak.label}.`;
   }
   const rs=CUR_ROUNDS.map(r=>[r,ipcProv[`${r.id}|C|${a}`]]).filter(x=>x[1]);
   if(!rs.length) return "Not covered by any IPC analysis.";
@@ -390,7 +390,7 @@ rainFacts();
   const p4=lastRows.filter(r=>r[5]>=4).map(r=>r[2]);
   const peak=CUR_ROUNDS.reduce((x,y)=>y.nat.C.p3>x.nat.C.p3?y:x);
   let ipcP=`${last.label}: ${fmt(last.nat.C.p3)} people in Phase 3+ in the ${lastRows.length} ${last.unit} analysed. `+
-    (p4.length?`${p4.length} ${p4.length===1?"was":"were"} in Emergency (Phase 4)${p4.length<=8?": "+list(p4):""}. `:"None was in Emergency (Phase 4). ");
+    (p4.length?`${p4.length} ${p4.length===1?"was":"were"} in Emergency (Phase 4)${p4.length<=8?": "+list(p4):""}. `:"None were in Emergency (Phase 4). ");
   if(CUR_ROUNDS.length>2) ipcP+=peak.id===last.id?`This is the highest of the ${CUR_ROUNDS.length} analyses.`:`Highest: ${fmt(peak.nat.C.p3)} in ${peak.label}.`;
   const rec=PROVS.map(p=>[p,asapAvg(p,RECENT)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,4);
   const all=PROVS.map(p=>[p,asapAvg(p)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,4);
@@ -491,7 +491,7 @@ seg("m-fews","5",ix=>{
   $("hs-sub").textContent=`ASAP's monthly assessment of whether ${C.name} is a hotspot or a major hotspot. One row per season, October to September.`;
   const longest=runs.length?runs.reduce((a,b)=>b[2]>a[2]?b:a):null, lr=runs[runs.length-1];
   $("stats").innerHTML=
-   `<div class="stat"><b>${hs.filter(r=>r[1]>=1).length} of ${hs.length}</b><span>months as a hotspot${nm?`, ${nm} as a major hotspot`:", never a major hotspot"}</span></div>
+   `<div class="stat"><b>${hs.filter(r=>r[1]>=1).length} of ${hs.length}</b><span>months as a hotspot${nm?`, ${nm} of them as a major hotspot`:", never a major hotspot"}</span></div>
     <div class="stat"><b>${runs.length} spells</b><span>separate hotspot spells</span></div>`+
    (longest?`<div class="stat"><b>${longest[2]} months</b><span>longest spell, ${md(longest[0])} to ${md(longest[1])}</span></div>
     <div class="stat"><b>${lr[2]} months</b><span>latest spell, ${md(lr[0])} to ${md(lr[1])}</span></div>`:"");
@@ -578,7 +578,7 @@ drawIpcBars();
   const F=D.fews, odd=WM.odd_units;
   $("src").innerHTML=`
   <li><b>JRC ASAP</b>: monthly national hotspot assessments since ${md(A.hs[0][0])}, and cropland and rangeland warnings by province every ten days since ${sLab(asapSeasons[0])}. Warning groups: 1 rainfall or water-balance anomaly, 2 vegetation (biomass) anomaly, 3 both, 4 vegetation anomaly at the end of the season.${A.never.length?` ${list(A.never)} have no crop or rangeland in ASAP and no warnings.`:""}</li>
-  <li><b>FEWS NET</b> Data Warehouse: reports from ${md(F.first)} to ${md(F.last)}. Zone map from the latest FEWS NET shapefiles, with phases from the ${md(ZN.CS.round)} to ${md(ZN.ML2.round)} reports.</li>
+  <li><b>FEWS NET</b> Data Warehouse: reports from ${md(F.first)} to ${md(F.last)}. Zone map from the latest FEWS NET shapefiles, with phases from the ${md(ZN.CS.round)} to ${md(ZN.ML2.round)} reports.${F.odd_docs.length?` The Data Warehouse files some ${C.name} reports under ${list(F.odd_docs)}; the areas and IDs in them are ${C.name}'s, so they are used here.`:""}</li>
   <li><b>IPC</b>: ${ROUNDS.length} acute food insecurity analyses, ${ROUNDS[0].label} to ${ROUNDS[ROUNDS.length-1].label}, from the IPC API, checked against HDX where HDX has the analysis. Province totals are as IPC published them.${D.ipc_moved.length?` IPC counts ${list(D.ipc_moved.map(m=>m[0]+" in "+m[1]))}; the official boundaries place ${D.ipc_moved.length===1?"it":"them"} in ${list(D.ipc_moved.map(m=>m[2]))}.`:""}</li>
   <li><b>Rainfall and NDVI</b>: WFP on HDX, by province. Rainfall is CHIRPS, added up over the 18 ten-day periods from October to March and compared with the ${baseTxt("rain")} average. NDVI is MODIS, averaged over the same periods and compared with the ${baseTxt("ndvi")} average.${odd.length?` WFP splits ${list(odd)} differently from the official boundaries; together they match.`:""}</li>
   <li><b>Boundaries</b>: ${C.name} COD-AB on HDX.</li>
