@@ -364,10 +364,10 @@ def load_ipc(adm):
         if y == 2021:
             r = g.iloc[0]
             prov.append(dict(year=y, per=per, prov=pv, p3=int(r.p3), pop=None if pd.isna(r["pop"]) else int(r["pop"]),
-                             share=float(r.pct), basis="published province figure"))
+                             share=float(r.pct), basis="Published province figure"))
         else:
             prov.append(dict(year=y, per=per, prov=pv, p3=int(g.p3.sum()), pop=int(g["pop"].sum()),
-                             share=float(g.p3.sum() / g["pop"].sum()), basis=f"sum of published figures for {', '.join(sorted(g.lvl))}"))
+                             share=float(g.p3.sum() / g["pop"].sum()), basis=f"Total of the municipality figures for {', '.join(sorted(g.lvl))}"))
     prov = pd.DataFrame(prov)
     periods = d.groupby(["year", "per"])[["frm", "to"]].first().to_dict("index")
     sums = d.groupby(["year", "per"])[["p3", "p4", "pop"]].sum()
@@ -532,6 +532,7 @@ def build():
         "wfp": [[r.var, r.area, int(r.season), round(float(r.v), 4 if r.var == "ndvi" else 1), round(float(r.n), 4 if r.var == "ndvi" else 1),
                  round(float(r.pct), 4), int(r.rank)] for r in wfp.itertuples()],
         "wfp_meta": wfp_meta,
+        "built": pd.Timestamp.today().strftime("%Y-%m-%d"),
         "facts": {
             "crisis_zones": crisis, "crisis_zones_cs": [int(x) for x in crisis_cs], "crisis_ph": [int(x) for x in crisis_ph],
             "fews_cs_round": fews["cs_round"], "fews_ml_round": fews["ml_round"],
