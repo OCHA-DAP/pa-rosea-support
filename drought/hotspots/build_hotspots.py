@@ -373,7 +373,7 @@ class Country:
             return [k2[x] for x in (t if isinstance(t, list) else [t]) if x in k2]
 
         places = []
-        for anl, g in d.groupby("anl"):
+        for _anl, g in d.groupby("anl"):
             share2 = g["area"].map(lambda s: len(adm2_hits(key(s))) > 0).mean()
             level = 2 if share2 >= 0.9 else 3
             for r in g.itertuples():
@@ -397,7 +397,7 @@ class Country:
         check(d["prov"].notna().all(), f"IPC {self.name}: every area matched to COD units ({len(d)} area-periods)")
         # group each area under the province IPC itself used (HDX "Level 1"), where that is a province;
         # COD only supplies the geometry. Differences are listed on the page.
-        l1 = {(f, per, key(a)): self.prov_of(l) for f, per, a, l in zip(h_area["frm"], h_area["per"], h_area["Area"], h_area["Level 1"])}
+        l1 = {(f, per, key(a)): self.prov_of(lv) for f, per, a, lv in zip(h_area["frm"], h_area["per"], h_area["Area"], h_area["Level 1"])}
         d["prov_cod"] = d["prov"]
         d["prov"] = [l1.get((f, per, key(a))) or pc for f, per, a, pc in zip(d["frm_d"], d["per"], d["area"], d["prov_cod"])]
         moved = d[d["prov"] != d["prov_cod"]]
@@ -633,7 +633,7 @@ class Country:
         ipc_rows = [[r.anl, r.per, r.name, r.muni if r.level == 3 else None, r.prov, int(r.phase), int(r.pop), int(r.p3), r.p3pct,
                      int(r.p4), r.p4pct, "+".join(r.pcodes)] for r in self.ipc.itertuples()]
         crisis = {}
-        for f, prov, lz, cs, ml1, ml2, _ in fews_map:
+        for _f, prov, lz, _cs, _ml1, ml2, _path in fews_map:
             if ml2 >= 3:
                 crisis.setdefault(lz, set()).add(prov)
         data = {

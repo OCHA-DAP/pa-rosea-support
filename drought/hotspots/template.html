@@ -46,7 +46,8 @@ h3{font-size:15px;margin:0 0 4px;font-weight:600}
 .glance h2{font-size:17px;margin:0 0 10px}
 .glance h3{font-size:14px;margin:0 0 4px}
 table.hot{min-width:720px}
-.hot th{white-space:nowrap}
+.hot th{max-width:120px}
+.hot th.pv{white-space:nowrap}
 .glance dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0;font-size:14px}
 .glance dt{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:3px}
 .glance dd{margin:0}
@@ -265,6 +266,7 @@ const ipcProv={};D.ipc_prov.forEach(r=>{ipcProv[`${r.round}|${r.per}|${r.prov}`]
 const ZN=D.fews.zones;
 const FM={};D.fews.monthly.forEach(r=>{(FM[r[1]]=FM[r[1]]||{})[r[0].slice(0,7)]=r});
 const covLab=z=>`${md(z.from)} to ${md(z.to)}`;
+const THR={dry:0.8,low:0.95};   // dry season: rainfall below 80% of normal; low vegetation: NDVI below 95%
 const S5=D.seas5_meta, F5={};D.seas5.forEach(r=>{F5[`${r[0]}|${r[1]}`]=r});   // [area, issue year, mm, normal, pct, rank]
 const fc=a=>F5[`${a}|${S5.season}`];
 const fcLab=`${MON[9]} ${S5.season} to ${MON[2]} ${S5.season+1}`;
@@ -287,20 +289,6 @@ const rsel=$("rarea");
 rsel.innerHTML=[NAT,...PROVS].map(p=>`<option value="${p}">${aName(p)}</option>`).join("");
 let rArea=NAT;
 
-function ipcAreaText(a){
-  if(a===NAT){
-    const rs=CUR_ROUNDS;
-    if(rs.length<=3) return rs.map(r=>`${r.label}: ${fmt(r.nat.C.p3)} people in Phase 3+.`).join(" ");
-    const peak=rs.reduce((x,y)=>y.nat.C.p3>x.nat.C.p3?y:x), last=rs[rs.length-1];
-    return `${ROUNDS.length} analyses, ${ROUNDS[0].label} to ${last.label}. Latest (${last.label}): ${fmt(last.nat.C.p3)} people in Phase 3+. Highest: ${fmt(peak.nat.C.p3)} in ${peak.label}.`;
-  }
-  const rs=CUR_ROUNDS.map(r=>[r,ipcProv[`${r.id}|C|${a}`]]).filter(x=>x[1]);
-  if(!rs.length) return "Not covered by any IPC analysis.";
-  const show=rs.length<=3?rs:[rs.reduce((x,y)=>y[1].share>x[1].share?y:x),rs[rs.length-1]];
-  const t=show.map(([r,v])=>`${r.label}: ${fmt(v.p3)} people in Phase 3+ (${pct(v.share)} of those analysed).`);
-  if(rs.length>3) t[0]="Highest share, "+t[0].charAt(0).toLowerCase()+t[0].slice(1),t[1]="Latest, "+t[1].charAt(0).toLowerCase()+t[1].slice(1);
-  return (rs.length>3?`Analysed in ${rs.length} of ${CUR_ROUNDS.length} analyses. `:"")+t.join(" ");
-}
 function barPanel(svg,k,a,left,right,Wd,cw,top,bh,extra){
   const V=VAR[k], vals=RS.map(s=>W[`${k}|${a}|${s}`][5]).concat(extra||[]);
   const half=Math.max(V.half,Math.ceil(Math.max(...vals.map(v=>Math.abs(v-1)))*1.1/V.step)*V.step);
@@ -327,13 +315,13 @@ function drawRain(){
   const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`October to March rainfall and NDVI as % of normal for ${aName(a)}, with IPC and FEWS NET`},box);
   const yr=barPanel(svg,"rain",a,left,right,Wd,cw,t1,bh1,f?[f[4]]:[]);
   barPanel(svg,"ndvi",a,left,right,Wd,cw,t2,bh2);
-  RS.forEach((s,i)=>txt(svg,left+i*cw+cw/2,yLab,sLab(s),{"text-anchor":"middle",class:"mono"}));
+  RS.forEach((s,i)=>txt(svg,left+i*cw+cw/2,yLab,cw>=46?sLab(s):"’"+String(s).slice(2),{"text-anchor":"middle",class:"mono"}));
   if(f){
     const x=left+RS.length*cw, bw=Math.min(cw*0.56,34), bx=x+(cw-bw)/2, v=f[4], y1=yr(1), yv=yr(v);
     el("line",{x1:x,x2:x,y1:t1,y2:yLab+4,stroke:"var(--rule)","stroke-dasharray":"3 3"},svg);
     el("rect",{x:bx,y:Math.min(y1,yv),width:bw,height:Math.max(Math.abs(yv-y1),1.5),rx:2,fill:`var(--d${vbin("rain",v)})`,opacity:.55,stroke:"var(--ink)","stroke-dasharray":"3 2"},svg);
     txt(svg,x+cw/2,v<1?yv+13:yv-5,pct(v),{"text-anchor":"middle",class:"mono"});
-    txt(svg,x+cw/2,yLab,sLab(S5.season),{"text-anchor":"middle",class:"mono strong"});
+    txt(svg,x+cw/2,yLab,cw>=46?sLab(S5.season):"’"+String(S5.season).slice(2),{"text-anchor":"middle",class:"mono strong"});
     txt(svg,x+cw/2,yLab+12,"forecast",{"text-anchor":"middle",style:"font-size:10px"});
     const hit=el("rect",{x,y:t1,width:cw,height:bh1,fill:"transparent"},svg);hover(hit,fcTip(a,f));
   }
@@ -589,7 +577,7 @@ drawIpcBars();
   const hs=A.hs, lr=A.runs[A.runs.length-1], nh=hs.filter(r=>r[1]>=1).length;
   // one row per province: how often each source has flagged it over the record
   const rows=PROVS.map(p=>{
-    const dry=RS.filter(s=>W[`rain|${p}|${s}`][5]<0.9).length, low=RS.filter(s=>W[`ndvi|${p}|${s}`][5]<0.97).length;
+    const dry=RS.filter(s=>W[`rain|${p}|${s}`][5]<THR.dry).length, low=RS.filter(s=>W[`ndvi|${p}|${s}`][5]<THR.low).length;
     const asap=asapAvg(p);
     const ipcs=CUR_ROUNDS.map(r=>ipcProv[`${r.id}|C|${p}`]).filter(Boolean);
     const ipc=ipcs.length?mean(ipcs.map(v=>v.share)):null;
@@ -608,11 +596,11 @@ drawIpcBars();
   const nIPC=CUR_ROUNDS.length, hasFews=rows.some(r=>r.fews!=null), asapMax=Math.max(...rows.map(x=>x.asap||0));
   const sub=t=>`<br><span style="font-weight:400">${t}</span>`;
   const th=(label,subt,tipT)=>`<th data-tip="${tipT}">${label}${sub(subt)}</th>`;
-  let h=`<thead><tr><th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,"Seasons with October to March rainfall below 90% of normal")}${th("Low vegetation",`seasons, of ${RS.length}`,"Seasons with October to March NDVI below 97% of normal")}${th("ASAP warnings",`since ${sLab(asapSeasons[0])}`,"Share of ten-day periods in the growing season with a cropland warning")}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of people analysed who were in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, as % of the ${S5.ref[0]}–${S5.ref[1]} average of the same September forecasts. Looks ahead; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projection for the months ahead. Looks ahead; not part of the ranking.")}</tr></thead><tbody>`;
+  let h=`<thead><tr><th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall below ${pct(THR.dry)} of normal`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI below ${pct(THR.low)} of normal`)}${th("ASAP warnings",`since ${sLab(asapSeasons[0])}`,"Share of ten-day periods in the growing season with a cropland warning")}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of people analysed who were in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, as % of the ${S5.ref[0]}–${S5.ref[1]} average of the same September forecasts. Looks ahead; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projection for the months ahead. Looks ahead; not part of the ranking.")}</tr></thead><tbody>`;
   rows.forEach(r=>{
     h+=`<tr><td class="pv">${r.p}</td>`;
-    h+=cell(r.dry,RS.length,r.dry,`<b>${r.p}</b><br>${r.dry} of ${RS.length} seasons with rainfall below 90% of normal`);
-    h+=cell(r.low,RS.length,r.low,`<b>${r.p}</b><br>${r.low} of ${RS.length} seasons with NDVI below 97% of normal`);
+    h+=cell(r.dry,RS.length,r.dry,`<b>${r.p}</b><br>${r.dry} of ${RS.length} seasons with rainfall below ${pct(THR.dry)} of normal`);
+    h+=cell(r.low,RS.length,r.low,`<b>${r.p}</b><br>${r.low} of ${RS.length} seasons with NDVI below ${pct(THR.low)} of normal`);
     h+=cell(r.asap,asapMax,r.asap==null?"":pct(r.asap),r.asap==null?`<b>${r.p}</b><br>Not assessed by ASAP (no crop or rangeland)`:`<b>${r.p}</b><br>${pct(r.asap)} of ten-day periods in the growing season had a cropland warning, ${asapSeasons.length} seasons`);
     h+=r.ipc==null?`<td class="na" data-tip="<b>${r.p}</b><br>Not covered by any IPC analysis">–</td>`
       :`<td style="background:var(--s${bin(r.ipc)});color:${bin(r.ipc)>=4?"var(--surface)":"var(--ink)"}" data-tip="<b>${r.p}</b><br>Average share in Phase 3+ over ${r.n} of ${nIPC} analyses${r.p4?`<br>Areas in Emergency (Phase 4) in ${r.p4} ${r.p4===1?"analysis":"analyses"}`:""}">${pct(r.ipc)}${r.n<nIPC?` <span style="opacity:.7;font-weight:400">(${r.n})</span>`:""}</td>`;
@@ -631,14 +619,14 @@ drawIpcBars();
   // now
   const rl=W[`rain|${NAT}|${lastS}`], nl=W[`ndvi|${NAT}|${lastS}`];
   const rec=PROVS.map(p=>[p,asapAvg(p,RECENT)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
-  const dryProvs=PROVS.filter(p=>W[`rain|${p}|${lastS}`][5]<0.9).sort((a,b)=>W[`rain|${a}|${lastS}`][5]-W[`rain|${b}|${lastS}`][5]);
+  const dryProvs=PROVS.filter(p=>W[`rain|${p}|${lastS}`][5]<THR.dry).sort((a,b)=>W[`rain|${a}|${lastS}`][5]-W[`rain|${b}|${lastS}`][5]);
   const ipcLine=CUR_ROUNDS.length>1
     ?`${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse.${peak.id!==last.id?` Highest of the ${ROUNDS.length} analyses: ${short(peak.nat.C.p3)} in ${peak.label}.`:` The highest of the ${ROUNDS.length} analyses.`}`
     :`${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse, in ${list(last.provs)}.`;
   $("now").innerHTML=`
-   <dt>Last season</dt><dd>${sLab(lastS)}: rainfall ${pct(rl[5])} of normal nationally, NDVI ${pct(nl[5])}.${dryProvs.length?` Rainfall below 90% in ${dryProvs.length>5?`${dryProvs.length} provinces, lowest `:""}${list(dryProvs.slice(0,5).map(p=>`${p} (${pct(W[`rain|${p}|${lastS}`][5])})`))}.`:" No province below 90%."}</dd>
-   <dt>Forecast</dt><dd>${(()=>{const n=fc(NAT);const lows=PROVS.map(p=>fc(p)).filter(r=>r&&r[4]<0.9).sort((a,b)=>a[4]-b[4]);
-     return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${pct(n[4])} of the model's average nationally (${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts).${lows.length?` Below 90% in ${lows.length>5?`${lows.length} provinces, lowest `:""}${list(lows.slice(0,5).map(r=>`${r[0]} (${pct(r[4])})`))}.`:" No province below 90%."}`})()}</dd>
+   <dt>Last season</dt><dd>${sLab(lastS)}: rainfall ${pct(rl[5])} of normal nationally, NDVI ${pct(nl[5])}.${dryProvs.length?` Rainfall below ${pct(THR.dry)} in ${dryProvs.length>5?`${dryProvs.length} provinces, lowest `:""}${list(dryProvs.slice(0,5).map(p=>`${p} (${pct(W[`rain|${p}|${lastS}`][5])})`))}.`:` No province below ${pct(THR.dry)}.`}</dd>
+   <dt>Forecast</dt><dd>${(()=>{const n=fc(NAT);const lows=PROVS.map(p=>fc(p)).filter(r=>r&&r[4]<THR.dry).sort((a,b)=>a[4]-b[4]);
+     return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${pct(n[4])} of the model's average nationally (${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts).${lows.length?` Below ${pct(THR.dry)} in ${lows.length>5?`${lows.length} provinces, lowest `:""}${list(lows.slice(0,5).map(r=>`${r[0]} (${pct(r[4])})`))}.`:` No province below ${pct(THR.dry)}.`}`})()}</dd>
    <dt>IPC</dt><dd>${ipcLine}</dd>
    <dt>FEWS NET</dt><dd>${z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`}</dd>
    <dt>ASAP</dt><dd>${lr?`National hotspot ${md(lr[0])} to ${md(lr[1])}`:"No hotspot spell"} (${nh} of ${hs.length} months since ${md(hs[0][0])}). Most cropland warnings in the last five seasons: ${list(rec.slice(0,3).map(x=>x[0]))}.</dd>`;
