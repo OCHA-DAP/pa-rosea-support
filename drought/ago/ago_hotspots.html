@@ -131,13 +131,13 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 <header>
   <div class="eyebrow" id="eyebrow"></div>
   <h1 id="title"></h1>
-  <p class="lede">Which provinces have been most affected by drought and food insecurity, according to rainfall and vegetation data, IPC, FEWS NET and ASAP.</p>
+  <p class="lede">Provinces most affected by drought and food insecurity, based on rainfall and vegetation data, IPC and FEWS NET classifications, and ASAP agricultural warnings.</p>
   <div class="meta" id="meta"></div>
 </header>
 
 <section class="glance" aria-labelledby="h-glance">
   <h2 id="h-glance">Summary</h2>
-  <h3>Provinces most often affected</h3>
+  <h3>Provinces most frequently affected</h3>
   <p class="small" id="hot-lead" style="margin:0 0 8px"></p>
   <div class="scroll"><table class="mx hot" id="hot"></table></div>
   <p class="small" id="hot-note" style="margin:8px 0 0"></p>
@@ -148,11 +148,11 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-rain">
   <h2 id="h-rain">October to March seasons</h2>
-  <p class="sub">One bar per season, as % of normal; the dashed bar is the SEAS5 forecast for the coming season. Under each season: the IPC analysis done that year and the FEWS NET phase by month. Pick a province to see it.</p>
+  <p class="sub">Each bar is one season, as a percentage of the long-term average; the dashed bar is the SEAS5 forecast for the coming season. Beneath each season are the IPC analysis conducted that year and the FEWS NET phase for each month. Select an area to view.</p>
   <div class="controls"><label class="clabel" for="rarea">Area</label><select id="rarea"></select></div>
   <div class="panel scroll"><div id="rchart"></div><div class="legend" id="rlegend"></div></div>
   <h3 style="margin-top:24px">By province</h3>
-  <p class="small" style="margin:0 0 10px">Brown: drier or less green than normal. Click a province to show it above.</p>
+  <p class="small" style="margin:0 0 10px">Brown shades indicate rainfall or vegetation below the long-term average. Select a province to view it in the chart above.</p>
   <div class="controls"><span class="clabel">Show</span><span class="seg" id="rds"><button type="button" id="rds-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="rds-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
   <div class="panel scroll"><div id="rheat"></div><div class="legend" id="rhlegend"></div></div>
 </section>
@@ -162,13 +162,13 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   <div class="maps">
     <div class="panel map">
       <h3>ASAP cropland warnings</h3>
-      <p class="desc">How often ASAP reported poor crop growth. Darker means more often.</p>
+      <p class="desc">Frequency of ASAP cropland warnings. Darker shades indicate more frequent warnings.</p>
       <div class="controls"><span class="seg" id="m-asap"><button type="button" id="m-asap-all" data-v="all" aria-pressed="true">All seasons</button><button type="button" id="m-asap-rec" data-v="rec" aria-pressed="false">Last five seasons</button></span></div>
       <div id="map-asap"></div><div class="legend" id="lg-asap"></div>
     </div>
     <div class="panel map">
       <h3>IPC area classification</h3>
-      <p class="desc">IPC phase by area. Grey: not analysed.</p>
+      <p class="desc">IPC phase by area analysed. Grey areas were not analysed.</p>
       <div class="controls"><select id="m-ipc-round" aria-label="IPC analysis"></select><span class="seg" id="m-ipc-per"><button type="button" id="m-ipc-c" data-v="C" aria-pressed="true">Current</button><button type="button" id="m-ipc-p" data-v="P" aria-pressed="false">Projection</button></span></div>
       <div id="map-ipc"></div><div class="legend" id="lg-ipc"></div>
     </div>
@@ -183,7 +183,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-mx">
   <h2 id="h-mx">Province detail</h2>
-  <p class="sub">Recent seasons and analyses, one row per province. Hover a cell for details.</p>
+  <p class="sub">Recent seasons and analyses, one row per province. Hover over a cell for details.</p>
   <div class="panel scroll"><table class="mx" id="mx"></table>
     <div class="legend"><span class="grp">ASAP / IPC share</span><span id="mxseq" style="display:contents"></span>
       <span class="grp" style="margin-left:6px">Phase</span><span id="mxph" style="display:contents"></span>
@@ -201,7 +201,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-hm">
   <h2 id="h-hm">ASAP warnings by province</h2>
-  <p class="sub">How often ASAP issued a warning, each season since 2001. Darker means more warnings.</p>
+  <p class="sub">Frequency of ASAP warnings by province and season since 2001/02. Darker shades indicate more frequent warnings.</p>
   <div class="controls">
     <div><span class="clabel">Land cover</span><span class="seg" id="lc"><button type="button" id="lc-crop" data-v="crop" aria-pressed="true">Cropland</button><button type="button" id="lc-range" data-v="range" aria-pressed="false">Rangeland</button></span></div>
     <div><span class="clabel">Warning</span><span class="seg" id="lv"><button type="button" id="lv-2" data-v="2" aria-pressed="true">Group 2 or higher</button><button type="button" id="lv-1" data-v="1" aria-pressed="false">Any warning</button></span></div>
@@ -211,7 +211,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-ipc">
   <h2 id="h-ipc">IPC by area</h2>
-  <p class="sub">Share of people in Crisis (Phase 3) or worse: bar for the current period (red: Emergency), tick for the projection. Provinces with an area in Crisis or worse are open.</p>
+  <p class="sub">Share of the population in Crisis (IPC Phase 3) or worse: the bar shows the current period (Emergency in red) and the tick the projection. Provinces with an area in Crisis or worse are expanded.</p>
   <div class="controls"><label class="clabel" for="ipcr">Analysis</label><select id="ipcr"></select></div>
   <div class="panel"><div class="ipc" id="ipc"></div></div>
 </section>
@@ -357,7 +357,7 @@ function drawRain(){
       hover(c,`<b>FEWS NET | ${MON[m]} ${yr}</b><br>Phase ${r[2]} ${PH[r[2]]} (${note})<br>${r[3]}`);
     }
   });
-  txt(svg,left,fy+fewsH+16,`Blank: no FEWS NET report.${a!==NAT?" Faded: phase for the whole country.":""}`,{class:"mono",style:"fill:var(--muted)"});
+  txt(svg,left,fy+fewsH+16,`Blank cells: no FEWS NET report for that month.${a!==NAT?" Faded cells: national phase, not specific to the province.":""}`,{class:"mono",style:"fill:var(--muted)"});
   $("rlegend").innerHTML=`<span class="grp">Rainfall</span>`+vLegend("rain")+`<span><i style="background:var(--d3);border:1px dashed var(--ink);opacity:.8"></i>SEAS5 forecast</span>`+`<span class="grp" style="margin-left:8px">NDVI</span>`+vLegend("ndvi")+`<span class="grp" style="margin-left:8px">IPC / FEWS NET</span>`+phLegend([1,2,3,4]);
 }
 const rh={v:"rain"};
@@ -383,7 +383,7 @@ function drawRainHeat(){
     });
     txt(svg,ax,yy+ch/2+4,pct(avg(p)),{"text-anchor":"middle",class:"mono strong"});
   });
-  $("rhlegend").innerHTML=vLegend(k)+`<span style="margin-left:auto;color:var(--muted)">Numbers are % of normal. Avg: ${sLab(R0)} to ${sLab(RLAST)}</span>`;
+  $("rhlegend").innerHTML=vLegend(k)+`<span style="margin-left:auto;color:var(--muted)">Values are percentages of the long-term average. Avg: mean over ${sLab(R0)} to ${sLab(RLAST)}</span>`;
 }
 function setArea(p){rArea=p;drawRain();drawRainHeat()}
 rsel.addEventListener("change",()=>setArea(rsel.value));
@@ -476,7 +476,7 @@ seg("m-fews","5",ix=>{
 /* ---------- ASAP hotspot calendar ---------- */
 (function(){
   const hs=A.hs, runs=A.runs, nm=hs.filter(r=>r[1]===2).length;
-  $("hs-sub").textContent=`ASAP's monthly assessment of whether ${C.name} is a hotspot or a major hotspot. One row per season, October to September.`;
+  $("hs-sub").textContent=`ASAP's monthly assessment of whether ${C.name} is an agricultural hotspot or a major hotspot. One row per season, October to September.`;
   const longest=runs.length?runs.reduce((a,b)=>b[2]>a[2]?b:a):null, lr=runs[runs.length-1];
   $("stats").innerHTML=
    `<div class="stat"><b>${hs.filter(r=>r[1]>=1).length} of ${hs.length}</b><span>months as a hotspot${nm?`, ${nm} of them as a major hotspot`:", never a major hotspot"}</span></div>
@@ -509,7 +509,7 @@ function drawStrip(){
 }
 
 /* ---------- ASAP warnings by province and season ---------- */
-$("hlegend").innerHTML=seqLegend()+`<span style="margin-left:auto;color:var(--muted)">Hover a cell for the highest warning group reached</span>`;
+$("hlegend").innerHTML=seqLegend()+`<span style="margin-left:auto;color:var(--muted)">Hover over a cell for the highest warning group reached</span>`;
 const hm={lc:"crop",lv:"2"};
 function drawHeat(){
   const rows=A[hm.lc], idx=hm.lv==="2"?4:3;
@@ -617,9 +617,9 @@ drawIpcBars();
   });
   $("hot").innerHTML=h+"</tbody>";
   $("hot").querySelectorAll("[data-tip]").forEach(td=>hover(td,td.dataset.tip));
-  $("hot-note").textContent=`Ranked by average position across the columns with data. The last two columns are projections and are not ranked. Hover a column heading for how it is measured.`;
+  $("hot-note").textContent=`Provinces are ranked by their average position across the columns with data. The final two columns are projections and are excluded from the ranking. Hover over a column heading for the definition.`;
   const top=rows.filter(r=>r.score!=null).slice(0,3).map(r=>r.p);
-  $("hot-lead").textContent=`${list(top.map(p=>p===C.capital?p+" (the capital)":p))} rank highest.`;
+  $("hot-lead").textContent=`${list(top.map(p=>p===C.capital?p+" (the capital)":p))} rank highest over the period covered.`;
   // now
   const rl=W[`rain|${NAT}|${lastS}`], nl=W[`ndvi|${NAT}|${lastS}`];
   const rec=PROVS.map(p=>[p,asapAvg(p,RECENT)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
