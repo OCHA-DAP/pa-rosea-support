@@ -42,6 +42,18 @@ h2{font-size:21px;margin:0 0 6px;font-weight:600;letter-spacing:-.005em;text-wra
 h3{font-size:15px;margin:0 0 4px;font-weight:600}
 .sub{color:var(--ink2);max-width:74ch;margin:0 0 16px}
 .small{font-size:13px;color:var(--ink2)}
+.glance{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:4px;padding:16px 20px;margin-top:22px}
+.glance h2{font-size:17px;margin:0 0 10px}
+.glance dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0;font-size:14px}
+.glance dt{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+.glance dd{margin:0}
+.glance .watch{margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2);font-size:14px}
+.glance .watch b{display:block;margin-bottom:4px}
+.glance .watch ul{margin:0;padding-left:18px}
+.glance .watch li{margin-bottom:3px}
+.glance .watch .small{margin-top:6px;display:block}
+.nav{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;font-size:13px}
+.nav a{color:var(--accent);text-decoration:none}.nav a:hover{text-decoration:underline}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin:0 0 18px}
 .fact{background:var(--surface);border:1px solid var(--rule);border-top:3px solid var(--src);border-radius:4px;padding:12px 16px}
 .fact .src{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
@@ -119,6 +131,13 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   <p class="lede">For each province: how rainfall and vegetation compared with normal in every October to March season since 2010/11, how many people IPC found in Crisis (Phase 3) or worse, what FEWS NET reports, and where ASAP flagged poor crop conditions.</p>
   <div class="meta" id="meta"></div>
 </header>
+
+<section class="glance" aria-labelledby="h-glance">
+  <h2 id="h-glance">Summary</h2>
+  <dl id="glance"></dl>
+  <div class="watch" id="watch"></div>
+  <nav class="nav" aria-label="Sections"><a href="#h-rain">Seasons</a><a href="#h-where">Maps</a><a href="#h-mx">Province table</a><a href="#h-hs">ASAP hotspots</a><a href="#h-hm">ASAP warnings</a><a href="#h-ipc">IPC areas</a><a href="#h-src">Sources</a></nav>
+</section>
 
 <section aria-labelledby="h-rain">
   <h2 id="h-rain">October to March seasons</h2>
@@ -583,6 +602,38 @@ drawIpcBars();
   <li><b>Rainfall and NDVI</b>: WFP on HDX, by province. Rainfall is CHIRPS, added up over the 18 ten-day periods from October to March and compared with the ${baseTxt("rain")} average. NDVI is MODIS, averaged over the same periods and compared with the ${baseTxt("ndvi")} average.${odd.length?` WFP splits ${list(odd)} differently from the official boundaries; together they match.`:""}</li>
   <li><b>Boundaries</b>: ${C.name} COD-AB on HDX.</li>
   <li>Code: <code>drought/hotspots/build_hotspots.py</code> in OCHA-DAP/pa-rosea-support.</li>`;
+})();
+
+/* ---------- at a glance ---------- */
+(function(){
+  const lowN=k=>RS.map(s=>W[`${k}|${NAT}|${s}`]).sort((x,y)=>x[5]-y[5]).slice(0,3);
+  const lastS=RLAST, rl=W[`rain|${NAT}|${lastS}`], nl=W[`ndvi|${NAT}|${lastS}`];
+  const last=CUR_ROUNDS[CUR_ROUNDS.length-1], peak=CUR_ROUNDS.reduce((x,y)=>y.nat.C.p3>x.nat.C.p3?y:x);
+  const z2=D.maps.fews.filter(z=>z[5]>=3), crisisProvs=[...new Set(z2.map(z=>z[1]))].sort();
+  const rec=PROVS.map(p=>[p,asapAvg(p,RECENT)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
+  const hs=A.hs, lr=A.runs[A.runs.length-1], nh=hs.filter(r=>r[1]>=1).length;
+  const ipcLine=CUR_ROUNDS.length>1
+    ?`Latest analysis, ${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse.${peak.id!==last.id?` Highest of the ${ROUNDS.length} analyses: ${short(peak.nat.C.p3)} in ${peak.label}.`:` The highest of the ${ROUNDS.length} analyses.`}`
+    :`Latest analysis, ${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse, in ${list(last.provs)}.`;
+  const fewsLine=z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`;
+  $("glance").innerHTML=`
+   <dt>Rainfall</dt><dd>Driest seasons since ${sLab(R0)}: ${lowN("rain").map(r=>`${sLab(r[2])} (${pct(r[5])})`).join(", ")} of normal. Latest, ${sLab(lastS)}: ${pct(rl[5])}.</dd>
+   <dt>Vegetation</dt><dd>Lowest NDVI: ${lowN("ndvi").map(r=>`${sLab(r[2])} (${pct(r[5])})`).join(", ")} of normal. Latest, ${sLab(lastS)}: ${pct(nl[5])}.</dd>
+   <dt>IPC</dt><dd>${ipcLine}</dd>
+   <dt>FEWS NET</dt><dd>${fewsLine}</dd>
+   <dt>ASAP</dt><dd>${lr?`National hotspot ${md(lr[0])} to ${md(lr[1])}`:"No hotspot spell"} (${nh} of ${hs.length} months since ${md(hs[0][0])}). Most cropland warnings in the last five seasons: ${list(rec.slice(0,3).map(x=>x[0]))}.</dd>`;
+  // provinces flagged by more than one source
+  const natShare=last.nat.C.p3/last.nat.C.pop, asapMean=mean(rec.map(x=>x[1]));
+  const flags=PROVS.map(p=>{
+    const f=[];
+    if(crisisProvs.includes(p))f.push("FEWS NET: Crisis expected");
+    const v=ipcProv[`${last.id}|C|${p}`]; if(v&&v.share>natShare)f.push(`IPC ${last.label}: ${pct(v.share)} in Phase 3+`);
+    const a=asapAvg(p,RECENT); if(a!=null&&a>asapMean)f.push(`ASAP: warnings in ${pct(a)} of recent growing-season periods`);
+    const r=W[`rain|${p}|${lastS}`]; if(r&&r[5]<0.9)f.push(`Rainfall ${sLab(lastS)}: ${pct(r[5])} of normal`);
+    return {p,f,ph:fewsBy[p]?Math.max(...fewsBy[p].map(z=>z[5])):0};
+  }).filter(x=>x.f.length>=2).sort((a,b)=>(b.f.length-a.f.length)||(b.ph-a.ph)||a.p.localeCompare(b.p));
+  $("watch").innerHTML=`<b>Provinces flagged by more than one source</b>`+(flags.length?`<ul>${flags.map(x=>`<li><b style="display:inline">${x.p}</b>: ${x.f.join(" | ")}</li>`).join("")}</ul>`:`<p style="margin:0">None.</p>`)
+   +`<span class="small">Flags: FEWS NET projects Crisis or worse; IPC share in Phase 3+ above the national ${pct(natShare)} in the latest analysis; ASAP warning share over the last five seasons above the province average (${pct(asapMean)}); rainfall in ${sLab(lastS)} below 90% of normal.</span>`;
 })();
 
 function drawAll(){drawRain();drawRainHeat();drawStrip();drawHeat()}
