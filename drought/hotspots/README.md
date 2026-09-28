@@ -4,7 +4,8 @@ One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
 - a summary: provinces ranked by how often each source has flagged them (dry seasons, low NDVI, ASAP
-  warnings, IPC Phase 3+ share, FEWS NET Crisis months), then the current situation in four lines
+  warnings, IPC Phase 3+ share, FEWS NET Crisis months), the SEAS5 rainfall forecast and FEWS NET
+  projection for the coming season, then the current situation in five lines
 - October to March rainfall and NDVI for every season since 2010/11, national and by province, as % of
   WFP's long-term average, lined up with the IPC analyses and FEWS NET's monthly phase
 - maps of ASAP cropland warnings, IPC area phases (any analysis, current or projection) and FEWS NET
@@ -16,10 +17,10 @@ One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 ## Build
 
 ```bash
-uv run --with pandas --with geopandas --with requests python drought/hotspots/build_hotspots.py AGO ZMB
+uv run --with pandas --with geopandas --with requests --with rasterio python drought/hotspots/build_hotspots.py AGO ZMB
 ```
 
-Needs `IPC_API_KEY`. Downloads go to a temp cache (`HOTSPOTS_CACHE` to override;
+Needs `IPC_API_KEY` and `DSCI_AZ_BLOB_PROD_SAS` (for the SEAS5 forecast COGs). Downloads go to a temp cache (`HOTSPOTS_CACHE` to override;
 `HOTSPOTS_USE_CACHE=1` reuses earlier downloads). The script prints one `[PASS]` line per check,
 `[NOTE]` lines for source issues it works around, and stops on the first failure. To add a country,
 add an entry to `COUNTRIES` in `build_hotspots.py`.
@@ -34,6 +35,7 @@ add an entry to `COUNTRIES` in `build_hotspots.py`.
 | HDX IPC | `<country>-acute-food-insecurity-country-data` (area, level-1, national files) | published province totals, cross-check |
 | WFP on HDX | `<iso3>-rainfall-subnational` (CHIRPS), `<iso3>-ndvi-subnational` (MODIS) | dekadal rainfall and NDVI by province |
 | HDX COD-AB | `cod-ab-<iso3>` | map boundaries, area-to-province lookup |
+| SEAS5 | team raster store `seas5/monthly/processed/precip_em_i<issue>_lt<n>.tif` (prod blob) | October to March rainfall forecast from the latest September issue, against the same forecasts issued every September since 1981 |
 
 ## What the checks cover, and the source issues found
 
@@ -52,5 +54,8 @@ add an entry to `COUNTRIES` in `build_hotspots.py`.
   reference periods (rainfall 1989-01-01 to 2018-12-31, NDVI 2002-07-01 to 2018-07-01), and every season
   used is complete and final. WFP's province units differ from COD for Bengo and Luanda (Angola) and for
   Eastern, Muchinga and Southern (Zambia); together they match.
+- SEAS5: every September issue since 1981 has lead times 1 to 6; each COG's tags say mm/day and the expected
+  valid month. The forecast is compared with the model's own 1991 to 2020 September forecasts, not with
+  observed rainfall, so it shows whether the model expects a drier or wetter season than it usually does.
 - ASAP warning groups are read from the file's own group column; hotspot counts are recounted from the
   raw text.

@@ -8,9 +8,10 @@ Sources
 - IPC API (analyses, areas, population; needs IPC_API_KEY) and the HDX IPC country files (cross-check)
 - WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by admin 1
 - HDX COD-AB boundaries (maps, area-to-province lookup)
+- SEAS5 seasonal rainfall forecast, ensemble-mean monthly COGs on the team raster store (needs DSCI_AZ_BLOB_PROD_SAS)
 
 Run from the repo root:
-    uv run --with pandas --with geopandas --with requests python drought/hotspots/build_hotspots.py AGO ZMB
+    uv run --with pandas --with geopandas --with requests --with rasterio python drought/hotspots/build_hotspots.py AGO ZMB
 """
 
 import io
@@ -538,6 +539,77 @@ class Country:
         self.wfp = pd.concat(out, ignore_index=True)
         self.wfp_meta = meta
 
+    # ------------------------------------------------------------ SEAS5 rainfall forecast (Oct-Mar)
+    def load_seas5(self):
+        """Oct-Mar rainfall forecast from the latest September SEAS5 issue, per province and national, against
+        the same forecasts issued every September since 1981 (team raster store, ensemble-mean monthly COGs)."""
+        import calendar
+
+        import numpy as np
+        import rasterio
+        from rasterio.features import rasterize
+        from rasterio.warp import Resampling, reproject
+        from rasterio.windows import from_bounds
+
+        os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
+        sas = os.environ["DSCI_AZ_BLOB_PROD_SAS"]
+        blob = "https://imb0chd0prod.blob.core.windows.net/raster"
+        listing = requests.get(f"{blob}?restype=container&comp=list&prefix=seas5/monthly/processed/precip_em_i&maxresults=5000&{sas}", timeout=300).text
+        check("<NextMarker>" not in listing.replace("<NextMarker />", ""), "SEAS5: blob listing complete in one page")
+        files = set(re.findall(r"precip_em_i(\d{4}-\d\d-\d\d)_lt(\d)", listing))
+        issues = sorted({d for d, lt in files if d.endswith("-09-01")})
+        check(len(issues) > 0, f"SEAS5: {len(issues)} September issues on blob")
+        latest = issues[-1]
+        years = [int(d[:4]) for d in issues]
+        check(years == list(range(years[0], years[-1] + 1)), f"SEAS5: September issues every year {years[0]} to {years[-1]}")
+        check(all((d, str(lt)) in files for d in issues for lt in range(1, 7)), "SEAS5: lead times 1 to 6 present for every September issue")
+        out_csv = CACHE / f"seas5_{self.low}_{latest}.csv"
+
+        x0, y0, x1, y1 = self.adm[0].total_bounds
+        bounds = (np.floor(x0 * 20) / 20 - 0.5, np.floor(y0 * 20) / 20 - 0.5, np.ceil(x1 * 20) / 20 + 0.5, np.ceil(y1 * 20) / 20 + 0.5)
+        res = 0.05
+        shape = (int(round((bounds[3] - bounds[1]) / res)), int(round((bounds[2] - bounds[0]) / res)))
+        tr = rasterio.transform.from_origin(bounds[0], bounds[3], res, res)
+        lat = bounds[3] - res * (np.arange(shape[0]) + 0.5)
+        wlat = np.repeat(np.cos(np.radians(lat))[:, None], shape[1], axis=1)
+        areas = {"_national": unary_union(self.adm[0].geometry), **dict(zip(self.adm[1]["adm1_name"], self.adm[1].geometry))}
+        masks = {k: rasterize([(g, 1)], out_shape=shape, transform=tr, fill=0).astype(bool) for k, g in areas.items()}
+        check(all(m.sum() > 0 for m in masks.values()), "SEAS5: every province covers grid cells")
+
+        if os.environ.get("HOTSPOTS_USE_CACHE") and out_csv.exists():
+            f = pd.read_csv(out_csv)
+        else:
+            rows = []
+            for d in issues:
+                y = int(d[:4])
+                total = np.zeros(shape)
+                for lt in range(1, 7):
+                    vm = 9 + lt
+                    vy, vm = (y, vm) if vm <= 12 else (y + 1, vm - 12)
+                    with rasterio.open(f"/vsicurl/{blob}/seas5/monthly/processed/precip_em_i{d}_lt{lt}.tif?{sas}") as r:
+                        tags = r.tags()
+                        check(tags.get("units") == "mm/day" and int(tags.get("month_valid", -1)) == vm and int(tags.get("year_valid", -1)) == vy,
+                              f"SEAS5 {d} lt{lt}: mm/day, valid {vy}-{vm:02d}") if lt == 1 or d == latest else None
+                        w = from_bounds(*bounds, r.transform).round_offsets().round_lengths()
+                        src = r.read(1, window=w).astype("float64")
+                        dst = np.full(shape, np.nan)
+                        reproject(src, dst, src_transform=r.window_transform(w), src_crs=r.crs, dst_transform=tr, dst_crs=r.crs, resampling=Resampling.nearest)
+                        total += dst * calendar.monthrange(vy, vm)[1]
+                for k, m in masks.items():
+                    ok = m & np.isfinite(total)
+                    rows.append(dict(area=k, year=y, mm=float((total[ok] * wlat[ok]).sum() / wlat[ok].sum())))
+                print(f"  SEAS5 {self.iso3} {d} done", flush=True)
+            f = pd.DataFrame(rows)
+            f.to_csv(out_csv, index=False)
+        check(f["mm"].notna().all() and (f["mm"] > 0).all() and f.groupby("area").size().nunique() == 1, "SEAS5: a total for every area and year")
+        ref = (1991, 2020)
+        base = f[f["year"].between(*ref)].groupby("area")["mm"].mean().rename("normal")
+        f = f.join(base, on="area")
+        f["pct"] = f["mm"] / f["normal"]
+        f["rank"] = f.groupby("area")["mm"].rank(method="min").astype(int)
+        self.seas5 = f
+        self.seas5_meta = {"issued": latest, "season": years[-1], "first": years[0], "n": len(years), "ref": ref, "res": "0.4"}
+
     # ------------------------------------------------------------ page
     def write(self, out_dir):
         proj = Proj(self.adm[0].total_bounds)
@@ -574,6 +646,8 @@ class Country:
             "wfp": [[r.var, r.area, int(r.season), round(float(r.v), 4 if r.var == "ndvi" else 1),
                      round(float(r.n), 4 if r.var == "ndvi" else 1), round(float(r.pct), 4), int(r.rank)] for r in self.wfp.itertuples()],
             "wfp_meta": self.wfp_meta,
+            "seas5": [[r.area, int(r.year), round(float(r.mm), 1), round(float(r.normal), 1), round(float(r.pct), 4), int(r.rank)] for r in self.seas5.itertuples()],
+            "seas5_meta": self.seas5_meta,
         }
         html = (HERE / "template.html").read_text(encoding="utf-8")
         js = json.dumps(data, ensure_ascii=False, separators=(",", ":"), default=float)
@@ -616,6 +690,7 @@ def build(iso3):
     c.load_fews()
     c.load_ipc()
     c.load_wfp()
+    c.load_seas5()
     out, size = c.write(HERE.parent)
     for status, msg in CHECKS:
         print(f"[{status}] {msg}")
