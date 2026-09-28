@@ -45,7 +45,7 @@ ONDJFM = (10, 11, 12, 1, 2, 3)
 # and each one was checked by hand against the COD list for that level.
 COUNTRIES = {
     "AGO": {
-        "name": "Angola", "iso2": "AO", "asap": "Angola",
+        "name": "Angola", "iso2": "AO", "asap": "Angola", "capital": "Luanda",
         "admin1_alias": {"kuandokubango": "cuandocubango", "kuanzanorte": "cuanzanorte", "kuanzasul": "cuanzasul"},
         "ipc_adm2_alias": {
             "municipiodosgambosexchiange": "gambosexchiange",
@@ -58,7 +58,7 @@ COUNTRIES = {
         "map_labels": ["Namibe", "Huíla", "Cunene", "Cuando Cubango", "Benguela", "Huambo", "Bié", "Luanda", "Malanje", "Moxico"],
     },
     "ZMB": {
-        "name": "Zambia", "iso2": "ZM", "asap": "Zambia",
+        "name": "Zambia", "iso2": "ZM", "asap": "Zambia", "capital": "Lusaka",
         "admin1_alias": {"muchiga": "muchinga", "machinga": "muchinga"},
         "ipc_adm2_alias": {
             "chikankanta": "chikankata", "milengi": "milenge", "chiengi": "chienge",
@@ -637,7 +637,7 @@ class Country:
             if ml2 >= 3:
                 crisis.setdefault(lz, set()).add(prov)
         data = {
-            "country": {"iso3": self.iso3, "name": self.name}, "built": pd.Timestamp.today().strftime("%Y-%m-%d"),
+            "country": {"iso3": self.iso3, "name": self.name, "capital": self.c["capital"]}, "built": pd.Timestamp.today().strftime("%Y-%m-%d"),
             "provinces": self.provinces, "asap": self.asap, "maps": maps,
             "fews": {"monthly": self.fews["monthly"], "first": self.fews["first"], "last": self.fews["last"], "odd_docs": self.fews["odd_docs"],
                      "zones": {k: {x: v[x] for x in ("round", "doc", "from", "to")} for k, v in z.items()},
