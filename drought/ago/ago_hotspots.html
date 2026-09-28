@@ -128,13 +128,13 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 <header>
   <div class="eyebrow" id="eyebrow"></div>
   <h1 id="title"></h1>
-  <p class="lede">Where drought and food insecurity have hit hardest, from rainfall and vegetation data, IPC, FEWS NET and ASAP.</p>
+  <p class="lede">Which provinces have been most affected by drought and food insecurity, according to rainfall and vegetation data, IPC, FEWS NET and ASAP.</p>
   <div class="meta" id="meta"></div>
 </header>
 
 <section class="glance" aria-labelledby="h-glance">
   <h2 id="h-glance">Summary</h2>
-  <h3>Provinces most often hit</h3>
+  <h3>Provinces most often affected</h3>
   <p class="small" id="hot-lead" style="margin:0 0 8px"></p>
   <div class="scroll"><table class="mx hot" id="hot"></table></div>
   <p class="small" id="hot-note" style="margin:8px 0 0"></p>
@@ -159,7 +159,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   <div class="maps">
     <div class="panel map">
       <h3>ASAP cropland warnings</h3>
-      <p class="desc">How often ASAP flagged poor crop growth. Darker means more often.</p>
+      <p class="desc">How often ASAP reported poor crop growth. Darker means more often.</p>
       <div class="controls"><span class="seg" id="m-asap"><button type="button" id="m-asap-all" data-v="all" aria-pressed="true">All seasons</button><button type="button" id="m-asap-rec" data-v="rec" aria-pressed="false">Last five seasons</button></span></div>
       <div id="map-asap"></div><div class="legend" id="lg-asap"></div>
     </div>
@@ -171,7 +171,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
     </div>
     <div class="panel map">
       <h3>FEWS NET livelihood zones</h3>
-      <p class="desc">FEWS NET phase by livelihood zone, now and ahead.</p>
+      <p class="desc">FEWS NET phase by livelihood zone, current and projected.</p>
       <div class="controls"><span class="seg" id="m-fews"></span></div>
       <div id="map-fews"></div><div class="legend" id="lg-fews"></div>
     </div>
@@ -576,7 +576,7 @@ drawIpcBars();
   const lastS=RLAST, last=CUR_ROUNDS[CUR_ROUNDS.length-1], peak=CUR_ROUNDS.reduce((x,y)=>y.nat.C.p3>x.nat.C.p3?y:x);
   const z2=D.maps.fews.filter(z=>z[5]>=3), crisisProvs=[...new Set(z2.map(z=>z[1]))].sort();
   const hs=A.hs, lr=A.runs[A.runs.length-1], nh=hs.filter(r=>r[1]>=1).length;
-  // one row per province: how often each source has flagged it over the record
+  // one row per province: how often each source has reported it as affected
   const rows=PROVS.map(p=>{
     const dry=RS.filter(s=>W[`rain|${p}|${s}`][5]<THR.dry).length, low=RS.filter(s=>W[`ndvi|${p}|${s}`][5]<THR.low).length;
     const asap=asapAvg(p);
@@ -597,7 +597,7 @@ drawIpcBars();
   const nIPC=CUR_ROUNDS.length, hasFews=rows.some(r=>r.fews!=null), asapMax=Math.max(...rows.map(x=>x.asap||0));
   const sub=t=>`<br><span style="font-weight:400">${t}</span>`;
   const th=(label,subt,tipT)=>`<th data-tip="${tipT}">${label}${sub(subt)}</th>`;
-  let h=`<thead><tr><th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall below ${pct(THR.dry)} of normal`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI below ${pct(THR.low)} of normal`)}${th("ASAP warnings",`since ${sLab(asapSeasons[0])}`,"Share of ten-day periods in the growing season with a cropland warning")}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of people analysed who were in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, as % of the ${S5.ref[0]}–${S5.ref[1]} average of the same September forecasts. Looks ahead; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projection for the months ahead. Looks ahead; not part of the ranking.")}</tr></thead><tbody>`;
+  let h=`<thead><tr><th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall below ${pct(THR.dry)} of normal`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI below ${pct(THR.low)} of normal`)}${th("ASAP warnings",`since ${sLab(asapSeasons[0])}`,"Share of ten-day periods in the growing season with a cropland warning")}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of people analysed who were in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, as % of the ${S5.ref[0]}–${S5.ref[1]} average of the same September forecasts. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
   rows.forEach(r=>{
     h+=`<tr><td class="pv">${r.p}${r.p===C.capital?'<span class="tag">capital</span>':""}</td>`;
     h+=cell(r.dry,RS.length,r.dry,`<b>${r.p}</b><br>${r.dry} of ${RS.length} seasons with rainfall below ${pct(THR.dry)} of normal`);
@@ -614,9 +614,9 @@ drawIpcBars();
   });
   $("hot").innerHTML=h+"</tbody>";
   $("hot").querySelectorAll("[data-tip]").forEach(td=>hover(td,td.dataset.tip));
-  $("hot-note").textContent=`Ranked by average position across the record columns with data; the last two columns look ahead and are not ranked. Hover a column heading for how it is measured.`;
+  $("hot-note").textContent=`Ranked by average position across the columns with data. The last two columns are projections and are not ranked. Hover a column heading for how it is measured.`;
   const top=rows.filter(r=>r.score!=null).slice(0,3).map(r=>r.p);
-  $("hot-lead").textContent=`${list(top.map(p=>p===C.capital?p+" (the capital)":p))} come out highest across the record.`;
+  $("hot-lead").textContent=`${list(top.map(p=>p===C.capital?p+" (the capital)":p))} rank highest.`;
   // now
   const rl=W[`rain|${NAT}|${lastS}`], nl=W[`ndvi|${NAT}|${lastS}`];
   const rec=PROVS.map(p=>[p,asapAvg(p,RECENT)]).filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
