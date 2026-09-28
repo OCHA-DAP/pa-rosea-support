@@ -1,0 +1,50 @@
+name: Deploy pages site to GitHub Pages
+
+# Publishes the landing page (pages/) with the drought hotspot pages assembled under
+# /ago/ and /zmb/. The hotspot pages are committed HTML (drought/<iso3>/<iso3>_hotspots.html,
+# built locally by drought/hotspots/build_hotspots.py), so no secrets are needed here.
+#
+# Triggers: push to main touching the site's files, or a manual run.
+# Template: OCHA-DAP/ds-seas5-skill (itself from ds-geospatial-impact-estimates).
+
+on:
+  push:
+    branches: [main, ago-drought-hotspots]
+    paths: ["pages/**", "drought/*/*_hotspots.html", ".github/workflows/deploy-pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble site (landing at /, country pages at /ago/ and /zmb/)
+        run: |
+          mkdir -p site
+          rsync -a pages/ site/
+          for iso in ago zmb; do
+            mkdir -p "site/$iso"
+            cp "drought/$iso/${iso}_hotspots.html" "site/$iso/index.html"
+          done
+          test -f site/index.html && test -f site/assets/site.css
+          test -f site/ago/index.html && test -f site/zmb/index.html
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
