@@ -3,6 +3,8 @@
 One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
+- a summary: provinces ranked by how often each source has flagged them (dry seasons, low NDVI, ASAP
+  warnings, IPC Phase 3+ share, FEWS NET Crisis months), then the current situation in four lines
 - October to March rainfall and NDVI for every season since 2010/11, national and by province, as % of
   WFP's long-term average, lined up with the IPC analyses and FEWS NET's monthly phase
 - maps of ASAP cropland warnings, IPC area phases (any analysis, current or projection) and FEWS NET
