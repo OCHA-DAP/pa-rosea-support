@@ -148,11 +148,11 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-rain">
   <h2 id="h-rain">October to March seasons</h2>
-  <p class="sub">Each bar is one season, as a percentage of the long-term average; the dashed bar is the SEAS5 forecast for the coming season. Beneath each season are the IPC analysis conducted that year and the FEWS NET phase for each month. Select an area to view.</p>
+  <p class="sub">Each bar is one season, as a percentage of normal (the long-term average); the dashed bar is the SEAS5 forecast for the coming season. Beneath each season are the IPC analysis conducted that year and the FEWS NET phase for each month. Select an area to view.</p>
   <div class="controls"><label class="clabel" for="rarea">Area</label><select id="rarea"></select></div>
   <div class="panel scroll"><div id="rchart"></div><div class="legend" id="rlegend"></div></div>
   <h3 style="margin-top:24px">By province</h3>
-  <p class="small" style="margin:0 0 10px">Brown shades indicate rainfall or vegetation below the long-term average. Select a province to view it in the chart above.</p>
+  <p class="small" style="margin:0 0 10px">Brown shades indicate rainfall or vegetation below normal. Select a province to view it in the chart above.</p>
   <div class="controls"><span class="clabel">Show</span><span class="seg" id="rds"><button type="button" id="rds-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="rds-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
   <div class="panel scroll"><div id="rheat"></div><div class="legend" id="rhlegend"></div></div>
 </section>
@@ -211,7 +211,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-ipc">
   <h2 id="h-ipc">IPC by area</h2>
-  <p class="sub">Share of the population in Crisis (IPC Phase 3) or worse: the bar shows the current period (Emergency in red) and the tick the projection. Provinces with an area in Crisis or worse are expanded.</p>
+  <p class="sub">Share of the population in Crisis (Phase 3) or worse: the bar shows the current period (Emergency in red) and the tick the projection. Provinces with an area in Crisis or worse are expanded.</p>
   <div class="controls"><label class="clabel" for="ipcr">Analysis</label><select id="ipcr"></select></div>
   <div class="panel"><div class="ipc" id="ipc"></div></div>
 </section>
@@ -274,7 +274,7 @@ const THR={dry:0.8,low:0.95};   // dry season: rainfall below 80% of normal; low
 const S5=D.seas5_meta, F5={};D.seas5.forEach(r=>{F5[`${r[0]}|${r[1]}`]=r});   // [area, issue year, mm, normal, pct, rank]
 const fc=a=>F5[`${a}|${S5.season}`];
 const fcLab=`${MON[9]} ${S5.season} to ${MON[2]} ${S5.season+1}`;
-const fcTip=(a,r)=>`<b>${aName(a)} | forecast ${fcLab}</b><br>SEAS5 issued ${+S5.issued.slice(8,10)} ${md(S5.issued)}: ${fmt(r[2])} mm, ${pct(r[4])} of the ${S5.ref[0]}–${S5.ref[1]} average of the same forecasts (${fmt(r[3])} mm)<br>${r[5]===1?"Driest":ord(r[5])+" driest"} of the ${S5.n} September forecasts since ${S5.first}`;
+const fcTip=(a,r)=>`<b>${aName(a)} | forecast ${fcLab}</b><br>SEAS5 issued ${md(S5.issued)}: ${fmt(r[2])} mm, ${pct(r[4])} of the ${S5.ref[0]} to ${S5.ref[1]} average of the same forecasts (${fmt(r[3])} mm)<br>${r[5]===1?"Driest":ord(r[5])+" driest"} of the ${S5.n} September forecasts since ${S5.first}`;
 
 /* ---------- October to March seasons ---------- */
 const WM=D.wfp_meta, R0=2010, RLAST=Math.min(WM.rain.last,WM.ndvi.last), RS=[];for(let y=R0;y<=RLAST;y++)RS.push(y);
@@ -383,7 +383,7 @@ function drawRainHeat(){
     });
     txt(svg,ax,yy+ch/2+4,pct(avg(p)),{"text-anchor":"middle",class:"mono strong"});
   });
-  $("rhlegend").innerHTML=vLegend(k)+`<span style="margin-left:auto;color:var(--muted)">Values are percentages of the long-term average. Avg: mean over ${sLab(R0)} to ${sLab(RLAST)}</span>`;
+  $("rhlegend").innerHTML=vLegend(k)+`<span style="margin-left:auto;color:var(--muted)">Values are % of normal. Avg: mean over ${sLab(R0)} to ${sLab(RLAST)}</span>`;
 }
 function setArea(p){rArea=p;drawRain();drawRainHeat()}
 rsel.addEventListener("change",()=>setArea(rsel.value));
@@ -470,7 +470,7 @@ seg("m-fews","5",ix=>{
   $("mx").innerHTML=h+"</tbody>";
   $("mx").querySelectorAll("td[data-tip]").forEach(td=>hover(td,td.dataset.tip));
   $("mxseq").innerHTML=seqLegend();$("mxph").innerHTML=phLegend([1,2,3,4].filter(p=>D.maps.fews.some(z=>z[3]===p||z[5]===p)));
-  $("mx-note").textContent=`ASAP: share of ten-day periods in the growing season with a cropland warning. IPC: share of people analysed who were in Phase 3+, for the ${IPC_COLS.length===1?"latest analysis":"latest "+IPC_COLS.length+" analyses"}. FEWS NET: highest phase among the province's livelihood zones.`;
+  $("mx-note").textContent=`ASAP: share of ten-day periods in the growing season with a cropland warning. IPC: share of the population analysed that was in Phase 3+, for the ${IPC_COLS.length===1?"latest analysis":"latest "+IPC_COLS.length+" analyses"}. FEWS NET: highest phase among the province's livelihood zones.`;
 })();
 
 /* ---------- ASAP hotspot calendar ---------- */
@@ -600,7 +600,7 @@ drawIpcBars();
   const nIPC=CUR_ROUNDS.length, hasFews=rows.some(r=>r.fews!=null), asapMax=Math.max(...rows.map(x=>x.asap||0));
   const sub=t=>`<br><span style="font-weight:400">${t}</span>`;
   const th=(label,subt,tipT)=>`<th data-tip="${tipT}">${label}${sub(subt)}</th>`;
-  let h=`<thead><tr><th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall below ${pct(THR.dry)} of normal`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI below ${pct(THR.low)} of normal`)}${th("ASAP warnings",`since ${sLab(asapSeasons[0])}`,"Share of ten-day periods in the growing season with a cropland warning")}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of people analysed who were in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, as % of the ${S5.ref[0]}–${S5.ref[1]} average of the same September forecasts. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
+  let h=`<thead><tr><th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall below ${pct(THR.dry)} of normal`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI below ${pct(THR.low)} of normal`)}${th("ASAP warnings",`since ${sLab(asapSeasons[0])}`,"Share of ten-day periods in the growing season with a cropland warning")}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of the population analysed that was in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, as % of the ${S5.ref[0]} to ${S5.ref[1]} average of the same September forecasts. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
   rows.forEach(r=>{
     h+=`<tr><td class="pv">${r.p}${r.p===C.capital?'<span class="tag">capital</span>':""}</td>`;
     h+=cell(r.dry,RS.length,r.dry,`<b>${r.p}</b><br>${r.dry} of ${RS.length} seasons with rainfall below ${pct(THR.dry)} of normal`);
