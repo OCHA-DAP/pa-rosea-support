@@ -23,9 +23,20 @@ python flood/ken/build_review_page.py data/ken
 
 Needs `DSCI_AZ_BLOB_PROD_SAS` (IMERG COGs and COD-AB on the prod raster / projects containers)
 and `DSCI_AZ_BLOB_DEV_SAS` (EM-DAT on the dev `global` container). Python with `ocha-stratus`,
-`rasterio`, `geopandas`, `pandas`, `pyarrow`, `numpy`. The Postgres `public.imerg` table has the
-same county means and is the quicker route when port 5432 is reachable; this build reads the COGs
-because it was written from a network that blocks that port.
+`rasterio`, `geopandas`, `pandas`, `pyarrow`, `numpy`. The build reads the COGs rather than the
+Postgres `public.imerg` table because it needs the pixel grids (wettest pixel, share of area, and
+running totals per pixel), which the table does not hold.
+
+Optional step 3b, a cross-check of the county means against `public.imerg`, shown in the page's
+method notes. From a laptop the database is reached through the team Databricks SSH tunnel
+(`ds-knowledge-base-internal/infrastructure/local-db-access.md`); in Git Bash:
+
+```bash
+db-tunnel up
+DSCI_AZ_DB_PROD_HOST=127.0.0.1:15433 python flood/ken/crosscheck_db.py data/ken
+```
+
+`db-tunnel` is a Git Bash script, so it does not run from PowerShell.
 
 EM-DAT extract used:
 
@@ -40,7 +51,8 @@ k.to_parquet("data/ken/emdat_ken_floods.parquet")
 
 | file | what |
 |---|---|
-| `extract_imerg_counties.py` | reads a Kenya window from each daily IMERG Late v7 COG, keeps the grids (`years/imerg_ken_grid_YYYY.npz`) and writes county mean, wettest pixel and area-share statistics (`imerg_ken_adm1_daily.parquet`) |
+| `extract_imerg_counties.py` | reads a Kenya window from each daily IMERG Late v7 COG, keeps the grids (`years/imerg_ken_grid_YYYY.npz`) and writes county mean, wettest pixel (pixels at least half inside the county) and area-share statistics (`imerg_ken_adm1_daily.parquet`) |
+| `crosscheck_db.py` | compares the county means with `public.imerg` (prod) and writes `out/db_crosscheck.json` |
 | `khf_trigger_review.py` | rolling 1/3/7-day totals per pixel; county-mean, wettest-pixel and area-share readings per trigger area; Weibull return periods on annual maxima; exceedance episodes matched to EM-DAT; tables in `data/ken/out/` |
 | `build_review_page.py` | assembles the HTML page from those tables |
 | `ken_khf_trigger_review.html` | the page |

@@ -405,9 +405,10 @@ footer{{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-s
 <h2>Method and data</h2>
 <ul class="notes">
 <li>Rainfall: NASA IMERG Late Run v7 daily totals at 0.1 degree, read from the team raster store. County boundaries: Kenya COD-AB admin 1 (47 counties), from the team blob.</li>
-<li>Readings: county mean is the area-weighted mean of the pixels in the county; multi-county areas weight each county equally. Wettest pixel is the maximum pixel in the area. "Half" and "a quarter of the area" are the share of the area's surface at or above the threshold.</li>
+<li>Readings: county mean is the area-weighted mean of the pixels in the county; multi-county areas weight each county equally. Wettest pixel is the maximum over pixels with at least half their area inside the area. "Half" and "a quarter of the area" are the share of the area's surface at or above the threshold.</li>
 <li>Windows: running 1-, 3- and 7-day totals per pixel, then aggregated. Return periods: Weibull plotting position (n + 1) / k on the annual maximum of each series over {N_YEARS} full years. An episode is a run of days at or above the threshold, merged when separated by 14 days or less.</li>
 <li>Flood matching: an episode is counted "within an EM-DAT flood" when an EM-DAT event naming a reviewed county overlaps the window from 10 days before the episode to 30 days after it.</li>
+__DB_CHECK__
 <li>Full return-period table for every area, window and threshold, county-mean reading:</li>
 </ul>
 {rp_full_table()}
@@ -511,6 +512,12 @@ def glance_lines():
     L.append(f"150 mm in 7 days as a county mean: {rp_txt('Mandera',7,150,'mean')} in Mandera, {rp_txt('Wajir',7,150,'mean')} in Wajir, "
              f"{rp_txt('Marsabit',7,150,'mean')} in Marsabit. As the wettest pixel in the county: {rp_txt('Mandera',7,150,'pixel')} in Mandera, "
              f"{rp_txt('Wajir',7,150,'pixel')} in Wajir, {rp_txt('Marsabit',7,150,'pixel')} in Marsabit.")
+    fdb = OUT / "db_crosscheck.json"
+    if fdb.exists():
+        for k, v in json.loads(fdb.read_text())["trigger_years"].items():
+            for d in v["differs"]:
+                L.append(f"{k} {d['year']} sits on the 150 mm line: {d['cog']} mm here, {d['db']} mm in the team database, "
+                         f"so {k} reaches the threshold in {len(v['cog'])} or {len(v['db'])} of {N_YEARS} years depending on the source.")
     e = eq[(eq.window_days == 7) & (eq.reading == "mean")].set_index("area")
     L.append(f"County-mean 7-day totals with a 1-in-3 year return period: Mandera {int(e.loc['Mandera','thr_1in3_mm'])} mm, "
              f"Wajir {int(e.loc['Wajir','thr_1in3_mm'])} mm, Marsabit {int(e.loc['Marsabit','thr_1in3_mm'])} mm. 1-in-5: "
@@ -535,6 +542,26 @@ def glance_lines():
 
 glance_js = "\n".join(f"{{ const li = document.createElement('li'); li.textContent = {json.dumps(t)}; gl.appendChild(li); }}" for t in glance_lines())
 html = html.replace("__GLANCE_JS__", glance_js)
+
+
+def db_check_html():
+    f = OUT / "db_crosscheck.json"
+    if not f.exists():
+        return ""
+    c = json.loads(f.read_text())
+    diffs = [f"{k} {d['year']} ({d['cog']} mm here, {d['db']} mm in the database)"
+             for k, v in c["trigger_years"].items() for d in v["differs"]]
+    diff_txt = ("The count of years at or above 150 mm in 7 days differs in one case: " + "; ".join(diffs) + "."
+                if diffs else "The years at or above 150 mm in 7 days are identical for Mandera, Wajir and Marsabit.")
+    gap = c["dates_missing_from_db"]
+    gap_txt = (f" The database has no Kenya rows for {', '.join(gap)}; the rasters for those days exist and are used here." if gap else "")
+    return (f"<li>Cross-check against the team database table <span class='mono'>public.imerg</span> "
+            f"({c['rows_compared']:,} county-days, {c['db_first']} to {c['db_last']}): correlation {c['corr']}, "
+            f"median difference {c['median_abs_diff_mm']} mm, 99th percentile {c['p99_abs_diff_mm']} mm. "
+            f"{esc(diff_txt)}{esc(gap_txt)}</li>")
+
+
+html = html.replace("__DB_CHECK__", db_check_html())
 
 out_path = HERE / "ken_khf_trigger_review.html"
 out_path.write_text(html, encoding="utf8")

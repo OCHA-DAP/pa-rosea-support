@@ -8,7 +8,7 @@ Output: data/out/*.csv tables used by build_review_page.py.
 For each trigger area (single county or group of counties) and window (1, 3, 7 days)
 three readings of "X mm in the area" are tested:
   mean   : area-weighted mean over the area  >= threshold
-  pixel  : wettest 0.1 degree pixel in the area >= threshold
+  pixel  : wettest 0.1 degree pixel in the area >= threshold (pixels at least half inside the area)
   q25/q50: at least 25% / 50% of the area's surface >= threshold
 Return periods are Weibull on annual maxima over full years.
 """
@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
-from extract_imerg_counties import grid_and_weights  # noqa: E402
+from extract_imerg_counties import MIN_COVER, grid_and_weights  # noqa: E402
 
 DATA = Path(sys.argv[1] if len(sys.argv) > 1 else "data")
 OUT = DATA / "out"
@@ -47,7 +47,7 @@ P = G.reshape(T, -1)
 LAST_FULL_YEAR = dates.max().year - (0 if dates.max().month == 12 and dates.max().day == 31 else 1)
 print(f"{T} days {dates.min().date()} to {dates.max().date()}, {len(missing)} missing days, full years to {LAST_FULL_YEAR}")
 
-win, shape, nodata, W, codes, names = grid_and_weights(dates.max().strftime("%Y-%m-%d"))
+win, shape, nodata, W, C, codes, names = grid_and_weights(dates.max().strftime("%Y-%m-%d"))
 assert shape == (H, Wd), (shape, (H, Wd))
 name_to_row = {names[c]: i for i, c in enumerate(codes)}
 
@@ -66,10 +66,12 @@ AREAS = {
     "Tana River": ["Tana River"],
     "Upper Tana (7 counties)": ["Nyeri", "Kirinyaga", "Murang'a", "Embu", "Meru", "Tharaka-Nithi", "Nyandarua"],
 }
-area_w = {}
+area_w, area_in = {}, {}
 for a, members in AREAS.items():
-    w = W[[name_to_row[m] for m in members]].sum(0)  # each county sums to 1 -> equal county weighting
+    rows_ = [name_to_row[m] for m in members]
+    w = W[rows_].sum(0)  # each county sums to 1 -> equal county weighting
     area_w[a] = (w / w.sum()).astype("float32")
+    area_in[a] = C[rows_].sum(0) >= MIN_COVER  # pixels at least half inside the area
 
 WINDOWS = (1, 3, 7)
 THRESHOLDS = (40, 70, 100, 150, 200)
@@ -128,7 +130,8 @@ for k in WINDOWS:
         s_w = (valid * ws).sum(1)
         mean = np.where(s_w > 0, (np.nan_to_num(Rw) * ws).sum(1) / np.where(s_w > 0, s_w, 1), np.nan)
         series[(a, k, "mean")] = pd.Series(mean, index=dates)
-        series[(a, k, "pixel")] = pd.Series(np.nanmax(Rw, axis=1), index=dates)
+        inside = area_in[a][sel]
+        series[(a, k, "pixel")] = pd.Series(np.nanmax(np.where(inside, Rw, np.nan), axis=1), index=dates)
         for thr in THRESHOLDS:
             frac = ((Rw >= thr) * ws).sum(1) / np.where(s_w > 0, s_w, 1)
             series[(a, k, "frac", thr)] = pd.Series(frac, index=dates)
