@@ -76,9 +76,7 @@ def lane_label(k, lv):
 lanes = {}
 for s in SECTIONS:
     lanes[s["id"]] = [dict(key=k, aw=(lv == "as written"), label=lane_label(k, lv),
-                           acts=[dict(d=a.date.strftime("%Y-%m-%d"), p=int(a.peak_mm), o=a.outcome,
-                                      e=("" if pd.isna(a.emdat) else a.emdat),
-                                      l=(None if pd.isna(a.lead_days) else int(a.lead_days)))
+                           acts=[dict(d=a.date.strftime("%Y-%m-%d"), p=int(a.peak_mm))
                                  for a in acts[(acts.trigger == k) & (acts.level == lv)].itertuples()])
                       for k, lv in s["rows"]]
 floods = {}
@@ -96,7 +94,7 @@ def summary_table():
             ("krcs_marsabit", "Kenya Red Cross Society"), ("whh_70", "Welthungerhilfe"), ("whh_100", "Welthungerhilfe"),
             ("krcs_garissa", "Kenya Red Cross Society")]
     h = ["<div class='scroll'><table><thead><tr><th>Trigger</th><th>Threshold</th>"
-         f"<th class='n'>Years reached (of {N})</th><th class='n'>Return period</th><th class='n'>Recorded floods it caught</th></tr></thead><tbody>"]
+         f"<th class='n'>Years reached (of {N})</th><th class='n'>Return period</th><th class='n'>Recorded floods with it reached</th></tr></thead><tbody>"]
     for k, partner in rows:
         r = srow(k, "as written")
         h.append(f"<tr><td>{esc(NAME[k])}<div class='sm'>{esc(partner)}</div></td>"
@@ -109,14 +107,13 @@ def summary_table():
 
 def section_table(s):
     h = ["<div class='scroll'><table><thead><tr><th>Threshold</th>"
-         f"<th class='n'>Years reached</th><th class='n'>Return period</th><th class='n'>Floods caught</th>"
-         "<th class='n'>Reached with no recorded flood</th></tr></thead><tbody>"]
+         f"<th class='n'>Years reached (of {N})</th><th class='n'>Return period</th>"
+         "<th class='n'>Recorded floods with it reached</th></tr></thead><tbody>"]
     for k, lv in s["rows"]:
         r = srow(k, lv)
         h.append(f"<tr class='{'aw' if lv == 'as written' else ''}'><td>{esc(lane_label(k, lv))}</td>"
                  f"<td class='n'>{int(r.years_activated)}</td><td class='n'>{rp_txt(r.rp_years)}</td>"
-                 f"<td class='n'>{int(r.floods_caught)} of {int(r.floods_in_record)}</td>"
-                 f"<td class='n'>{int(r.no_recorded_flood)} of {int(r.evaluable)}</td></tr>")
+                 f"<td class='n'>{int(r.floods_caught)} of {int(r.floods_in_record)}</td></tr>")
     h.append("</tbody></table></div>")
     return "".join(h)
 
@@ -130,8 +127,7 @@ def dates_list(s):
         sub = a[a.trigger == k].sort_values("date")
         items = []
         for r in sub.itertuples():
-            ev = f" | {esc(r.emdat)}" if isinstance(r.emdat, str) and r.emdat else ""
-            items.append(f"<li><span class='mono'>{r.date.strftime('%d %b %Y')}</span> | {int(r.peak_mm)} mm | {esc(r.outcome)}{ev}</li>")
+            items.append(f"<li><span class='mono'>{r.date.strftime('%d %b %Y')}</span> | {int(r.peak_mm)} mm</li>")
         lines.append(f"<h4>{esc(lane_label(k, 'as written'))}</h4><ul class='dates'>{''.join(items)}</ul>")
     return f"<details><summary>Dates reached at the threshold as written</summary>{''.join(lines)}</details>"
 
@@ -148,15 +144,14 @@ def section_html(s):
 
 
 LEGEND = ("<div class='legend'>"
-          "<span><svg width='14' height='14'><circle cx='7' cy='7' r='5' fill='var(--before)'/></svg>before a recorded flood</span>"
-          "<span><svg width='14' height='14'><rect x='2.5' y='2.5' width='9' height='9' transform='rotate(45 7 7)' fill='var(--during)'/></svg>during a recorded flood</span>"
-          "<span><svg width='14' height='14'><circle cx='7' cy='7' r='4.5' fill='none' stroke='var(--muted)' stroke-width='1.6'/></svg>no recorded flood</span>"
-          "<span><i style='background:var(--band)'></i>recorded flood period</span>"
+          "<span><svg width='14' height='14'><circle cx='7' cy='7' r='4.5' fill='var(--dot)'/></svg>threshold reached</span>"
+          "<span><i style='background:var(--band)'></i>recorded flood in the county</span>"
           f"<span><i style='background:var(--rule2)'></i>no flood record after {EM_LAST.year}</span></div>")
 
 # ------------------------------------------------------------------ headline numbers (from the tables)
 ne = summ[(summ.level == "as written") & (summ.trigger.isin(["krcs_mandera", "krcs_wajir", "krcs_marsabit"]))]
-n150, d150, b150 = int(ne.activations.sum()), int(ne.during_flood.sum()), int(ne.before_flood.sum())
+ne_ov = ov[(ov.group == "krcs_ne") & (ov.level == "as written")].iloc[0]
+fl = {k: srow(k, "as written") for k in ("krcs_mandera", "krcs_wajir", "krcs_marsabit")}
 all_aw = ov[(ov.group == "all") & (ov.level == "as written")].iloc[0]
 w70 = srow("whh_70", "as written")
 ut = srow("krcs_garissa", "as written")
@@ -164,10 +159,13 @@ px = rp[(rp.window_days == 7) & (rp.threshold_mm == 150) & (rp.reading == "pixel
 px_min = int(px.years_exceeded.min())
 
 KEY_POINTS = [
-    f"150 mm in 7 days was reached {n150} times in Mandera, Wajir and Marsabit. {d150} were during a flood EM-DAT had already recorded in that county; {b150} came before one.",
-    f"70 mm in 7 days over the Ewaso Ng'iro area was reached in {int(w70.years_activated)} of {N} years. {int(w70.no_recorded_flood)} of its {int(w70.evaluable)} activations had no recorded flood in Isiolo or Samburu.",
-    f"40 mm in a day over the upper Tana was reached in {int(ut.years_activated)} of {N} years and caught {int(ut.floods_caught)} of {int(ut.floods_in_record)} recorded floods downstream.",
-    f"At least one trigger as written would have been reached in {int(all_aw.years_activated)} of {N} years.",
+    f"150 mm in 7 days (Mandera, Wajir, Marsabit): reached in {int(ne_ov.years_activated)} of {N} years in at least one county. "
+    f"It was reached for {int(fl['krcs_mandera'].floods_caught)} of {int(fl['krcs_mandera'].floods_in_record)} recorded floods in Mandera, "
+    f"{int(fl['krcs_wajir'].floods_caught)} of {int(fl['krcs_wajir'].floods_in_record)} in Wajir and "
+    f"{int(fl['krcs_marsabit'].floods_caught)} of {int(fl['krcs_marsabit'].floods_in_record)} in Marsabit.",
+    f"70 mm in 7 days (Ewaso Ng'iro area): reached in {int(w70.years_activated)} of {N} years, and for {int(w70.floods_caught)} of {int(w70.floods_in_record)} recorded floods in Isiolo or Samburu.",
+    f"40 mm in a day (upper Tana): reached in {int(ut.years_activated)} of {N} years, and for {int(ut.floods_caught)} of {int(ut.floods_in_record)} recorded floods in Garissa, Tana River or Dadaab.",
+    f"At least one trigger as written: reached in {int(all_aw.years_activated)} of {N} years.",
 ]
 
 NOT_COVERED = [
@@ -179,7 +177,7 @@ NOT_COVERED = [
 METHOD = [
     f"Rainfall: NASA IMERG Late Run v7, daily, 0.1 degree, {FIRST_YEAR}-01-01 to {LAST_DATE}. County boundaries: Kenya COD-AB.",
     "Activation: the first day the running total reaches the threshold; the next 30 days count as the same activation. 1-in-3 and 1-in-5 thresholds are set on the annual maximum of the same indicator.",
-    f"Floods: EM-DAT events whose location names the trigger's counties, {FIRST_YEAR} to {EM_LAST.year}. \"Before\": an event starts within 30 days after the activation. \"During\": an event was already under way. EM-DAT dates are often season-long and one event can list many counties.",
+    f"Floods: EM-DAT events whose location names the trigger's counties, {FIRST_YEAR} to {EM_LAST.year}. A flood counts as reached when the threshold is reached between 30 days before it starts and its end. EM-DAT dates are often season-long and one event can list many counties.",
     f"Return periods: Weibull, (n + 1) / years reached, over {N} full years ({FIRST_YEAR}-{LAST_FULL}).",
 ]
 if dbc:
@@ -194,12 +192,12 @@ def ul(items, cls=""):
 # ------------------------------------------------------------------ page
 CSS = """
 :root{color-scheme:light;--bg:#F4F6F7;--surface:#FFFFFF;--ink:#15212A;--ink2:#46555F;--muted:#76838C;--rule:#DDE3E6;--rule2:#EEF1F3;
---accent:#1D5B7C;--before:#4a3aa7;--during:#1baf7a;--band:rgba(140,58,11,.18);
+--accent:#1D5B7C;--dot:#1D5B7C;--band:rgba(140,58,11,.13);
 --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#11171B;--surface:#182026;--ink:#E6ECEF;--ink2:#AAB6BD;
---muted:#7F8C94;--rule:#2B353B;--rule2:#222B31;--accent:#7DB6D6;--before:#9085e9;--during:#199e70;--band:rgba(242,179,107,.22)}}
+--muted:#7F8C94;--rule:#2B353B;--rule2:#222B31;--accent:#7DB6D6;--dot:#7DB6D6;--band:rgba(242,179,107,.18)}}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#11171B;--surface:#182026;--ink:#E6ECEF;--ink2:#AAB6BD;--muted:#7F8C94;--rule:#2B353B;
---rule2:#222B31;--accent:#7DB6D6;--before:#9085e9;--during:#199e70;--band:rgba(242,179,107,.22)}
+--rule2:#222B31;--accent:#7DB6D6;--dot:#7DB6D6;--band:rgba(242,179,107,.18)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
 .wrap{max-width:1040px;margin:0 auto;padding:36px 16px 56px}
@@ -251,38 +249,36 @@ function show(ev, main, sub){ tip.textContent = ''; const b = document.createEle
 function hide(){ tip.style.display = 'none'; }
 document.querySelectorAll('.timeline').forEach(panel => {
   const L = A.lanes[panel.dataset.group];
-  const W = 1000, lh = 28, ml = 200, mr = 8, mt = 6, mb = 24, H = mt + L.length * lh + mb;
+  const W = 1000, lh = 26, gap = 10, ml = 200, mr = 8, mt = 4, mb = 24;
+  // rows grouped by county: a gap between groups
+  let yy = mt; const pos = L.map((ln, i) => { if (i > 0 && L[i - 1].key !== ln.key) yy += gap; const t = yy; yy += lh; return t; });
+  const H = yy + mb;
   const t0 = Date.parse(A.first), t1 = Date.parse(A.last);
   const x = d => ml + (Date.parse(d) - t0) / (t1 - t0) * (W - ml - mr);
   const svg = el('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Dates each threshold was reached, with recorded flood periods'});
-  const y0 = +A.first.slice(0, 4), y1 = +A.last.slice(0, 4);
-  for (let y = y0; y <= y1; y++) {
-    const xx = x(y + '-01-01');
-    if (y % 2 === 0) { svg.appendChild(el('line', {x1: xx, x2: xx, y1: mt, y2: H - mb, stroke: 'var(--rule2)'})); svg.appendChild(el('text', {x: xx, y: H - 6, 'text-anchor': 'middle'}, String(y))); }
-  }
   const ex = x(A.emLast);
-  svg.appendChild(el('rect', {x: ex, y: mt, width: W - mr - ex, height: L.length * lh, fill: 'var(--rule2)'}));
+  svg.appendChild(el('rect', {x: ex, y: mt, width: W - mr - ex, height: yy - mt, fill: 'var(--rule2)'}));
+  // flood shading spans all rows of the county
+  const groups = [];
+  L.forEach((ln, i) => { const g = groups[groups.length - 1]; if (g && g.key === ln.key) g.bot = pos[i] + lh; else groups.push({key: ln.key, top: pos[i], bot: pos[i] + lh}); });
+  groups.forEach(g => (A.floods[g.key] || []).forEach(f => {
+    const r = el('rect', {x: x(f.s), y: g.top, width: Math.max(3, x(f.e) - x(f.s)), height: g.bot - g.top, fill: 'var(--band)'});
+    r.addEventListener('pointermove', ev => show(ev, 'Recorded flood ' + f.id, f.s + ' to ' + f.e + (f.a ? ' | ' + f.a.toLocaleString('en') + ' people affected' : '')));
+    r.addEventListener('pointerleave', hide); svg.appendChild(r);
+  }));
+  const ya = +A.first.slice(0, 4), yb = +A.last.slice(0, 4);
+  for (let y = ya; y <= yb; y += 2) svg.appendChild(el('text', {x: x(y + '-01-01'), y: H - 6, 'text-anchor': 'middle'}, String(y)));
   L.forEach((ln, i) => {
-    const top = mt + i * lh, yc = top + lh / 2;
-    if (i > 0 && L[i - 1].key !== ln.key) svg.appendChild(el('line', {x1: 0, x2: W - mr, y1: top, y2: top, stroke: 'var(--rule)'}));
+    const yc = pos[i] + lh / 2;
+    svg.appendChild(el('line', {x1: ml, x2: W - mr, y1: yc, y2: yc, stroke: 'var(--rule)', 'stroke-width': 1}));
     svg.appendChild(el('text', {x: ml - 10, y: yc + 4, 'text-anchor': 'end', class: ln.aw ? 'strong' : ''}, ln.label));
-    (A.floods[ln.key] || []).forEach(f => {
-      const r = el('rect', {x: x(f.s), y: top + 5, width: Math.max(4, x(f.e) - x(f.s)), height: lh - 10, fill: 'var(--band)', rx: 2});
-      r.addEventListener('pointermove', ev => show(ev, 'Recorded flood ' + f.id, f.s + ' to ' + f.e + (f.a ? ' | ' + f.a.toLocaleString('en') + ' people affected' : '')));
-      r.addEventListener('pointerleave', hide); svg.appendChild(r);
-    });
-    svg.appendChild(el('line', {x1: ml, x2: W - mr, y1: yc, y2: yc, stroke: 'var(--rule)', 'stroke-width': .6}));
     ln.acts.forEach(a => {
-      const xx = x(a.d); let m;
-      if (a.o === 'before a recorded flood') m = el('circle', {cx: xx, cy: yc, r: 5.5, fill: 'var(--before)', stroke: 'var(--surface)', 'stroke-width': 2});
-      else if (a.o === 'during a recorded flood') m = el('rect', {x: xx - 5, y: yc - 5, width: 10, height: 10, transform: `rotate(45 ${xx} ${yc})`, fill: 'var(--during)', stroke: 'var(--surface)', 'stroke-width': 2});
-      else if (a.o === 'no recorded flood') m = el('circle', {cx: xx, cy: yc, r: 4.5, fill: 'var(--surface)', stroke: 'var(--muted)', 'stroke-width': 1.6});
-      else m = el('circle', {cx: xx, cy: yc, r: 3.5, fill: 'var(--muted)'});
-      const hit = el('circle', {cx: xx, cy: yc, r: 12, fill: 'transparent'});
-      const out = a.o === 'after impact record' ? 'no flood record for this date' : a.o;
-      hit.addEventListener('pointermove', ev => show(ev, a.p + ' mm | ' + a.d, ln.label + ' | ' + out + (a.e ? ' ' + a.e : '') + (a.l != null ? ', ' + a.l + ' days before it started' : '')));
+      const xx = x(a.d);
+      svg.appendChild(el('circle', {cx: xx, cy: yc, r: ln.aw ? 5 : 4, fill: 'var(--dot)', 'fill-opacity': ln.aw ? 1 : .55, stroke: 'var(--surface)', 'stroke-width': 1.5}));
+      const hit = el('circle', {cx: xx, cy: yc, r: 11, fill: 'transparent'});
+      hit.addEventListener('pointermove', ev => show(ev, a.p + ' mm', ln.label + ' | reached ' + a.d));
       hit.addEventListener('pointerleave', hide);
-      svg.appendChild(m); svg.appendChild(hit);
+      svg.appendChild(hit);
     });
   });
   panel.querySelector('.svgwrap').appendChild(svg);
