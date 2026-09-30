@@ -57,7 +57,7 @@ k.to_parquet("data/ken/emdat_ken_floods.parquet")
 | `crosscheck_db.py` | compares the county means with `public.imerg` (prod) and writes `out/db_crosscheck.json` |
 | `khf_trigger_review.py` | rolling 1/3/7-day totals per pixel; county-mean, wettest-pixel and area-share readings per trigger area; Weibull return periods on annual maxima; exceedance episodes matched to EM-DAT; tables in `data/ken/out/` |
 | `khf_activations.py` | every date each trigger's indicator reached its threshold (as written, 1-in-3, 1-in-5), outcome against EM-DAT floods in the trigger's counties (before, during, none), missed floods, individual and overall return periods |
-| `build_review_page.py` | assembles the HTML page from those tables; `page_activations.py` builds its activation section and timelines |
+| `build_review_page.py` | assembles the HTML page from those tables: summary, one timeline and table per trigger, notes |
 | `ken_khf_trigger_review.html` | the page |
 
 Data produced by the build is not committed. The daily county parquet is on the dev `projects`
