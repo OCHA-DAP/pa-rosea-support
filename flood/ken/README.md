@@ -17,6 +17,8 @@ python flood/ken/extract_imerg_counties.py data/ken            # optional third 
 # 2. EM-DAT Kenya floods from the team blob -> data/ken/emdat_ken_floods.parquet (see below)
 # 3. backtest tables
 python flood/ken/khf_trigger_review.py data/ken
+# 3c. historical activations of each trigger (as written, 1-in-3, 1-in-5) against EM-DAT
+python flood/ken/khf_activations.py data/ken
 # 4. page
 python flood/ken/build_review_page.py data/ken
 ```
@@ -54,7 +56,8 @@ k.to_parquet("data/ken/emdat_ken_floods.parquet")
 | `extract_imerg_counties.py` | reads a Kenya window from each daily IMERG Late v7 COG, keeps the grids (`years/imerg_ken_grid_YYYY.npz`) and writes county mean, wettest pixel (pixels at least half inside the county) and area-share statistics (`imerg_ken_adm1_daily.parquet`) |
 | `crosscheck_db.py` | compares the county means with `public.imerg` (prod) and writes `out/db_crosscheck.json` |
 | `khf_trigger_review.py` | rolling 1/3/7-day totals per pixel; county-mean, wettest-pixel and area-share readings per trigger area; Weibull return periods on annual maxima; exceedance episodes matched to EM-DAT; tables in `data/ken/out/` |
-| `build_review_page.py` | assembles the HTML page from those tables |
+| `khf_activations.py` | every date each trigger's indicator reached its threshold (as written, 1-in-3, 1-in-5), outcome against EM-DAT floods in the trigger's counties (before, during, none), missed floods, individual and overall return periods |
+| `build_review_page.py` | assembles the HTML page from those tables; `page_activations.py` builds its activation section and timelines |
 | `ken_khf_trigger_review.html` | the page |
 
 Data produced by the build is not committed. The daily county parquet is on the dev `projects`

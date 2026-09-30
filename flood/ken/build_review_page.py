@@ -14,6 +14,8 @@ import pandas as pd
 DATA = Path(sys.argv[1] if len(sys.argv) > 1 else "data")
 OUT = DATA / "out"
 HERE = Path(__file__).parent
+sys.path.insert(0, str(HERE))
+import page_activations  # noqa: E402
 
 spec = pd.read_csv(OUT / "khf_thresholds_backtest.csv")
 rp = pd.read_csv(OUT / "threshold_return_periods.csv")
@@ -288,16 +290,16 @@ html = f"""<!doctype html>
 :root{{
   color-scheme:light;
   --bg:#F4F6F7; --surface:#FFFFFF; --ink:#15212A; --ink2:#46555F; --muted:#76838C; --rule:#DDE3E6; --rule2:#EEF1F3;
-  --accent:#1D5B7C; --mam:#2a78d6; --ond:#eb6834; --thr:#15212A; --flood:#8C3A0B; --hit:#FAE3D3;
+  --accent:#1D5B7C; --mam:#2a78d6; --ond:#eb6834; --thr:#15212A; --flood:#8C3A0B; --hit:#FAE3D3; --o-before:#4a3aa7; --o-during:#1baf7a; --flood-band:rgba(140,58,11,.16);
   --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }}
 @media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{color-scheme:dark;
   --bg:#11171B; --surface:#182026; --ink:#E6ECEF; --ink2:#AAB6BD; --muted:#7F8C94; --rule:#2B353B; --rule2:#222B31;
-  --accent:#7DB6D6; --mam:#3987e5; --ond:#d95926; --thr:#E6ECEF; --flood:#F2B36B; --hit:#4A2E1A;}}}}
+  --accent:#7DB6D6; --mam:#3987e5; --ond:#d95926; --thr:#E6ECEF; --flood:#F2B36B; --hit:#4A2E1A; --o-before:#9085e9; --o-during:#199e70; --flood-band:rgba(242,179,107,.20);}}}}
 :root[data-theme="dark"]{{color-scheme:dark;
   --bg:#11171B; --surface:#182026; --ink:#E6ECEF; --ink2:#AAB6BD; --muted:#7F8C94; --rule:#2B353B; --rule2:#222B31;
-  --accent:#7DB6D6; --mam:#3987e5; --ond:#d95926; --thr:#E6ECEF; --flood:#F2B36B; --hit:#4A2E1A;}}
+  --accent:#7DB6D6; --mam:#3987e5; --ond:#d95926; --thr:#E6ECEF; --flood:#F2B36B; --hit:#4A2E1A; --o-before:#9085e9; --o-during:#199e70; --flood-band:rgba(242,179,107,.20);}}
 *{{box-sizing:border-box}}
 body{{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}}
 .wrap{{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:36px 56px}}
@@ -338,6 +340,7 @@ svg .strong{{fill:var(--ink);font-weight:600}}
 .legend i{{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:5px}}
 .legend .l{{display:inline-block;width:14px;height:0;border-top:2px solid var(--thr);vertical-align:3px;margin-right:5px}}
 .legend .t{{display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid var(--flood);vertical-align:-1px;margin-right:5px}}
+__ACT_CSS__
 .tip{{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:6px 9px;font-size:12.5px;box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;z-index:9;max-width:280px}}
 .tip b{{font-variant-numeric:tabular-nums}}
 .tip .k{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}}
@@ -356,7 +359,7 @@ footer{{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-s
   <h1>Kenya Humanitarian Fund flood triggers against IMERG rainfall</h1>
   <p class="lede">The Kenya Humanitarian Fund's RA2 allocation (September 2026) reserves USD 4 million for anticipatory action ahead of El Niño floods and lists partner triggers on KMSA 7-day rainfall forecasts and Tana River gauge levels. This page tests how often each rainfall threshold has been reached in the observed record, and whether those occasions line up with recorded floods.</p>
   <div class="meta">IMERG Late Run v7, daily, 0.1 degree, {FIRST_YEAR}-01-01 to {LAST_DATE} | return periods on full years {FIRST_YEAR}-{LAST_FULL} ({N_YEARS} years) | impact record: EM-DAT floods naming the reviewed counties | built {date.today().isoformat()}</div>
-  <nav class="nav"><a href="#written">Triggers as written</a><a href="#krcs-ne">Mandera, Wajir, Marsabit</a><a href="#whh">Isiolo, Samburu</a><a href="#krcs-garissa">Garissa rainfall leg</a><a href="#events">Flood events vs rainfall</a><a href="#untested">Not testable here</a><a href="#method">Method and data</a></nav>
+  <nav class="nav"><a href="#written">Triggers as written</a><a href="#activations">When each trigger would have been reached</a><a href="#krcs-ne">Mandera, Wajir, Marsabit</a><a href="#whh">Isiolo, Samburu</a><a href="#krcs-garissa">Garissa rainfall leg</a><a href="#events">Flood events vs rainfall</a><a href="#untested">Not testable here</a><a href="#method">Method and data</a></nav>
 </header>
 
 <div class="glance">
@@ -371,6 +374,8 @@ footer{{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-s
 {trigger_cards()}
 </div>
 </section>
+
+__ACT_HTML__
 
 <div class="controls" id="reading-ctl">
   <span class="small">Reading of "X mm over the area":</span>
@@ -420,6 +425,7 @@ __DB_CHECK__
 <div class="tip" id="tip"></div>
 
 <script id="data" type="application/json">{json.dumps(payload)}</script>
+<script id="actdata" type="application/json">__ACT_DATA__</script>
 <script>
 (function(){{
 const D = JSON.parse(document.getElementById('data').textContent);
@@ -493,6 +499,7 @@ document.querySelectorAll('#reading-ctl button').forEach(b => b.addEventListener
   drawAll();
 }}));
 drawAll();
+__ACT_JS__
 
 // at-a-glance lines, computed from the same data
 const gl = document.getElementById('glance-list');
@@ -502,6 +509,42 @@ __GLANCE_JS__
 </body>
 </html>
 """
+
+def activation_glance():
+    sm_ = pd.read_csv(OUT / "activation_summary.csv")
+    ac_ = pd.read_csv(OUT / "activations.csv")
+    ov_ = pd.read_csv(OUT / "overall_return_periods.csv")
+    aw = sm_[sm_.level == "as written"].set_index("trigger")
+    out = []
+    parts = []
+    for k, nm in [("krcs_mandera", "Mandera"), ("krcs_wajir", "Wajir"), ("krcs_marsabit", "Marsabit")]:
+        d = ac_[(ac_.trigger == k) & (ac_.level == "as written")]
+        dates = ", ".join(pd.to_datetime(d.date).dt.strftime("%b %Y"))
+        times = {1: "once", 2: "twice"}.get(len(d), f"{len(d)} times")
+        parts.append(f"{nm} {times} ({dates})")
+    ne = aw.loc[["krcs_mandera", "krcs_wajir", "krcs_marsabit"]]
+    o = ov_[(ov_.group == "krcs_ne") & (ov_.level == "as written")].iloc[0]
+    out.append("150 mm in 7 days (county mean) would have been reached: " + "; ".join(parts) + ". "
+               f"{int(ne.during_flood.sum())} of these came during an EM-DAT flood already under way in that county, "
+               f"{int(ne.before_flood.sum())} before one, {int(ne.no_recorded_flood.sum())} with no recorded flood. "
+               f"Any of the three counties: {int(o.years_activated)} of {N_YEARS} years ({o.years}). Recorded floods with an activation: "
+               f"Mandera {int(aw.loc['krcs_mandera','floods_caught'])} of {int(aw.loc['krcs_mandera','floods_in_record'])}, "
+               f"Wajir {int(aw.loc['krcs_wajir','floods_caught'])} of {int(aw.loc['krcs_wajir','floods_in_record'])}, "
+               f"Marsabit {int(aw.loc['krcs_marsabit','floods_caught'])} of {int(aw.loc['krcs_marsabit','floods_in_record'])}.")
+    for k, txt in [("whh_70", "70 mm in 7 days over the six Ewaso Ng'iro counties"), ("whh_100", "100 mm")]:
+        r = aw.loc[k]
+        out.append(f"{txt}: {int(r.activations)} activations in {int(r.years_activated)} of {N_YEARS} years; "
+                   f"{int(r.before_flood)} before a recorded flood in Isiolo or Samburu, {int(r.during_flood)} during one, "
+                   f"{int(r.no_recorded_flood)} with no recorded flood; {int(r.floods_caught)} of {int(r.floods_in_record)} recorded floods had an activation.")
+    r = aw.loc["krcs_garissa"]
+    out.append(f"40 mm in a day over the upper Tana counties: {int(r.activations)} activations in {int(r.years_activated)} of {N_YEARS} years; "
+               f"{int(r.before_flood)} before a recorded flood in Garissa, Tana River or Dadaab, {int(r.during_flood)} during one, "
+               f"{int(r.no_recorded_flood)} with no recorded flood; {int(r.floods_caught)} of {int(r.floods_in_record)} recorded floods had an activation.")
+    oa = ov_[(ov_.group == "all") & (ov_.level == "as written")].iloc[0]
+    out.append(f"At least one of these rainfall triggers as written would have been reached in {int(oa.years_activated)} of {N_YEARS} years "
+               f"and in {int(oa.ond_seasons_activated)} of {N_YEARS} October-December seasons.")
+    return out
+
 
 # glance lines are built in Python from the tables so the text and the numbers cannot drift apart
 def glance_lines():
@@ -522,18 +565,7 @@ def glance_lines():
     L.append(f"County-mean 7-day totals with a 1-in-3 year return period: Mandera {int(e.loc['Mandera','thr_1in3_mm'])} mm, "
              f"Wajir {int(e.loc['Wajir','thr_1in3_mm'])} mm, Marsabit {int(e.loc['Marsabit','thr_1in3_mm'])} mm. 1-in-5: "
              f"{int(e.loc['Mandera','thr_1in5_mm'])}, {int(e.loc['Wajir','thr_1in5_mm'])}, {int(e.loc['Marsabit','thr_1in5_mm'])} mm.")
-    a6 = "Ewaso Ng'iro area (6 counties)"
-    s70 = spec[(spec.area == a6) & (spec.threshold_mm == 70) & (spec.reading == "mean")].iloc[0]
-    s100 = spec[(spec.area == a6) & (spec.threshold_mm == 100) & (spec.reading == "mean")].iloc[0]
-    L.append(f"70 mm in 7 days averaged over the six Ewaso Ng'iro counties: {rp_txt(a6,7,70,'mean')}, {int(s70.episodes)} episodes in {N_YEARS} years "
-             f"({s70.episodes_per_year:g} per year), {int(s70.episodes_with_emdat_flood)} of them within an EM-DAT flood naming a reviewed county. "
-             f"100 mm: {rp_txt(a6,7,100,'mean')}, {int(s100.episodes)} episodes, {int(s100.episodes_with_emdat_flood)} within an EM-DAT flood. "
-             f"1-in-3 equivalent: {int(e.loc[a6,'thr_1in3_mm'])} mm; 1-in-5: {int(e.loc[a6,'thr_1in5_mm'])} mm.")
-    g = spec[(spec.area == "Garissa") & (spec.window_days == 1) & (spec.reading == "mean")].iloc[0]
-    ut = spec[(spec.area == "Upper Tana (7 counties)") & (spec.window_days == 1) & (spec.reading == "mean")].iloc[0]
-    L.append(f"40 mm in a day as a county mean: {rp_txt('Garissa',1,40,'mean')} in Garissa, {rp_txt('Tana River',1,40,'mean')} in Tana River, "
-             f"{rp_txt('Upper Tana (7 counties)',1,40,'mean')} over the upper Tana counties ({int(ut.episodes)} episodes). As the wettest pixel: "
-             f"{rp_txt('Garissa',1,40,'pixel')} in Garissa.")
+    L += activation_glance()
     n_ev = len(ev_js)
     L.append(f"{n_ev} EM-DAT flood events since {FIRST_YEAR} name at least one reviewed county; the table below shows the rainfall preceding each.")
     L.append("Gauge levels (Garissa 5.1 m for the Kenya Red Cross Society, 3.0-3.5 m for Dadaab) and forecast skill are outside what rainfall data can test.")
@@ -562,6 +594,9 @@ def db_check_html():
 
 
 html = html.replace("__DB_CHECK__", db_check_html())
+_ah, _ad, _ac, _aj = page_activations.build(OUT, N_YEARS, FIRST_YEAR, LAST_FULL)
+html = (html.replace("__ACT_HTML__", _ah).replace("__ACT_DATA__", _ad.replace("</", "<\/"))
+        .replace("__ACT_CSS__", _ac).replace("__ACT_JS__", _aj))
 
 out_path = HERE / "ken_khf_trigger_review.html"
 out_path.write_text(html, encoding="utf8")
