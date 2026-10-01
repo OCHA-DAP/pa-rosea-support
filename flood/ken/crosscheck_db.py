@@ -36,9 +36,14 @@ out = dict(
     dates_missing_from_db=missing, trigger_years={},
 )
 last_full = mine["date"].max().year - 1
+out["season"] = "October to December"
 for c in ["Mandera", "Wajir", "Marsabit"]:
     x = b[b["ADM1_EN"] == c].set_index("date").sort_index()
-    am = {k: x[col].rolling(7).sum().groupby(x.index.year).max() for k, col in [("cog", "mean_mm"), ("db", "mean")]}
+    am = {}
+    for k, col in [("cog", "mean_mm"), ("db", "mean")]:
+        r = x[col].rolling(7).sum()
+        r = r[r.index.month.isin([10, 11, 12])]  # October to December totals, as in backtest.py
+        am[k] = r.groupby(r.index.year).max()
     yrs = [y for y in am["cog"].index if y <= last_full]
     out["trigger_years"][c] = {
         k: [int(y) for y in yrs if am[k][y] >= 150] for k in am

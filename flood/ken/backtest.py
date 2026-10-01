@@ -1,8 +1,9 @@
-"""Backtest of the KHF RA2 (September 2026) rainfall triggers against IMERG, 1998 to present.
+"""Backtest of the KHF RA2 (September 2026) rainfall triggers against IMERG, October to December
+seasons 1998 to present (the allocation targets the October to December 2026 rains).
 
-For each trigger as written: every date the observed indicator reached its threshold, how many
-years that happened in, the Weibull return period, and how many recorded EM-DAT floods in the
-trigger's counties it was reached for. Also the "wettest spot" reading of the 150 mm trigger, and the same thresholds applied to the
+For each trigger as written: every date in October to December the observed indicator reached its
+threshold, how many seasons that happened in, the Weibull return period, and how many recorded
+EM-DAT floods that started in October to December in the trigger's counties it was reached for. Also the "wettest spot" reading of the 150 mm trigger, and the same thresholds applied to the
 county average of each of the eight ASAL counties the KHF paper names.
 
 Input  (data_dir): imerg_ken_adm1_daily.parquet  county means, from extract_imerg_counties.py
@@ -26,6 +27,7 @@ OUT = DATA / "out"
 COOLDOWN = 30     # days after an activation that belong to the same occasion
 FLOOD_LEAD = 30   # a flood counts as reached if the threshold is reached from this many days before it starts to its end
 MIN_COVER = 0.5   # wettest spot: pixels at least this share inside the county
+SEASON = (10, 11, 12)  # October to December: a total counts when its last day falls in these months
 
 UPPER_EWASO = ["Isiolo", "Samburu", "Nyeri", "Nyandarua", "Laikipia", "Meru"]
 UPPER_TANA = ["Nyeri", "Kirinyaga", "Murang'a", "Embu", "Meru", "Tharaka-Nithi", "Nyandarua"]
@@ -70,11 +72,12 @@ def load_emdat():
                                 int(r["Start Day"]) if pd.notna(r["Start Day"]) else 1) for _, r in em.iterrows()]
     em["end"] = [end(r) for _, r in em.iterrows()]
     em["loc"] = em["Location"].fillna("").str.lower().str.replace(" ", "")
-    return em
+    return em[em["start"].dt.month.isin(SEASON)]  # floods that started in October to December
 
 
 def activations(s, thr):
-    """First day at or above thr; later days within COOLDOWN of that day are the same occasion."""
+    """First day in the season at or above thr; later days within COOLDOWN of that day are the same occasion."""
+    s = s[s.index.month.isin(SEASON)]
     out, start = [], None
     for d, v in s[s >= thr].items():
         if start is None or (d - start).days > COOLDOWN:
@@ -109,7 +112,10 @@ def wettest_spot(last_full):
         cs = np.cumsum(X, axis=0)
         r7 = np.full_like(X, np.nan)
         r7[6:] = cs[6:] - np.vstack([np.zeros((1, X.shape[1])), cs[:-7]])
-        daily_max, yr = r7[6:].max(axis=1), years[6:]  # first 6 days have no full 7-day total
+        months = np.array([int(d[5:7]) for d in dates])
+        keep = np.isin(months, SEASON)
+        keep[:6] = False  # first 6 days have no full 7-day total
+        daily_max, yr = r7[keep].max(axis=1), years[keep]
         n = sum(daily_max[yr == y].max() >= 150 for y in range(yr.min(), last_full + 1))
         rows.append(dict(county=county, pixels=int(X.shape[1]), years_reached=int(n)))
     return pd.DataFrame(rows)
@@ -173,7 +179,7 @@ def main():
     wettest_spot(last_full).to_csv(OUT / "wettest_spot.csv", index=False)
     pd.DataFrame(by_county).to_csv(OUT / "counties.csv", index=False)
     (OUT / "meta.json").write_text(json.dumps(dict(
-        first_date=str(rain.index.min().date()), last_date=str(last_date.date()), first_year=first_year,
+        season="October to December", first_date=str(rain.index.min().date()), last_date=str(last_date.date()), first_year=first_year,
         last_full_year=last_full, n_years=n, emdat_last=str(em["end"].max().date()))))
     print(pd.DataFrame(summary).drop(columns="years").to_string(index=False))
     print(pd.DataFrame(overall).to_string(index=False))

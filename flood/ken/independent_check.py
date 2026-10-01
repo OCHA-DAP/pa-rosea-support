@@ -1,7 +1,8 @@
 """Recompute the page's counts a second way and compare with backtest.py.
 
 backtest.py averages the county means and then sums over the window. This script works from the
-saved pixel grids instead: running totals per pixel, then the area-weighted average. EM-DAT dates
+saved pixel grids instead: running totals per pixel, then the area-weighted average. Season:
+October to December totals and floods only, as in backtest.py. EM-DAT dates
 and county matching are redone here from the raw file. Prints one OK/BAD line per trigger and
 "PROBLEMS: none" when everything matches.
 
@@ -48,6 +49,7 @@ def _end(r):
 em["s"] = [pd.Timestamp(int(r["Start Year"]), int(r["Start Month"]), int(r["Start Day"]) if pd.notna(r["Start Day"]) else 1) for _, r in em.iterrows()]
 em["e"] = [_end(r) for _, r in em.iterrows()]
 em["loc"] = em["Location"].fillna("").str.lower().str.replace(" ", "")
+em = em[[d.month in (10, 11, 12) for d in em["s"]]]  # October to December floods only
 
 CS = np.cumsum(G, axis=0)
 RUN = {}
@@ -63,7 +65,7 @@ for k, (counties, win, thr, keys) in TRIG.items():
     R = RUN[win]
     s = pd.Series(R @ w, index=idx).iloc[win - 1:]                    # per-pixel running totals, then average
     acts, start = [], None
-    for d in s.index[s.values >= thr]:
+    for d in s.index[(s.values >= thr) & s.index.month.isin([10, 11, 12])]:
         if start is None or (d - start).days > 30:
             acts.append(d)
             start = d
@@ -86,7 +88,7 @@ bad_c = []
 for (county, win, thr), p in cty.iterrows():
     s = pd.Series(RUN[win] @ W[row[county]], index=idx).iloc[win - 1:]
     acts, start = [], None
-    for d in s.index[s.values >= thr]:
+    for d in s.index[(s.values >= thr) & s.index.month.isin([10, 11, 12])]:
         if start is None or (d - start).days > 30:
             acts.append(d)
             start = d

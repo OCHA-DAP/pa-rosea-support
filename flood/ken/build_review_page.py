@@ -1,5 +1,5 @@
 """Build flood/ken/ken_khf_trigger_review.html: how often each KHF RA2 rainfall trigger would
-have been reached since 1998, against recorded floods. Single self-contained page, written
+have been reached in October to December seasons since 1998, against recorded floods. Single self-contained page, written
 for a non-technical reader.
 
 Reads data_dir/out/ from backtest.py and (optional) crosscheck_db.py.
@@ -41,15 +41,15 @@ TRIGGERS = [
 SECTIONS = [
     dict(id="north-east", title="Mandera, Wajir and Marsabit", partner="Kenya Red Cross Society",
          trigger="KMSA 7-day rainfall forecast above 150 mm.",
-         shown="Rainfall over 7 days, averaged over each county.",
+         shown="Rainfall over 7 days, averaged over each county, October to December.",
          keys=["krcs_mandera", "krcs_wajir", "krcs_marsabit"]),
     dict(id="isiolo-samburu", title="Isiolo and Samburu", partner="Welthungerhilfe",
          trigger="KMSA 7-day forecast of 70 to 100 mm or more over Isiolo, Samburu and the upper Ewaso Ng'iro catchment.",
-         shown="Rainfall over 7 days, averaged over Isiolo, Samburu, Nyeri, Nyandarua, Laikipia and Meru. Both ends of the range are shown.",
+         shown="Rainfall over 7 days, averaged over Isiolo, Samburu, Nyeri, Nyandarua, Laikipia and Meru. Both ends of the range are shown, October to December.",
          keys=["whh_70", "whh_100"]),
     dict(id="garissa", title="Garissa", partner="Kenya Red Cross Society",
          trigger="Garissa Bridge river level above 5.1 m, or a KMSA heavy rainfall advisory of at least 40 mm for the Tana basin.",
-         shown="The rainfall part only: rainfall in one day, averaged over the upper Tana counties upstream of Garissa (Nyeri, Kirinyaga, Murang'a, Embu, Meru, Tharaka-Nithi, Nyandarua).",
+         shown="The rainfall part only: rainfall in one day, averaged over the upper Tana counties upstream of Garissa (Nyeri, Kirinyaga, Murang'a, Embu, Meru, Tharaka-Nithi, Nyandarua), October to December.",
          keys=["krcs_garissa"]),
 ]
 LANE = {k: lab for k, _, _, lab in TRIGGERS}
@@ -66,7 +66,7 @@ def srow(k):
 def rp_txt(v):
     if v is None or pd.isna(v):
         return "never"
-    return "every year" if v <= 1.15 else f"1 in {v:g} years"
+    return "every season" if v <= 1.15 else f"1 in {v:g} seasons"
 
 
 def thr_txt(r):
@@ -90,21 +90,21 @@ R = {k: srow(k) for k, *_ in TRIGGERS}
 
 FINDINGS = [
     ("Mandera, Wajir and Marsabit (150 mm)",
-     f"Reached in {int(ne.years_reached)} of {N} years in at least one of the three counties. "
+     f"Reached in {int(ne.years_reached)} of {N} seasons in at least one of the three counties. "
      f"It was reached for {int(R['krcs_wajir'].floods_reached)} of {int(R['krcs_wajir'].floods)} recorded floods in Wajir, "
      f"{int(R['krcs_mandera'].floods_reached)} of {int(R['krcs_mandera'].floods)} in Mandera and "
      f"{int(R['krcs_marsabit'].floods_reached)} of {int(R['krcs_marsabit'].floods)} in Marsabit."),
     ("Isiolo and Samburu (70 mm)",
-     f"Reached in {int(R['whh_70'].years_reached)} of {N} years, and for {int(R['whh_70'].floods_reached)} of "
-     f"{int(R['whh_70'].floods)} recorded floods. At 100 mm: {int(R['whh_100'].years_reached)} of {N} years."),
+     f"Reached in {int(R['whh_70'].years_reached)} of {N} seasons, and for {int(R['whh_70'].floods_reached)} of "
+     f"{int(R['whh_70'].floods)} recorded floods. At 100 mm: {int(R['whh_100'].years_reached)} of {N} seasons."),
     ("Garissa (40 mm rainfall part)",
-     f"Reached in {int(R['krcs_garissa'].years_reached)} of {N} years, and for {int(R['krcs_garissa'].floods_reached)} of "
+     f"Reached in {int(R['krcs_garissa'].years_reached)} of {N} seasons, and for {int(R['krcs_garissa'].floods_reached)} of "
      f"{int(R['krcs_garissa'].floods)} recorded floods in Garissa, Tana River or Dadaab."),
     ("All triggers together",
-     f"At least one was reached in {int(alltr.years_reached)} of {N} years."),
+     f"At least one was reached in {int(alltr.years_reached)} of {N} seasons."),
     ("Other counties",
      f"Applied to the county average in each of the eight ASAL counties named in the allocation, 150 mm in 7 days was reached in "
-     f"{CR[(7, 150)][0]} to {CR[(7, 150)][1]} of {N} years, and 70 mm in 7 days in {CR[(7, 70)][0]} to {CR[(7, 70)][1]} of {N} years."),
+     f"{CR[(7, 150)][0]} to {CR[(7, 150)][1]} of {N} seasons, and 70 mm in 7 days in {CR[(7, 70)][0]} to {CR[(7, 70)][1]} of {N} seasons."),
 ]
 
 
@@ -125,7 +125,7 @@ def county_table():
             alpha = 0.06 + 0.44 * int(r.years_reached) / N
             mark = " aw" if (c, w, thr) in AS_WRITTEN else ""
             h.append(f"<td class='n cell{mark}' style='background:rgba(42,120,214,{alpha:.2f})'>"
-                     f"<b>{int(r.years_reached)}</b> of {N} years<div class='sm'>{int(r.floods_reached)} of {int(r.floods)} floods</div></td>")
+                     f"<b>{int(r.years_reached)}</b> of {N} seasons<div class='sm'>{int(r.floods_reached)} of {int(r.floods)} floods</div></td>")
         h.append("</tr>")
     h.append("</tbody></table></div>")
     return "".join(h)
@@ -134,7 +134,7 @@ def county_table():
 COUNTY_SECTION = f"""
 <section id="counties">
   <h2>The same thresholds in other counties</h2>
-  <p class="sub">Each threshold applied to the county average in the eight ASAL counties the allocation names at Severity Level 4. Each cell gives the years it was reached ({FIRST_YEAR}-{LAST_FULL}) and the recorded floods in that county it was reached for. Outlined cells are the triggers as written. The Isiolo and Samburu and the Garissa triggers average over several counties, so their single-county values here differ from the charts above.</p>
+  <p class="sub">Each threshold applied to the county average in the eight ASAL counties the allocation names at Severity Level 4. Each cell gives the October to December seasons it was reached ({FIRST_YEAR}-{LAST_FULL}) and the recorded floods in that county it was reached for. Outlined cells are the triggers as written. The Isiolo and Samburu and the Garissa triggers average over several counties, so their single-county values here differ from the charts above.</p>
   {county_table()}
 </section>"""
 
@@ -145,8 +145,8 @@ def findings_html():
 
 def summary_table():
     h = ["<div class='scroll'><table><thead><tr><th>Trigger</th><th>Threshold</th>"
-         f"<th class='n'>Years reached<br>({FIRST_YEAR}-{LAST_FULL})</th><th class='n'>How often</th>"
-         "<th class='n'>Recorded floods<br>it was reached for</th></tr></thead><tbody>"]
+         f"<th class='n'>Oct-Dec seasons reached<br>({FIRST_YEAR}-{LAST_FULL})</th><th class='n'>How often</th>"
+         "<th class='n'>Oct-Dec floods<br>it was reached for</th></tr></thead><tbody>"]
     for k, area, partner, _ in TRIGGERS:
         r = R[k]
         h.append(f"<tr><td>{esc(area)}<div class='sm'>{esc(partner)}</div></td><td>{thr_txt(r)}</td>"
@@ -167,8 +167,8 @@ def dates_list(s):
 
 
 LEGEND = ("<div class='legend'>"
-          "<span><svg width='14' height='14'><circle cx='7' cy='7' r='4.5' fill='var(--dot)'/></svg>threshold reached</span>"
-          "<span><i style='background:var(--band)'></i>recorded flood</span>"
+          "<span><svg width='14' height='14'><circle cx='7' cy='7' r='4.5' fill='var(--dot)'/></svg>threshold reached (October to December)</span>"
+          "<span><i style='background:var(--band)'></i>recorded flood starting October to December</span>"
           f"<span><i style='background:var(--rule2)'></i>no flood records after {EM_LAST_YEAR}</span></div>")
 
 
@@ -185,23 +185,26 @@ def section_html(s):
 NOT_COVERED = [
     "Whether KMSA forecasts would have predicted these totals. This page uses observed rainfall.",
     "The river-level triggers: Garissa Bridge above 5.1 m (Kenya Red Cross Society), Flood Alert levels at Garissa, Hola and Garsen (Dadaab partners), and the Danish Refugee Council trigger for Darika, which has no rainfall amount.",
-    f"Where in a county the rainfall must fall. The triggers do not say, so this page uses the county average. Measured at the wettest spot in each county instead, 150 mm in 7 days is reached in {int(wet.years_reached.min())} or more of {N} years.",
+    f"Where in a county the rainfall must fall. The triggers do not say, so this page uses the county average. Measured at the wettest spot in each county instead, 150 mm in 7 days is reached in {int(wet.years_reached.min())} or more of {N} seasons.",
 ]
 
 METHOD = [
+    f"Season: only rainfall totals whose last day falls between 1 October and 31 December count, and only EM-DAT floods that started in those months. "
+    f"The {N} seasons are {FIRST_YEAR}-{LAST_FULL}; the October to December {int(LAST_DATE[:4])} season is not yet in the record.",
     f"Rainfall: NASA IMERG Late Run version 7, daily, about 11 km grid, {FIRST_YEAR}-01-01 to {LAST_DATE}, averaged over Kenya county boundaries (COD-AB).",
     "A threshold counts as reached on the first day the running total gets to it. Further days in the next 30 days count as the same occasion.",
-    f"Floods: events in EM-DAT, the international disaster database, whose location names the trigger's counties, {FIRST_YEAR} to {EM_LAST_YEAR}. "
+    f"Floods: events in EM-DAT, the international disaster database, that started in October to December and whose location names the trigger's counties, {FIRST_YEAR} to {EM_LAST_YEAR}. "
     "EM-DAT only includes events that meet its criteria (for example 100 or more people affected), often records one long event for a whole season, "
     "and can list many counties for one event. A flood counts as reached when the threshold was reached between 30 days before it began and its end.",
-    f"How often: (number of years + 1) divided by the years reached, over the {N} full years {FIRST_YEAR}-{LAST_FULL} (Weibull return period).",
+    f"How often: (number of seasons + 1) divided by the seasons reached, over the {N} seasons {FIRST_YEAR}-{LAST_FULL} (Weibull return period).",
     "Checks: every count on this page was recalculated a second way, from the county rainfall series and the raw EM-DAT file, and matched. Each flood matched to a county was checked against the EM-DAT location text.",
 ]
 if dbc:
-    METHOD.append(f"The county rainfall matches the team's database copy of IMERG (correlation {dbc['corr']}). "
-                  + " ".join(f"The one difference that changes a count: {k} in {d['year']} is {d['cog']} mm here and {d['db']} mm in the database, "
-                             f"so {k} reaches 150 mm in {len(v['cog'])} or {len(v['db'])} years depending on the copy used."
-                             for k, v in dbc["trigger_years"].items() for d in v["differs"]))
+    note = f"The county rainfall matches the team's database copy of IMERG (correlation {dbc['corr']})."
+    if dbc.get("season") == meta.get("season"):
+        note += "".join(f" One difference changes a count: {k} in {d['year']} is {d['cog']} mm here and {d['db']} mm in the database."
+                        for k, v in dbc["trigger_years"].items() for d in v["differs"])
+    METHOD.append(note)
 
 
 def ul(items, cls=""):
@@ -314,7 +317,7 @@ html = f"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kenya Flood Triggers</title>
-<meta name="description" content="How often the Kenya Humanitarian Fund RA2 rainfall triggers would have been reached since {FIRST_YEAR}, against recorded floods.">
+<meta name="description" content="How often the Kenya Humanitarian Fund RA2 rainfall thresholds are reached in October to December seasons since {FIRST_YEAR}, against recorded floods.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>{CSS}</style>
@@ -323,13 +326,14 @@ html = f"""<!doctype html>
 <div class="wrap">
 <header>
   <div class="eyebrow">OCHA ROSEA support | Kenya | floods</div>
-  <h1>Kenya flood triggers: how often the rainfall thresholds are reached</h1>
+  <h1>Kenya flood triggers: how often the rainfall thresholds are reached in October to December</h1>
 </header>
 
 <div class="note"><b>Different data source: results may vary</b>The triggers are written on forecasts from KMSA (Kenya Meteorological Service Authority). This page uses NASA's IMERG satellite rainfall estimates instead. Totals from the two sources differ, so the dates and counts here may not match what KMSA data would give.</div>
 
 <section id="findings">
 <h2>At a glance</h2>
+<p class="sub">October to December seasons, {FIRST_YEAR} to {LAST_FULL}.</p>
 {findings_html()}
 {summary_table()}
 </section>

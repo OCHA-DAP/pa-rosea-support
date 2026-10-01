@@ -8,6 +8,10 @@ applied to the county average, in the eight ASAL counties the allocation names a
 this analysis uses observed NASA IMERG satellite rainfall instead, so results may differ from what
 KMSA data would give.
 
+Season: October to December only, because the allocation targets the October to December 2026
+rains. A rainfall total counts when its last day falls between 1 October and 31 December, and only
+EM-DAT floods that started in those months are used. Frequencies are per season, 1998 to 2025.
+
 Output: `ken_khf_trigger_review.html`, a single self-contained page.
 
 | Trigger (partner) | Tested as |
