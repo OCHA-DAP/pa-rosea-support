@@ -34,8 +34,10 @@ TRIGGERS = [
     ("krcs_mandera", "Mandera", "Kenya Red Cross Society", "Mandera"),
     ("krcs_wajir", "Wajir", "Kenya Red Cross Society", "Wajir"),
     ("krcs_marsabit", "Marsabit", "Kenya Red Cross Society", "Marsabit"),
-    ("whh_70", "Isiolo and Samburu", "Welthungerhilfe", "70 mm"),
-    ("whh_100", "Isiolo and Samburu", "Welthungerhilfe", "100 mm"),
+    ("whh_isiolo_70", "Isiolo", "Welthungerhilfe", "Isiolo 70 mm"),
+    ("whh_isiolo_100", "Isiolo", "Welthungerhilfe", "Isiolo 100 mm"),
+    ("whh_samburu_70", "Samburu", "Welthungerhilfe", "Samburu 70 mm"),
+    ("whh_samburu_100", "Samburu", "Welthungerhilfe", "Samburu 100 mm"),
     ("krcs_garissa", "Garissa (rainfall part)", "Kenya Red Cross Society", "40 mm"),
 ]
 SECTIONS = [
@@ -44,9 +46,9 @@ SECTIONS = [
          shown="Rainfall over 7 days in each county, October to December.",
          keys=["krcs_mandera", "krcs_wajir", "krcs_marsabit"]),
     dict(id="isiolo-samburu", title="Isiolo and Samburu", partner="Welthungerhilfe",
-         trigger="KMSA 7-day forecast of \"average rainfall of 70-100mm or more\" over Isiolo, Samburu and the upper Ewaso Ng'iro catchment. This is the only trigger that says average.",
-         shown="Rainfall over 7 days over Isiolo, Samburu, Nyeri, Nyandarua, Laikipia and Meru, at both ends of the range, October to December.",
-         keys=["whh_70", "whh_100"]),
+         trigger="KMSA 7-day forecast of \"average rainfall of 70-100mm or more\" over Isiolo, Samburu and the upper Ewaso Ng'iro catchment (Nyeri, Nyandarua, Laikipia, Meru). This is the only trigger that says average.",
+         shown="Rainfall over 7 days in Isiolo and in Samburu, each on its own, at both ends of the range, October to December.",
+         keys=["whh_isiolo_70", "whh_isiolo_100", "whh_samburu_70", "whh_samburu_100"]),
     dict(id="garissa", title="Garissa", partner="Kenya Red Cross Society",
          trigger="Garissa Bridge river level above 5.1 m, or a KMSA heavy rainfall advisory of at least 40 mm for the Tana basin. The document does not say whether this is a basin average or any one place.",
          shown="The rainfall part only: rainfall in one day over the upper Tana counties upstream of Garissa (Nyeri, Kirinyaga, Murang'a, Embu, Meru, Tharaka-Nithi, Nyandarua), October to December.",
@@ -63,10 +65,13 @@ def S(reading, k):
     return summ.loc[(reading, k)]
 
 
-def rp_txt(v):
-    if v is None or pd.isna(v):
+def rp_txt(r):
+    """How often, from a summary row: 'every season' only when reached in all N seasons."""
+    if int(r.years_reached) == 0:
         return "never"
-    return "every season" if v <= 1.15 else f"1 in {v:g} seasons"
+    if int(r.years_reached) == N:
+        return "every season"
+    return f"1 in {r.return_period:g} seasons"
 
 
 def thr_txt(r):
@@ -74,7 +79,8 @@ def thr_txt(r):
 
 
 # ------------------------------------------------------------------ chart data
-lanes = {s["id"]: [dict(key=k, reading=rd, label=f"{LANE[k]}, {'average' if rd == 'county' else 'one cell'}",
+FLOOD_KEY = {"whh_isiolo_100": "whh_isiolo_70", "whh_samburu_100": "whh_samburu_70"}
+lanes = {s["id"]: [dict(key=k, fk=FLOOD_KEY.get(k, k), reading=rd, label=f"{LANE[k]}, {'average' if rd == 'county' else 'one cell'}",
                         acts=[dict(d=a.date.strftime("%Y-%m-%d"), p=int(a.peak_mm))
                               for a in acts[(acts.trigger == k) & (acts.reading == rd)].itertuples()])
                    for k in s["keys"] for rd, _ in READINGS] for s in SECTIONS}
@@ -99,13 +105,17 @@ alltr = [int(ov.loc[(rd, "all")].years_reached) for rd, _ in READINGS]
 FINDINGS = [
     ("Mandera, Wajir and Marsabit (150 mm in 7 days)",
      f"Reached in at least one of the three counties in {ne[0]} of {N} seasons on the county average, and {ne[1]} of {N} at a single cell."),
-    ("Isiolo and Samburu (70 mm in 7 days)",
-     f"Reached in {both('whh_70')[0]} of {N} seasons on the average the trigger describes, and {both('whh_70')[1]} of {N} at a single cell. "
-     f"At 100 mm: {both('whh_100')[0]} and {both('whh_100')[1]}."),
+    ("Isiolo (70 mm in 7 days)",
+     f"Reached in {both('whh_isiolo_70')[0]} of {N} seasons on the county average, and {both('whh_isiolo_70')[1]} of {N} at a single cell. "
+     f"At 100 mm: {both('whh_isiolo_100')[0]} and {both('whh_isiolo_100')[1]}."),
+    ("Samburu (70 mm in 7 days)",
+     f"Reached in {both('whh_samburu_70')[0]} of {N} seasons on the county average, and {both('whh_samburu_70')[1]} of {N} at a single cell. "
+     f"At 100 mm: {both('whh_samburu_100')[0]} and {both('whh_samburu_100')[1]}."),
     ("Garissa (40 mm in a day, rainfall part)",
      f"Reached in {both('krcs_garissa')[0]} of {N} seasons on the upper Tana average, and {both('krcs_garissa')[1]} of {N} at a single cell."),
-    ("All triggers together",
-     f"At least one was reached in {alltr[0]} of {N} seasons on the average, and {alltr[1]} of {N} at a single cell."),
+    ("All triggers together, as written",
+     f"At least one was reached in {alltr[0]} of {N} seasons on the average, and {alltr[1]} of {N} at a single cell. "
+     f"This uses the Welthungerhilfe trigger as written, averaged over six counties."),
     ("Other counties",
      f"In the eight ASAL counties named in the allocation, 150 mm in 7 days was reached in {CR('county', 7, 150)[0]} to {CR('county', 7, 150)[1]} "
      f"of {N} seasons on the county average, and {CR('cell', 7, 150)[0]} to {CR('cell', 7, 150)[1]} at a single cell."),
@@ -125,9 +135,9 @@ def summary_table():
     for k, area, partner, _ in TRIGGERS:
         c, x = S("county", k), S("cell", k)
         h.append(f"<tr><td>{esc(area)}<div class='sm'>{esc(partner)}</div></td><td>{thr_txt(c)}</td>"
-                 f"<td class='n g1'>{int(c.years_reached)}<div class='sm'>{rp_txt(c.return_period)}</div></td>"
+                 f"<td class='n g1'>{int(c.years_reached)}<div class='sm'>{rp_txt(c)}</div></td>"
                  f"<td class='n g1'>{int(c.floods_reached)} of {int(c.floods)}</td>"
-                 f"<td class='n g2'>{int(x.years_reached)}<div class='sm'>{rp_txt(x.return_period)}</div></td>"
+                 f"<td class='n g2'>{int(x.years_reached)}<div class='sm'>{rp_txt(x)}</div></td>"
                  f"<td class='n g2'>{int(x.floods_reached)} of {int(x.floods)}</td></tr>")
     h.append("</tbody></table></div>")
     return "".join(h)
@@ -151,11 +161,20 @@ LEGEND = ("<div class='legend'>"
           f"<span><i style='background:var(--rule2)'></i>no flood records after {EM_LAST_YEAR}</span></div>")
 
 
+def as_written_note(s):
+    if s["id"] != "isiolo-samburu":
+        return ""
+    a70, a100 = S("county", "whh_70"), S("county", "whh_100")
+    return (f"<br><b>As written, over the six-county area:</b> reached in {int(a70.years_reached)} of {N} seasons at 70 mm and "
+            f"{int(a100.years_reached)} at 100 mm on the average, for {int(a70.floods_reached)} and {int(a100.floods_reached)} of "
+            f"{int(a70.floods)} recorded floods in Isiolo or Samburu.")
+
+
 def section_html(s):
     return f"""
 <section id="{s['id']}">
   <h2>{esc(s['title'])}</h2>
-  <p class="sub"><b>Trigger ({esc(s['partner'])}):</b> {esc(s['trigger'])}<br><b>Shown here:</b> {esc(s['shown'])}</p>
+  <p class="sub"><b>Trigger ({esc(s['partner'])}):</b> {esc(s['trigger'])}<br><b>Shown here:</b> {esc(s['shown'])}{as_written_note(s)}</p>
   <div class="panel timeline" data-group="{s['id']}"><div class="svgwrap"></div>{LEGEND}</div>
   {dates_list(s)}
 </section>"""
@@ -187,7 +206,7 @@ def county_table():
 COUNTY_SECTION = f"""
 <section id="counties">
   <h2>The same thresholds in other counties</h2>
-  <p class="sub">Each threshold applied in the eight ASAL counties the allocation names at Severity Level 4. In each cell, the left number is the October to December seasons it was reached ({FIRST_YEAR}-{LAST_FULL}, of {N}) on the county average, the right number at a single cell, each with the recorded floods it was reached for. Outlined cells are the triggers as written. The Isiolo and Samburu and the Garissa triggers cover several counties, so their single-county values here differ from the charts above.</p>
+  <p class="sub">Each threshold applied in the eight ASAL counties the allocation names at Severity Level 4. In each cell, the left number is the October to December seasons it was reached ({FIRST_YEAR}-{LAST_FULL}, of {N}) on the county average, the right number at a single cell, each with the recorded floods it was reached for. Outlined cells are the triggers as written. The Garissa trigger covers the upper Tana counties, so its single-county values here differ from the chart above.</p>
   {county_table()}
 </section>"""
 
@@ -297,11 +316,11 @@ function show(ev, main, sub){ tip.textContent = ''; const b = document.createEle
   if (sub) { const s = document.createElement('div'); s.className = 'sm'; s.textContent = sub; tip.appendChild(s); }
   tip.style.display = 'block'; tip.style.left = Math.min(ev.clientX + 14, innerWidth - 310) + 'px'; tip.style.top = Math.min(ev.clientY + 14, innerHeight - 70) + 'px'; }
 function hide(){ tip.style.display = 'none'; }
-const fkey = k => k.startsWith('whh') ? 'whh_70' : k;   // flood list per area
+const fkey = ln => ln.fk;   // flood list per county
 document.querySelectorAll('.timeline').forEach(panel => {
   const L = A.lanes[panel.dataset.group];
-  const W = 1000, lh = 26, gap = 12, ml = 150, mr = 8, mt = 4, mb = 26;
-  let yy = mt; const pos = L.map((ln, i) => { if (i > 0 && fkey(L[i - 1].key) !== fkey(ln.key)) yy += gap; const t = yy; yy += lh; return t; });
+  const W = 1000, lh = 26, gap = 12, ml = 200, mr = 8, mt = 4, mb = 26;
+  let yy = mt; const pos = L.map((ln, i) => { if (i > 0 && fkey(L[i - 1]) !== fkey(ln)) yy += gap; const t = yy; yy += lh; return t; });
   const H = yy + mb;
   const t0 = Date.parse(A.first), t1 = Date.parse(A.last);
   const x = d => ml + (Date.parse(d) - t0) / (t1 - t0) * (W - ml - mr);
@@ -310,7 +329,7 @@ document.querySelectorAll('.timeline').forEach(panel => {
   svg.appendChild(el('rect', {x: ex, y: mt, width: W - mr - ex, height: yy - mt, fill: 'var(--rule2)'}));
   const groups = [];
   L.forEach((ln, i) => { const g = groups[groups.length - 1];
-    if (g && g.key === fkey(ln.key)) g.bot = pos[i] + lh; else groups.push({key: fkey(ln.key), top: pos[i], bot: pos[i] + lh}); });
+    if (g && g.key === fkey(ln)) g.bot = pos[i] + lh; else groups.push({key: fkey(ln), top: pos[i], bot: pos[i] + lh}); });
   groups.forEach(g => (A.floods[g.key] || []).forEach(f => {
     const r = el('rect', {x: x(f.s), y: g.top, width: Math.max(3, x(f.e) - x(f.s)), height: g.bot - g.top, fill: 'var(--band)'});
     r.addEventListener('pointermove', ev => show(ev, 'Recorded flood', f.s + ' to ' + f.e + (f.a ? ' | ' + f.a.toLocaleString('en') + ' people affected' : '') + ' | EM-DAT ' + f.id));

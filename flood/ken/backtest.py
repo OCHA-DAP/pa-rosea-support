@@ -39,6 +39,11 @@ TRIGGERS = {
     "krcs_marsabit": (["Marsabit"], 7, 150, ["Marsabit"], "krcs_ne"),
     "whh_70": (UPPER_EWASO, 7, 70, ["Isiolo", "Samburu"], "whh"),
     "whh_100": (UPPER_EWASO, 7, 100, ["Isiolo", "Samburu"], None),   # upper end of the 70-100 mm range
+    # the same thresholds for Isiolo and Samburu each on their own (shown as separate rows on the page)
+    "whh_isiolo_70": (["Isiolo"], 7, 70, ["Isiolo"], None),
+    "whh_isiolo_100": (["Isiolo"], 7, 100, ["Isiolo"], None),
+    "whh_samburu_70": (["Samburu"], 7, 70, ["Samburu"], None),
+    "whh_samburu_100": (["Samburu"], 7, 100, ["Samburu"], None),
     "krcs_garissa": (UPPER_TANA, 1, 40, ["Garissa", "Tana River", "Dadaab"], "krcs_garissa"),
 }
 

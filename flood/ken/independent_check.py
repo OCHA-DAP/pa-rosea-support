@@ -24,7 +24,9 @@ EWASO = ["Isiolo", "Samburu", "Nyeri", "Nyandarua", "Laikipia", "Meru"]
 TANA = ["Nyeri", "Kirinyaga", "Murang'a", "Embu", "Meru", "Tharaka-Nithi", "Nyandarua"]
 TRIG = {"krcs_mandera": (["Mandera"], 7, 150, ["mandera"]), "krcs_wajir": (["Wajir"], 7, 150, ["wajir"]),
         "krcs_marsabit": (["Marsabit"], 7, 150, ["marsabit"]), "whh_70": (EWASO, 7, 70, ["isiolo", "samburu"]),
-        "whh_100": (EWASO, 7, 100, ["isiolo", "samburu"]), "krcs_garissa": (TANA, 1, 40, ["garissa", "tanariver", "dadaab"])}
+        "whh_100": (EWASO, 7, 100, ["isiolo", "samburu"]), "krcs_garissa": (TANA, 1, 40, ["garissa", "tanariver", "dadaab"]),
+        "whh_isiolo_70": (["Isiolo"], 7, 70, ["isiolo"]), "whh_isiolo_100": (["Isiolo"], 7, 100, ["isiolo"]),
+        "whh_samburu_70": (["Samburu"], 7, 70, ["samburu"]), "whh_samburu_100": (["Samburu"], 7, 100, ["samburu"])}
 
 # pixel grids
 dates, grids = [], []
@@ -89,7 +91,7 @@ for reading in ("county", "cell"):
     for k, (counties, win, thr, keys) in TRIG.items():
         ev = em[em["loc"].apply(lambda t: any(x in t for x in keys))]
         acts, yrs, reached = count(series(reading, counties, win), thr, ev)
-        if k != "whh_100":
+        if k in ("krcs_mandera", "krcs_wajir", "krcs_marsabit", "whh_70", "krcs_garissa"):  # the triggers as written
             years_any |= yrs
         if k in ("krcs_mandera", "krcs_wajir", "krcs_marsabit"):
             years_ne |= yrs
