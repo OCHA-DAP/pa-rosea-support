@@ -12,6 +12,10 @@ Season: October to December only, because the allocation targets the October to 
 rains. A rainfall total counts when its last day falls between 1 October and 31 December, and only
 EM-DAT floods that started in those months are used. Frequencies are per season, 1998 to 2025.
 
+Two readings of each threshold, because the paper only says "average" for the Welthungerhilfe trigger:
+county average (rainfall averaged over the county or area) and single cell (the wettest IMERG grid
+cell, about 11 km, with at least half its area inside). Every output table has a `reading` column.
+
 Output: `ken_khf_trigger_review.html`, a single self-contained page.
 
 | Trigger (partner) | Tested as |
@@ -36,7 +40,7 @@ python flood/ken/build_review_page.py data/ken
 
 Needs `DSCI_AZ_BLOB_PROD_SAS` (IMERG COGs and COD-AB) and `DSCI_AZ_BLOB_DEV_SAS` (EM-DAT), and
 Python with `ocha-stratus`, `rasterio`, `geopandas`, `pandas`, `pyarrow`, `numpy`. The COGs are
-used rather than the `public.imerg` table because the wettest-spot figure needs the pixel grids.
+used rather than the `public.imerg` table because the single-cell reading needs the pixel grids.
 
 ```python
 import ocha_stratus as stratus
@@ -60,7 +64,7 @@ DSCI_AZ_DB_PROD_HOST=127.0.0.1:15433 python flood/ken/crosscheck_db.py data/ken
 | file | what |
 |---|---|
 | `extract_imerg_counties.py` | reads a Kenya window from each daily IMERG Late v7 COG; writes county `mean_mm` and `max_mm` (wettest pixel at least half inside the county) to `imerg_ken_adm1_daily.parquet` and keeps the grids in `years/`; `--from-grids` recomputes without downloading |
-| `backtest.py` | every date each trigger was reached (first day at the threshold, 30-day cooldown), years reached, Weibull return period, EM-DAT floods reached (threshold reached from 30 days before the start to the end), wettest-spot years for 150 mm, and each threshold in the eight ASAL counties (`out/counties.csv`); writes `out/` |
+| `backtest.py` | every date each trigger was reached (first day at the threshold, 30-day cooldown), years reached, Weibull return period, EM-DAT floods reached (threshold reached from 30 days before the start to the end), for both readings (county average, single cell), and each threshold in the eight ASAL counties (`out/counties.csv`); writes `out/` |
 | `independent_check.py` | recomputes every count, including the county table, from the pixel grids and the raw EM-DAT file and compares with `out/` |
 | `crosscheck_db.py` | optional comparison with `public.imerg` |
 | `build_review_page.py` | the page, from `out/` |

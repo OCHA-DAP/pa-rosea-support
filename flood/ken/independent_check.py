@@ -1,7 +1,8 @@
 """Recompute the page's counts a second way and compare with backtest.py.
 
 backtest.py averages the county means and then sums over the window. This script works from the
-saved pixel grids instead: running totals per pixel, then the area-weighted average. Season:
+saved pixel grids instead: running totals per pixel, then the area-weighted average (county
+reading), and pandas rolling sums per pixel, then the maximum (single-cell reading). Season:
 October to December totals and floods only, as in backtest.py. EM-DAT dates
 and county matching are redone here from the raw file. Prints one OK/BAD line per trigger and
 "PROBLEMS: none" when everything matches.
@@ -53,17 +54,22 @@ em = em[[d.month in (10, 11, 12) for d in em["s"]]]  # October to December flood
 
 CS = np.cumsum(G, axis=0)
 RUN = {}
-for win in (1, 7):  # running totals per pixel
+for win in (1, 7):  # running totals per pixel (county-average route)
     RUN[win] = CS.copy()
     RUN[win][win:] = CS[win:] - CS[:-win]
+del CS
+_, _, _, _, C, _, _ = grid_and_weights(dates[-1])
 
-summ = pd.read_csv(D / "out" / "summary.csv").set_index("trigger")
-ov = pd.read_csv(D / "out" / "overall.csv").set_index("group")
-problems, years_any, years_ne = [], set(), set()
-for k, (counties, win, thr, keys) in TRIG.items():
-    w = W[[row[c] for c in counties]].sum(0) / len(counties)          # equal weight per county
-    R = RUN[win]
-    s = pd.Series(R @ w, index=idx).iloc[win - 1:]                    # per-pixel running totals, then average
+
+def series(reading, counties, win):
+    if reading == "county":  # per-pixel running totals, then the area-weighted average, equal weight per county
+        w = W[[row[c] for c in counties]].sum(0) / len(counties)
+        return pd.Series(RUN[win] @ w, index=idx).iloc[win - 1:]
+    inside = C[[row[c] for c in counties]].sum(0) >= 0.5  # single cell: pandas rolling sum per pixel, then the maximum
+    return pd.DataFrame(G[:, inside], index=idx).rolling(win).sum().max(axis=1).iloc[win - 1:]
+
+
+def count(s, thr, ev):
     acts, start = [], None
     for d in s.index[(s.values >= thr) & s.index.month.isin([10, 11, 12])]:
         if start is None or (d - start).days > 30:
@@ -71,37 +77,39 @@ for k, (counties, win, thr, keys) in TRIG.items():
             start = d
     A = pd.DatetimeIndex(acts)
     yrs = {d.year for d in acts if d.year <= last_full}
-    if k != "whh_100":
-        years_any |= yrs
-    if k.startswith("krcs_m") or k == "krcs_wajir":
-        years_ne |= yrs
-    ev = em[em["loc"].apply(lambda t: any(x in t for x in keys))]
-    reached = sum(((A >= r.s - pd.Timedelta(days=30)) & (A <= r.e)).any() for r in ev.itertuples())
-    mine = (len(acts), len(yrs), len(ev), int(reached))
-    p = summ.loc[k]
-    theirs = (int(p.activations), int(p.years_reached), int(p.floods), int(p.floods_reached))
-    ok = mine == theirs
-    print(f"{'OK ' if ok else 'BAD'} {k:14s} activations, years, floods, floods reached: here {mine} | backtest {theirs}")
-    problems += [] if ok else [k]
-cty = pd.read_csv(D / "out" / "counties.csv").set_index(["county", "window_days", "threshold_mm"])
-bad_c = []
-for (county, win, thr), p in cty.iterrows():
-    s = pd.Series(RUN[win] @ W[row[county]], index=idx).iloc[win - 1:]
-    acts, start = [], None
-    for d in s.index[(s.values >= thr) & s.index.month.isin([10, 11, 12])]:
-        if start is None or (d - start).days > 30:
-            acts.append(d)
-            start = d
-    A = pd.DatetimeIndex(acts)
-    ev = em[em["loc"].str.contains(county.lower().replace(" ", ""), regex=False)]
-    mine = (len({d.year for d in acts if d.year <= last_full}), len(ev),
-            int(sum(((A >= r.s - pd.Timedelta(days=30)) & (A <= r.e)).any() for r in ev.itertuples())))
-    if mine != (int(p.years_reached), int(p.floods), int(p.floods_reached)):
-        bad_c.append((county, win, thr, mine, (int(p.years_reached), int(p.floods), int(p.floods_reached))))
-print(f"{'OK ' if not bad_c else 'BAD'} counties       {len(cty)} county-threshold cells checked, {len(bad_c)} differ {bad_c[:3]}")
-problems += [f"county {b[0]} {b[2]}mm" for b in bad_c]
-for g, yrs in [("krcs_ne", years_ne), ("all", years_any)]:
-    ok = len(yrs) == int(ov.loc[g].years_reached)
-    print(f"{'OK ' if ok else 'BAD'} {g:14s} years: here {len(yrs)} | backtest {int(ov.loc[g].years_reached)}")
-    problems += [] if ok else [g]
-print(f"record {idx.min().date()} to {idx.max().date()}, {n} full years | PROBLEMS: {problems or 'none'}")
+    return acts, yrs, int(sum(((A >= r.s - pd.Timedelta(days=30)) & (A <= r.e)).any() for r in ev.itertuples()))
+
+
+summ = pd.read_csv(D / "out" / "summary.csv").set_index(["reading", "trigger"])
+ov = pd.read_csv(D / "out" / "overall.csv").set_index(["reading", "group"])
+cty = pd.read_csv(D / "out" / "counties.csv").set_index(["reading", "county", "window_days", "threshold_mm"])
+problems = []
+for reading in ("county", "cell"):
+    years_any, years_ne = set(), set()
+    for k, (counties, win, thr, keys) in TRIG.items():
+        ev = em[em["loc"].apply(lambda t: any(x in t for x in keys))]
+        acts, yrs, reached = count(series(reading, counties, win), thr, ev)
+        if k != "whh_100":
+            years_any |= yrs
+        if k in ("krcs_mandera", "krcs_wajir", "krcs_marsabit"):
+            years_ne |= yrs
+        mine = (len(acts), len(yrs), len(ev), reached)
+        p = summ.loc[(reading, k)]
+        theirs = (int(p.activations), int(p.years_reached), int(p.floods), int(p.floods_reached))
+        ok = mine == theirs
+        print(f"{'OK ' if ok else 'BAD'} {reading:6s} {k:14s} activations, seasons, floods, floods reached: here {mine} | backtest {theirs}")
+        problems += [] if ok else [f"{reading} {k}"]
+    for g, yrs in [("krcs_ne", years_ne), ("all", years_any)]:
+        ok = len(yrs) == int(ov.loc[(reading, g)].years_reached)
+        print(f"{'OK ' if ok else 'BAD'} {reading:6s} {g:14s} seasons: here {len(yrs)} | backtest {int(ov.loc[(reading, g)].years_reached)}")
+        problems += [] if ok else [f"{reading} {g}"]
+    bad = []
+    for (rd, county, win, thr), p in cty.loc[[reading]].iterrows():
+        ev = em[em["loc"].str.contains(county.lower().replace(" ", ""), regex=False)]
+        _, yrs, reached = count(series(reading, [county], win), thr, ev)
+        mine = (len(yrs), len(ev), reached)
+        if mine != (int(p.years_reached), int(p.floods), int(p.floods_reached)):
+            bad.append((county, win, thr, mine))
+    print(f"{'OK ' if not bad else 'BAD'} {reading:6s} counties       {len(cty.loc[[reading]])} cells checked, {len(bad)} differ {bad[:3]}")
+    problems += [f"{reading} county {b[0]} {b[2]}mm" for b in bad]
+print(f"record {idx.min().date()} to {idx.max().date()}, {n} seasons | PROBLEMS: {problems or 'none'}")

@@ -3,14 +3,15 @@ seasons 1998 to present (the allocation targets the October to December 2026 rai
 
 For each trigger as written: every date in October to December the observed indicator reached its
 threshold, how many seasons that happened in, the Weibull return period, and how many recorded
-EM-DAT floods that started in October to December in the trigger's counties it was reached for. Also the "wettest spot" reading of the 150 mm trigger, and the same thresholds applied to the
-county average of each of the eight ASAL counties the KHF paper names.
+EM-DAT floods that started in October to December in the trigger's counties it was reached for. Each is computed two ways: the rainfall averaged over the
+area ("county") and the wettest single grid cell in the area ("cell"). The same thresholds are also
+applied to each of the eight ASAL counties the KHF paper names.
 
 Input  (data_dir): imerg_ken_adm1_daily.parquet  county means, from extract_imerg_counties.py
-                   years/imerg_ken_grid_YYYY.npz  daily grids, same script (wettest spot only)
+                   years/imerg_ken_grid_YYYY.npz  daily grids, same script (single-cell reading)
                    emdat_ken_floods.parquet       EM-DAT Kenya floods (see README)
-Output (data_dir/out): summary.csv, activations.csv, overall.csv, floods.csv, wettest_spot.csv,
-                       counties.csv, meta.json
+Output (data_dir/out): summary.csv, activations.csv, overall.csv, floods.csv, counties.csv, meta.json
+                       (every table has a "reading" column: county or cell)
 
 Run: python flood/ken/backtest.py [data_dir]
 """
@@ -26,7 +27,7 @@ DATA = Path(sys.argv[1] if len(sys.argv) > 1 else "data")
 OUT = DATA / "out"
 COOLDOWN = 30     # days after an activation that belong to the same occasion
 FLOOD_LEAD = 30   # a flood counts as reached if the threshold is reached from this many days before it starts to its end
-MIN_COVER = 0.5   # wettest spot: pixels at least this share inside the county
+MIN_COVER = 0.5   # single-cell reading: grid cells at least this share inside the area
 SEASON = (10, 11, 12)  # October to December: a total counts when its last day falls in these months
 
 UPPER_EWASO = ["Isiolo", "Samburu", "Nyeri", "Nyandarua", "Laikipia", "Meru"]
@@ -92,33 +93,31 @@ def return_period(k, n):
     return round((n + 1) / k, 1) if k else None
 
 
-def wettest_spot(last_full):
-    """Years in which the 7-day total at the wettest pixel of each county reached 150 mm."""
-    sys.path.insert(0, str(Path(__file__).parent))
-    from extract_imerg_counties import grid_and_weights
-    files = sorted((DATA / "years").glob("imerg_ken_grid_*.npz"))
-    dates, grids = [], []
-    for f in files:
-        z = np.load(f)
-        dates += list(z["dates"])
-        grids.append(z["grid"].reshape(len(z["dates"]), -1))
-    G = np.concatenate(grids)
-    years = np.array([int(d[:4]) for d in dates])
-    _, _, _, _, C, codes, names = grid_and_weights(str(dates[-1]))
-    code = {v: k for k, v in names.items()}
-    rows = []
-    for county in ("Mandera", "Wajir", "Marsabit"):
-        X = np.nan_to_num(G[:, C[codes.index(code[county])] >= MIN_COVER]).astype("float64")
-        cs = np.cumsum(X, axis=0)
-        r7 = np.full_like(X, np.nan)
-        r7[6:] = cs[6:] - np.vstack([np.zeros((1, X.shape[1])), cs[:-7]])
-        months = np.array([int(d[5:7]) for d in dates])
-        keep = np.isin(months, SEASON)
-        keep[:6] = False  # first 6 days have no full 7-day total
-        daily_max, yr = r7[keep].max(axis=1), years[keep]
-        n = sum(daily_max[yr == y].max() >= 150 for y in range(yr.min(), last_full + 1))
-        rows.append(dict(county=county, pixels=int(X.shape[1]), years_reached=int(n)))
-    return pd.DataFrame(rows)
+class Cells:
+    """Single-cell reading: the wettest grid cell (at least MIN_COVER inside the area) per day."""
+
+    def __init__(self, index):
+        sys.path.insert(0, str(Path(__file__).parent))
+        from extract_imerg_counties import grid_and_weights
+        dates, grids = [], []
+        for f in sorted((DATA / "years").glob("imerg_ken_grid_*.npz")):
+            z = np.load(f)
+            dates += list(z["dates"])
+            grids.append(z["grid"].reshape(len(z["dates"]), -1))
+        self.index = pd.DatetimeIndex(pd.to_datetime(dates))
+        assert self.index.equals(index), "grids and county file cover different days"
+        G = np.nan_to_num(np.concatenate(grids)).astype("float32")
+        cs = np.cumsum(G, axis=0, dtype="float64")
+        r7 = np.full(G.shape, np.nan, dtype="float32")
+        r7[6:] = (cs[6:] - np.vstack([np.zeros((1, G.shape[1])), cs[:-7]])).astype("float32")
+        del cs
+        self.run = {1: G, 7: r7}
+        _, _, _, _, self.C, codes, names = grid_and_weights(dates[-1])
+        self.row = {names[c]: i for i, c in enumerate(codes)}
+
+    def series(self, counties, win):
+        inside = self.C[[self.row[c] for c in counties]].sum(0) >= MIN_COVER
+        return pd.Series(self.run[win][:, inside].max(axis=1), index=self.index)
 
 
 def main():
@@ -127,63 +126,73 @@ def main():
     first_year, last_date = rain.index.min().year, rain.index.max()
     last_full = last_date.year - (0 if (last_date.month, last_date.day) == (12, 31) else 1)
     n = last_full - first_year + 1
+    cells = Cells(rain.index)
+    readings = {
+        "county": lambda counties, win: rain[counties].mean(axis=1).rolling(win).sum(),  # area average
+        "cell": lambda counties, win: cells.series(counties, win),                      # wettest single cell
+    }
 
-    summary, acts, floods, years_by_group = [], [], [], {}
-    for key, (counties, win, thr, flood_names, group) in TRIGGERS.items():
-        s = rain[counties].mean(axis=1).rolling(win).sum()
-        a = activations(s, thr)
-        acts += [dict(trigger=key, date=x["date"].date(), peak_mm=round(x["peak_mm"])) for x in a]
+    def evaluate(series, thr, ev):
+        a = activations(series, thr)
         dates = pd.DatetimeIndex([x["date"] for x in a])
-        names = [c.lower().replace(" ", "") for c in flood_names]
-        ev = em[em["loc"].apply(lambda t: any(k in t for k in names))]
         reached = [bool(((dates >= e.start - pd.Timedelta(days=FLOOD_LEAD)) & (dates <= e.end)).any()) for e in ev.itertuples()]
-        floods += [dict(trigger=key, disno=e["DisNo."], start=e["start"].date(), end=e["end"].date(),
-                        affected=(None if pd.isna(e["Total Affected"]) else int(e["Total Affected"])), reached=r)
-                   for (_, e), r in zip(ev.iterrows(), reached)]
         yrs = sorted({d.year for d in dates if d.year <= last_full})
-        if group:
-            years_by_group.setdefault(group, set()).update(yrs)
-        summary.append(dict(trigger=key, threshold_mm=thr, window_days=win, activations=len(a),
-                            years_reached=len(yrs), return_period=return_period(len(yrs), n),
-                            floods=len(ev), floods_reached=int(sum(reached)), years=" ".join(map(str, yrs))))
+        return a, reached, yrs
 
-    by_county = []
-    for county in COUNTIES:
-        ev = em[em["loc"].str.contains(county.lower().replace(" ", ""), regex=False)]
-        for win, thr in THRESHOLDS:
-            dates = pd.DatetimeIndex([x["date"] for x in activations(rain[county].rolling(win).sum(), thr)])
-            yrs = {d.year for d in dates if d.year <= last_full}
-            reached = sum(((dates >= e.start - pd.Timedelta(days=FLOOD_LEAD)) & (dates <= e.end)).any() for e in ev.itertuples())
-            by_county.append(dict(county=county, window_days=win, threshold_mm=thr, years_reached=len(yrs),
-                                  return_period=return_period(len(yrs), n), floods=len(ev), floods_reached=int(reached)))
-    # consistency: where a county row and a trigger are the same indicator, they must agree
-    bc = pd.DataFrame(by_county).set_index(["county", "window_days", "threshold_mm"])
-    for r in summary:
-        c = TRIGGERS[r["trigger"]][0]
-        if len(c) == 1:
-            assert bc.loc[(c[0], r["window_days"], r["threshold_mm"]), "years_reached"] == r["years_reached"]
+    summary, acts, floods, overall, by_county = [], [], [], [], []
+    for reading, make in readings.items():
+        years_by_group = {}
+        for key, (counties, win, thr, flood_names, group) in TRIGGERS.items():
+            names = [c.lower().replace(" ", "") for c in flood_names]
+            ev = em[em["loc"].apply(lambda t: any(k in t for k in names))]
+            a, reached, yrs = evaluate(make(counties, win), thr, ev)
+            acts += [dict(reading=reading, trigger=key, date=x["date"].date(), peak_mm=round(x["peak_mm"])) for x in a]
+            floods += [dict(reading=reading, trigger=key, disno=e["DisNo."], start=e["start"].date(), end=e["end"].date(),
+                            affected=(None if pd.isna(e["Total Affected"]) else int(e["Total Affected"])), reached=r)
+                       for (_, e), r in zip(ev.iterrows(), reached)]
+            if group:
+                years_by_group.setdefault(group, set()).update(yrs)
+            summary.append(dict(reading=reading, trigger=key, threshold_mm=thr, window_days=win, activations=len(a),
+                                years_reached=len(yrs), return_period=return_period(len(yrs), n),
+                                floods=len(ev), floods_reached=int(sum(reached)), years=" ".join(map(str, yrs))))
+        for g, members in [("krcs_ne", ["krcs_ne"]), ("all", ["krcs_ne", "whh", "krcs_garissa"])]:
+            yrs = sorted(set().union(*[years_by_group[m] for m in members]))
+            overall.append(dict(reading=reading, group=g, years_reached=len(yrs),
+                                return_period=return_period(len(yrs), n), years=" ".join(map(str, yrs))))
+        for county in COUNTIES:
+            ev = em[em["loc"].str.contains(county.lower().replace(" ", ""), regex=False)]
+            for win, thr in THRESHOLDS:
+                _, reached, yrs = evaluate(make([county], win), thr, ev)
+                by_county.append(dict(reading=reading, county=county, window_days=win, threshold_mm=thr,
+                                      years_reached=len(yrs), return_period=return_period(len(yrs), n),
+                                      floods=len(ev), floods_reached=int(sum(reached))))
 
-    overall = []
-    for g, members in [("krcs_ne", ["krcs_ne"]), ("all", ["krcs_ne", "whh", "krcs_garissa"])]:
-        yrs = sorted(set().union(*[years_by_group[m] for m in members]))
-        overall.append(dict(group=g, years_reached=len(yrs), return_period=return_period(len(yrs), n),
-                            years=" ".join(map(str, yrs))))
-    # overall frequency can never be lower than any member's
-    smin = min(r["return_period"] for r in summary if r["return_period"])
-    assert overall[1]["return_period"] <= smin + 1e-9
+    sm, bc, ov = pd.DataFrame(summary), pd.DataFrame(by_county), pd.DataFrame(overall)
+    # consistency checks
+    for r in sm.itertuples():
+        c = TRIGGERS[r.trigger][0]
+        if len(c) == 1:  # a single-county trigger and its county-table cell are the same indicator
+            q = bc[(bc.reading == r.reading) & (bc.county == c[0]) & (bc.window_days == r.window_days) & (bc.threshold_mm == r.threshold_mm)]
+            assert int(q.years_reached.iloc[0]) == r.years_reached, r
+    for reading in readings:  # overall frequency can never be lower than any member's
+        rps = sm[(sm.reading == reading) & sm.return_period.notna()].return_period
+        assert ov[(ov.reading == reading) & (ov.group == "all")].return_period.iloc[0] <= rps.min() + 1e-9
+    piv = sm.pivot(index="trigger", columns="reading", values="years_reached")
+    assert (piv["cell"] >= piv["county"]).all(), "the wettest cell is always at least as wet as the average"
 
-    pd.DataFrame(summary).to_csv(OUT / "summary.csv", index=False)
+    sm.to_csv(OUT / "summary.csv", index=False)
     pd.DataFrame(acts).to_csv(OUT / "activations.csv", index=False)
-    pd.DataFrame(overall).to_csv(OUT / "overall.csv", index=False)
+    ov.to_csv(OUT / "overall.csv", index=False)
     pd.DataFrame(floods).to_csv(OUT / "floods.csv", index=False)
-    wettest_spot(last_full).to_csv(OUT / "wettest_spot.csv", index=False)
-    pd.DataFrame(by_county).to_csv(OUT / "counties.csv", index=False)
+    bc.to_csv(OUT / "counties.csv", index=False)
+    (OUT / "wettest_spot.csv").unlink(missing_ok=True)  # replaced by the "cell" reading
     (OUT / "meta.json").write_text(json.dumps(dict(
-        season="October to December", first_date=str(rain.index.min().date()), last_date=str(last_date.date()), first_year=first_year,
-        last_full_year=last_full, n_years=n, emdat_last=str(em["end"].max().date()))))
-    print(pd.DataFrame(summary).drop(columns="years").to_string(index=False))
-    print(pd.DataFrame(overall).to_string(index=False))
-    print(bc["years_reached"].unstack(["window_days", "threshold_mm"]).to_string())
+        season="October to December", first_date=str(rain.index.min().date()), last_date=str(last_date.date()),
+        first_year=first_year, last_full_year=last_full, n_years=n, emdat_last=str(em["end"].max().date()),
+        min_cover=MIN_COVER)))
+    print(sm.drop(columns="years").to_string(index=False))
+    print(ov.to_string(index=False))
+    print(bc.pivot_table(index="county", columns=["reading", "window_days", "threshold_mm"], values="years_reached").to_string())
 
 
 if __name__ == "__main__":
