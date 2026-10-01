@@ -223,7 +223,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 header{padding-bottom:18px;border-bottom:1px solid var(--rule)}
 .eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 h1{font-size:clamp(26px,4.6vw,38px);line-height:1.12;margin:12px 0;font-weight:700;letter-spacing:-.015em;text-wrap:balance}
-.lede{color:var(--ink2);max-width:66ch;margin:0}
 .note{background:var(--note);border-left:4px solid var(--noteb);border-radius:4px;padding:12px 18px;margin-top:22px;max-width:80ch}
 .note b{display:block;margin-bottom:2px}
 section{margin-top:40px}
@@ -325,7 +324,6 @@ html = f"""<!doctype html>
 <header>
   <div class="eyebrow">OCHA ROSEA support | Kenya | floods</div>
   <h1>Kenya flood triggers: how often the rainfall thresholds are reached</h1>
-  <p class="lede">The Kenya Humanitarian Fund's RA2 allocation (September 2026) sets aside USD 4 million for anticipatory action ahead of El Niño floods. This page looks at how often the rainfall thresholds in its partner triggers have been reached since {FIRST_YEAR}, in the counties they were written for and in the other ASAL counties the allocation names.</p>
 </header>
 
 <div class="note"><b>Different data source: results may vary</b>The triggers are written on forecasts from KMSA (Kenya Meteorological Service Authority). This page uses NASA's IMERG satellite rainfall estimates instead. Totals from the two sources differ, so the dates and counts here may not match what KMSA data would give.</div>
