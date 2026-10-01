@@ -2,7 +2,7 @@
 have been reached since 1998, against recorded floods. Single self-contained page, written
 for a non-technical reader.
 
-Reads the tables from khf_trigger_review.py, khf_activations.py and (optional) crosscheck_db.py.
+Reads data_dir/out/ from backtest.py and (optional) crosscheck_db.py.
 Run: python flood/ken/build_review_page.py [data_dir]
 """
 import json
@@ -16,23 +16,17 @@ DATA = Path(sys.argv[1] if len(sys.argv) > 1 else "data")
 OUT = DATA / "out"
 HERE = Path(__file__).parent
 
-summ = pd.read_csv(OUT / "activation_summary.csv")
+summ = pd.read_csv(OUT / "summary.csv").set_index("trigger")
 acts = pd.read_csv(OUT / "activations.csv", parse_dates=["date"])
-ov = pd.read_csv(OUT / "overall_return_periods.csv")
-em = pd.read_csv(OUT / "emdat_events_clean.csv", parse_dates=["start", "end"])
-rp = pd.read_csv(OUT / "threshold_return_periods.csv")
-daily = pd.read_parquet(OUT / "daily_area_series.parquet")
+ov = pd.read_csv(OUT / "overall.csv").set_index("group")
+fl = pd.read_csv(OUT / "floods.csv")
+wet = pd.read_csv(OUT / "wettest_spot.csv")
+meta = json.loads((OUT / "meta.json").read_text())
 dbc = json.loads((OUT / "db_crosscheck.json").read_text()) if (OUT / "db_crosscheck.json").exists() else None
 
-LAST_DATE = pd.Timestamp(daily.index.max()).date()
-FIRST_YEAR = pd.Timestamp(daily.index.min()).year
-LAST_FULL = LAST_DATE.year - 1
-N = LAST_FULL - FIRST_YEAR + 1
-EM_LAST = em["end"].max()
-
-FLOOD_COUNTIES = {"krcs_mandera": ["Mandera"], "krcs_wajir": ["Wajir"], "krcs_marsabit": ["Marsabit"],
-                  "whh_70": ["Isiolo", "Samburu"], "whh_100": ["Isiolo", "Samburu"],
-                  "krcs_garissa": ["Garissa", "Tana River", "Dadaab"]}
+FIRST_YEAR, LAST_FULL, N = meta["first_year"], meta["last_full_year"], meta["n_years"]
+LAST_DATE = meta["last_date"]
+EM_LAST_YEAR = int(meta["emdat_last"][:4])
 
 # one row per trigger as written: (key, area shown, partner, threshold text, lane label)
 TRIGGERS = [
@@ -65,7 +59,7 @@ def esc(s):
 
 
 def srow(k):
-    return summ[(summ.trigger == k) & (summ.level == "as written")].iloc[0]
+    return summ.loc[k]
 
 
 def rp_txt(v):
@@ -81,37 +75,31 @@ def thr_txt(r):
 # ------------------------------------------------------------------ chart data
 lanes = {s["id"]: [dict(key=k, label=LANE[k],
                         acts=[dict(d=a.date.strftime("%Y-%m-%d"), p=int(a.peak_mm))
-                              for a in acts[(acts.trigger == k) & (acts.level == "as written")].itertuples()])
+                              for a in acts[acts.trigger == k].itertuples()])
                    for k in s["keys"]] for s in SECTIONS}
-floods = {}
-for k, cs in FLOOD_COUNTIES.items():
-    keys = [c.lower().replace(" ", "") for c in cs]
-    sub = em[em["Location"].fillna("").str.lower().str.replace(" ", "").apply(lambda t: any(x in t for x in keys))]
-    floods[k] = [dict(id=r["DisNo."], s=r["start"].strftime("%Y-%m-%d"), e=r["end"].strftime("%Y-%m-%d"),
-                      a=(None if pd.isna(r["Total Affected"]) else int(r["Total Affected"]))) for _, r in sub.iterrows()]
-payload = dict(lanes=lanes, floods=floods, first=f"{FIRST_YEAR}-01-01", last=f"{LAST_DATE.year}-12-31",
-               emLast=EM_LAST.strftime("%Y-%m-%d"))
+floods = {k: [dict(id=r.disno, s=r.start, e=r.end, a=(None if pd.isna(r.affected) else int(r.affected)))
+              for r in g.itertuples()] for k, g in fl.groupby("trigger")}
+payload = dict(lanes=lanes, floods=floods, first=f"{FIRST_YEAR}-01-01", last=f"{LAST_DATE[:4]}-12-31",
+               emLast=meta["emdat_last"])
 
 # ------------------------------------------------------------------ numbers used in the text (all from the tables)
-ne = ov[(ov.group == "krcs_ne") & (ov.level == "as written")].iloc[0]
-alltr = ov[(ov.group == "all") & (ov.level == "as written")].iloc[0]
+ne, alltr = ov.loc["krcs_ne"], ov.loc["all"]
 R = {k: srow(k) for k, *_ in TRIGGERS}
-px = rp[(rp.window_days == 7) & (rp.threshold_mm == 150) & (rp.reading == "pixel") & rp.area.isin(["Mandera", "Wajir", "Marsabit"])]
 
 FINDINGS = [
     ("Mandera, Wajir and Marsabit (150 mm)",
-     f"Reached in {int(ne.years_activated)} of the last {N} years in at least one of the three counties. "
-     f"It was reached for {int(R['krcs_wajir'].floods_caught)} of {int(R['krcs_wajir'].floods_in_record)} recorded floods in Wajir, "
-     f"{int(R['krcs_mandera'].floods_caught)} of {int(R['krcs_mandera'].floods_in_record)} in Mandera and "
-     f"{int(R['krcs_marsabit'].floods_caught)} of {int(R['krcs_marsabit'].floods_in_record)} in Marsabit."),
+     f"Reached in {int(ne.years_reached)} of the last {N} years in at least one of the three counties. "
+     f"It was reached for {int(R['krcs_wajir'].floods_reached)} of {int(R['krcs_wajir'].floods)} recorded floods in Wajir, "
+     f"{int(R['krcs_mandera'].floods_reached)} of {int(R['krcs_mandera'].floods)} in Mandera and "
+     f"{int(R['krcs_marsabit'].floods_reached)} of {int(R['krcs_marsabit'].floods)} in Marsabit."),
     ("Isiolo and Samburu (70 mm)",
-     f"Reached in {int(R['whh_70'].years_activated)} of {N} years, and for {int(R['whh_70'].floods_caught)} of "
-     f"{int(R['whh_70'].floods_in_record)} recorded floods. At 100 mm: {int(R['whh_100'].years_activated)} of {N} years."),
+     f"Reached in {int(R['whh_70'].years_reached)} of {N} years, and for {int(R['whh_70'].floods_reached)} of "
+     f"{int(R['whh_70'].floods)} recorded floods. At 100 mm: {int(R['whh_100'].years_reached)} of {N} years."),
     ("Garissa (40 mm rainfall part)",
-     f"Reached in {int(R['krcs_garissa'].years_activated)} of {N} years, and for {int(R['krcs_garissa'].floods_caught)} of "
-     f"{int(R['krcs_garissa'].floods_in_record)} recorded floods in Garissa, Tana River or Dadaab."),
+     f"Reached in {int(R['krcs_garissa'].years_reached)} of {N} years, and for {int(R['krcs_garissa'].floods_reached)} of "
+     f"{int(R['krcs_garissa'].floods)} recorded floods in Garissa, Tana River or Dadaab."),
     ("All triggers together",
-     f"At least one would have been reached in {int(alltr.years_activated)} of {N} years."),
+     f"At least one would have been reached in {int(alltr.years_reached)} of {N} years."),
 ]
 
 
@@ -126,8 +114,8 @@ def summary_table():
     for k, area, partner, _ in TRIGGERS:
         r = R[k]
         h.append(f"<tr><td>{esc(area)}<div class='sm'>{esc(partner)}</div></td><td>{thr_txt(r)}</td>"
-                 f"<td class='n'>{int(r.years_activated)} of {N}</td><td class='n'>{rp_txt(r.rp_years)}</td>"
-                 f"<td class='n'>{int(r.floods_caught)} of {int(r.floods_in_record)}</td></tr>")
+                 f"<td class='n'>{int(r.years_reached)} of {N}</td><td class='n'>{rp_txt(r.return_period)}</td>"
+                 f"<td class='n'>{int(r.floods_reached)} of {int(r.floods)}</td></tr>")
     h.append("</tbody></table></div>")
     return "".join(h)
 
@@ -135,7 +123,7 @@ def summary_table():
 def dates_list(s):
     parts = []
     for k in s["keys"]:
-        a = acts[(acts.trigger == k) & (acts.level == "as written")].sort_values("date")
+        a = acts[acts.trigger == k].sort_values("date")
         items = "".join(f"<li><span class='mono'>{r.date.strftime('%d %b %Y')}</span> | {int(r.peak_mm)} mm</li>" for r in a.itertuples())
         head = f"<h4>{esc(LANE[k])}</h4>" if len(s["keys"]) > 1 else ""
         parts.append(f"{head}<ul class='dates'>{items}</ul>")
@@ -145,7 +133,7 @@ def dates_list(s):
 LEGEND = ("<div class='legend'>"
           "<span><svg width='14' height='14'><circle cx='7' cy='7' r='4.5' fill='var(--dot)'/></svg>threshold reached</span>"
           "<span><i style='background:var(--band)'></i>recorded flood</span>"
-          f"<span><i style='background:var(--rule2)'></i>no flood records after {EM_LAST.year}</span></div>")
+          f"<span><i style='background:var(--rule2)'></i>no flood records after {EM_LAST_YEAR}</span></div>")
 
 
 def section_html(s):
@@ -161,13 +149,13 @@ def section_html(s):
 NOT_COVERED = [
     "Whether KMSA forecasts would have predicted these totals. This page uses observed rainfall.",
     "The river-level triggers: Garissa Bridge above 5.1 m (Kenya Red Cross Society), Flood Alert levels at Garissa, Hola and Garsen (Dadaab partners), and the Danish Refugee Council trigger for Darika, which has no rainfall amount.",
-    f"Where in a county the rainfall must fall. The triggers do not say, so this page uses the county average. Measured at the wettest spot in each county instead, 150 mm in 7 days is reached in {int(px.years_exceeded.min())} or more of {N} years.",
+    f"Where in a county the rainfall must fall. The triggers do not say, so this page uses the county average. Measured at the wettest spot in each county instead, 150 mm in 7 days is reached in {int(wet.years_reached.min())} or more of {N} years.",
 ]
 
 METHOD = [
     f"Rainfall: NASA IMERG Late Run version 7, daily, about 11 km grid, {FIRST_YEAR}-01-01 to {LAST_DATE}, averaged over Kenya county boundaries (COD-AB).",
     "A threshold counts as reached on the first day the running total gets to it. Further days in the next 30 days count as the same occasion.",
-    f"Floods: events in EM-DAT, the international disaster database, whose location names the trigger's counties, {FIRST_YEAR} to {EM_LAST.year}. "
+    f"Floods: events in EM-DAT, the international disaster database, whose location names the trigger's counties, {FIRST_YEAR} to {EM_LAST_YEAR}. "
     "EM-DAT only includes events that meet its criteria (for example 100 or more people affected), often records one long event for a whole season, "
     "and can list many counties for one event. A flood counts as reached when the threshold was reached between 30 days before it began and its end.",
     f"How often: (number of years + 1) divided by the years reached, over the {N} full years {FIRST_YEAR}-{LAST_FULL} (Weibull return period).",

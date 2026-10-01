@@ -1,46 +1,36 @@
-# Kenya floods: KHF RA2 anticipatory action triggers against IMERG
+# Kenya floods: KHF RA2 rainfall triggers against IMERG
 
-Review of the rainfall thresholds in the Kenya Humanitarian Fund's RA2 allocation paper
-(September 2026, Priority Area III: anticipatory action ahead of El Niño floods). The partner
-triggers are on KMSA 7-day rainfall forecasts (150 mm for Mandera, Wajir and Marsabit; 70-100 mm
-over Isiolo, Samburu and the upper Ewaso Ng'iro; a 40 mm advisory for the Tana basin) and on
-Tana River gauge levels. This folder tests how often each rainfall threshold has been reached in
-observed IMERG rainfall since 1998 and whether those occasions coincide with EM-DAT flood events.
+How often the rainfall triggers in the Kenya Humanitarian Fund's RA2 allocation paper
+(September 2026, Priority Area III: anticipatory action ahead of El Niño floods) would have been
+reached since 1998, and for how many recorded floods. The triggers are written on KMSA forecasts;
+this analysis uses observed NASA IMERG satellite rainfall instead, so results may differ from what
+KMSA data would give.
 
 Output: `ken_khf_trigger_review.html`, a single self-contained page.
+
+| Trigger (partner) | Tested as |
+|---|---|
+| Mandera, Wajir, Marsabit: 150 mm in 7 days (Kenya Red Cross Society) | 7-day total of the county average |
+| Isiolo and Samburu: 70-100 mm in 7 days (Welthungerhilfe) | 7-day total averaged over Isiolo, Samburu, Nyeri, Nyandarua, Laikipia, Meru, at 70 and 100 mm |
+| Garissa: 40 mm advisory for the Tana basin (Kenya Red Cross Society) | 1-day total averaged over the upper Tana counties; the 5.1 m gauge part is not tested |
 
 ## Build
 
 ```bash
-# 1. daily IMERG grids and county statistics, 1998 to present (about 40 minutes; resumable, one year at a time)
-python flood/ken/extract_imerg_counties.py data/ken            # optional third argument: 1998-2012
-# 2. EM-DAT Kenya floods from the team blob -> data/ken/emdat_ken_floods.parquet (see below)
-# 3. backtest tables
-python flood/ken/khf_trigger_review.py data/ken
-# 3c. historical activations of each trigger (as written, 1-in-3, 1-in-5) against EM-DAT
-python flood/ken/khf_activations.py data/ken
-# 4. page
+# 1. county rainfall from the daily IMERG COGs (about 40 minutes the first time; resumable)
+python flood/ken/extract_imerg_counties.py data/ken
+# 2. EM-DAT Kenya floods to data/ken/emdat_ken_floods.parquet (snippet below)
+# 3. backtest
+python flood/ken/backtest.py data/ken
+# 4. second-way recalculation of every count; must print "PROBLEMS: none"
+python flood/ken/independent_check.py data/ken
+# 5. page
 python flood/ken/build_review_page.py data/ken
 ```
 
-Needs `DSCI_AZ_BLOB_PROD_SAS` (IMERG COGs and COD-AB on the prod raster / projects containers)
-and `DSCI_AZ_BLOB_DEV_SAS` (EM-DAT on the dev `global` container). Python with `ocha-stratus`,
-`rasterio`, `geopandas`, `pandas`, `pyarrow`, `numpy`. The build reads the COGs rather than the
-Postgres `public.imerg` table because it needs the pixel grids (wettest pixel, share of area, and
-running totals per pixel), which the table does not hold.
-
-Optional step 3b, a cross-check of the county means against `public.imerg`, shown in the page's
-method notes. From a laptop the database is reached through the team Databricks SSH tunnel
-(`ds-knowledge-base-internal/infrastructure/local-db-access.md`); in Git Bash:
-
-```bash
-db-tunnel up
-DSCI_AZ_DB_PROD_HOST=127.0.0.1:15433 python flood/ken/crosscheck_db.py data/ken
-```
-
-`db-tunnel` is a Git Bash script, so it does not run from PowerShell.
-
-EM-DAT extract used:
+Needs `DSCI_AZ_BLOB_PROD_SAS` (IMERG COGs and COD-AB) and `DSCI_AZ_BLOB_DEV_SAS` (EM-DAT), and
+Python with `ocha-stratus`, `rasterio`, `geopandas`, `pandas`, `pyarrow`, `numpy`. The COGs are
+used rather than the `public.imerg` table because the wettest-spot figure needs the pixel grids.
 
 ```python
 import ocha_stratus as stratus
@@ -49,22 +39,31 @@ k = df[(df["ISO"] == "KEN") & (df["Disaster Type"].str.contains("Flood", na=Fals
 k.to_parquet("data/ken/emdat_ken_floods.parquet")
 ```
 
+Optional: `crosscheck_db.py` compares the county averages with `public.imerg` and writes
+`out/db_crosscheck.json`, which the page's method notes report. From a laptop the database is
+reached through the team Databricks SSH tunnel
+(`ds-knowledge-base-internal/infrastructure/local-db-access.md`), in Git Bash:
+
+```bash
+db-tunnel up
+DSCI_AZ_DB_PROD_HOST=127.0.0.1:15433 python flood/ken/crosscheck_db.py data/ken
+```
+
 ## Files
 
 | file | what |
 |---|---|
-| `extract_imerg_counties.py` | reads a Kenya window from each daily IMERG Late v7 COG, keeps the grids (`years/imerg_ken_grid_YYYY.npz`) and writes county mean, wettest pixel (pixels at least half inside the county) and area-share statistics (`imerg_ken_adm1_daily.parquet`) |
-| `crosscheck_db.py` | compares the county means with `public.imerg` (prod) and writes `out/db_crosscheck.json` |
-| `khf_trigger_review.py` | rolling 1/3/7-day totals per pixel; county-mean, wettest-pixel and area-share readings per trigger area; Weibull return periods on annual maxima; exceedance episodes matched to EM-DAT; tables in `data/ken/out/` |
-| `khf_activations.py` | every date each trigger's indicator reached its threshold (as written, 1-in-3, 1-in-5), outcome against EM-DAT floods in the trigger's counties (before, during, none), missed floods, individual and overall return periods |
-| `independent_check.py` | recomputes every count on the page a second way (county series, raw EM-DAT) and compares; prints `PROBLEMS: none` when all match |
-| `build_review_page.py` | assembles the HTML page: data-source note, key findings, summary table, one chart per trigger, notes |
-| `ken_khf_trigger_review.html` | the page |
+| `extract_imerg_counties.py` | reads a Kenya window from each daily IMERG Late v7 COG; writes county `mean_mm` and `max_mm` (wettest pixel at least half inside the county) to `imerg_ken_adm1_daily.parquet` and keeps the grids in `years/`; `--from-grids` recomputes without downloading |
+| `backtest.py` | every date each trigger was reached (first day at the threshold, 30-day cooldown), years reached, Weibull return period, EM-DAT floods reached (threshold reached from 30 days before the start to the end), wettest-spot years for 150 mm; writes `out/` |
+| `independent_check.py` | recomputes every count from the pixel grids and the raw EM-DAT file and compares with `out/summary.csv` |
+| `crosscheck_db.py` | optional comparison with `public.imerg` |
+| `build_review_page.py` | the page, from `out/` |
 
-Data produced by the build is not committed. The daily county parquet is on the dev `projects`
-container at `pa-rosea-support/processed/imerg/imerg_ken_adm1_daily.parquet`.
+Data are not committed. The county file is on the dev `projects` container at
+`pa-rosea-support/processed/imerg/imerg_ken_adm1_daily.parquet`.
 
-## What the page does not test
+## Not tested
 
-KMSA forecast skill (observed rainfall stands in for the forecast), the Garissa, Hola and Garsen
-gauge thresholds, and the Danish Refugee Council 24-hour trigger, which has no rainfall amount.
+KMSA forecast skill, the river-level triggers (Garissa Bridge 5.1 m; Flood Alert levels at
+Garissa, Hola and Garsen), and the Danish Refugee Council 24-hour trigger for Darika, which has
+no rainfall amount.
