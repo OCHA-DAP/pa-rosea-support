@@ -114,4 +114,19 @@ for reading in ("county", "cell"):
             bad.append((county, win, thr, mine))
     print(f"{'OK ' if not bad else 'BAD'} {reading:6s} counties       {len(cty.loc[[reading]])} cells checked, {len(bad)} differ {bad[:3]}")
     problems += [f"{reading} county {b[0]} {b[2]}mm" for b in bad]
+# season-by-season table: highest October to December total per trigger and season
+sx = pd.read_csv(D / "out" / "season_max.csv").set_index(["reading", "trigger", "year"])
+worst, bad_met = 0.0, []
+for reading in ("county", "cell"):
+    for k, (counties, win, thr, _) in TRIG.items():
+        s = series(reading, counties, win)
+        s = s[s.index.month.isin([10, 11, 12]) & (s.index.year <= last_full)]
+        for y, v in s.groupby(s.index.year).max().items():
+            p = sx.loc[(reading, k, y)]
+            worst = max(worst, abs(float(p.max_mm) - v))
+            if bool(p.met) != bool(v >= thr):
+                bad_met.append((reading, k, y))
+ok = worst <= 0.06 and not bad_met
+print(f"{'OK ' if ok else 'BAD'} season table   {len(sx)} values, largest difference {worst:.3f} mm (rounding), {len(bad_met)} highlight differences {bad_met[:3]}")
+problems += [] if ok else ["season table"]
 print(f"record {idx.min().date()} to {idx.max().date()}, {n} seasons | PROBLEMS: {problems or 'none'}")

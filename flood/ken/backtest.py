@@ -10,7 +10,7 @@ applied to each of the eight ASAL counties the KHF paper names.
 Input  (data_dir): imerg_ken_adm1_daily.parquet  county means, from extract_imerg_counties.py
                    years/imerg_ken_grid_YYYY.npz  daily grids, same script (single-cell reading)
                    emdat_ken_floods.parquet       EM-DAT Kenya floods (see README)
-Output (data_dir/out): summary.csv, activations.csv, overall.csv, floods.csv, counties.csv, meta.json
+Output (data_dir/out): summary.csv, activations.csv, overall.csv, floods.csv, counties.csv, season_max.csv, meta.json
                        (every table has a "reading" column: county or cell)
 
 Run: python flood/ken/backtest.py [data_dir]
@@ -144,13 +144,18 @@ def main():
         yrs = sorted({d.year for d in dates if d.year <= last_full})
         return a, reached, yrs
 
-    summary, acts, floods, overall, by_county = [], [], [], [], []
+    summary, acts, floods, overall, by_county, season_max = [], [], [], [], [], []
     for reading, make in readings.items():
         years_by_group = {}
         for key, (counties, win, thr, flood_names, group) in TRIGGERS.items():
             names = [c.lower().replace(" ", "") for c in flood_names]
             ev = em[em["loc"].apply(lambda t: any(k in t for k in names))]
-            a, reached, yrs = evaluate(make(counties, win), thr, ev)
+            series = make(counties, win)
+            a, reached, yrs = evaluate(series, thr, ev)
+            ond = series[series.index.month.isin(SEASON) & (series.index.year <= last_full)]
+            for y, v in ond.groupby(ond.index.year).max().items():
+                season_max.append(dict(reading=reading, trigger=key, year=int(y), max_mm=round(float(v), 1),
+                                       threshold_mm=thr, met=bool(v >= thr)))
             acts += [dict(reading=reading, trigger=key, date=x["date"].date(), peak_mm=round(x["peak_mm"])) for x in a]
             floods += [dict(reading=reading, trigger=key, disno=e["DisNo."], start=e["start"].date(), end=e["end"].date(),
                             affected=(None if pd.isna(e["Total Affected"]) else int(e["Total Affected"])), reached=r)
@@ -173,6 +178,11 @@ def main():
                                       floods=len(ev), floods_reached=int(sum(reached))))
 
     sm, bc, ov = pd.DataFrame(summary), pd.DataFrame(by_county), pd.DataFrame(overall)
+    sx = pd.DataFrame(season_max)
+    # the seasons where the seasonal maximum meets the threshold are exactly the seasons reached
+    met = sx[sx.met].groupby(["reading", "trigger"]).size()
+    for r in sm.itertuples():
+        assert int(met.get((r.reading, r.trigger), 0)) == r.years_reached, r
     # consistency checks
     for r in sm.itertuples():
         c = TRIGGERS[r.trigger][0]
@@ -190,6 +200,7 @@ def main():
     ov.to_csv(OUT / "overall.csv", index=False)
     pd.DataFrame(floods).to_csv(OUT / "floods.csv", index=False)
     bc.to_csv(OUT / "counties.csv", index=False)
+    sx.to_csv(OUT / "season_max.csv", index=False)
     (OUT / "wettest_spot.csv").unlink(missing_ok=True)  # replaced by the "cell" reading
     (OUT / "meta.json").write_text(json.dumps(dict(
         season="October to December", first_date=str(rain.index.min().date()), last_date=str(last_date.date()),

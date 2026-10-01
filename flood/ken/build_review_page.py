@@ -21,6 +21,7 @@ acts = pd.read_csv(OUT / "activations.csv", parse_dates=["date"])
 ov = pd.read_csv(OUT / "overall.csv").set_index(["reading", "group"])
 fl = pd.read_csv(OUT / "floods.csv")
 cty = pd.read_csv(OUT / "counties.csv")
+sx = pd.read_csv(OUT / "season_max.csv")
 meta = json.loads((OUT / "meta.json").read_text())
 dbc = json.loads((OUT / "db_crosscheck.json").read_text()) if (OUT / "db_crosscheck.json").exists() else None
 
@@ -141,6 +142,58 @@ def summary_table():
                  f"<td class='n g2'>{int(x.floods_reached)} of {int(x.floods)}</td></tr>")
     h.append("</tbody></table></div>")
     return "".join(h)
+
+
+# season-by-season table: (column header, threshold note, trigger key for the value, higher-threshold key or None)
+SEASON_COLS = [
+    ("Mandera", "150 mm, 7 days", "krcs_mandera", None),
+    ("Wajir", "150 mm, 7 days", "krcs_wajir", None),
+    ("Marsabit", "150 mm, 7 days", "krcs_marsabit", None),
+    ("Isiolo", "70 / 100 mm, 7 days", "whh_isiolo_70", "whh_isiolo_100"),
+    ("Samburu", "70 / 100 mm, 7 days", "whh_samburu_70", "whh_samburu_100"),
+    ("Garissa (upper Tana)", "40 mm, 1 day", "krcs_garissa", None),
+]
+
+
+def season_table(reading):
+    t = sx[sx.reading == reading].set_index(["trigger", "year"])
+    years = sorted(sx.year.unique())
+    h = [f"<div class='scroll'><table class='season {reading}'><thead><tr><th>Oct-Dec</th>"]
+    for name, note, *_ in SEASON_COLS:
+        h.append(f"<th class='n'>{esc(name)}<div class='sm'>{esc(note)}</div></th>")
+    h.append("</tr></thead><tbody>")
+    for y in years:
+        h.append(f"<tr><td class='yr'>{y}</td>")
+        for _, _, k, k_hi in SEASON_COLS:
+            r = t.loc[(k, y)]
+            assert (r.max_mm // 1 >= r.threshold_mm) == bool(r.met), (k, y, r.max_mm)  # shown value and highlight agree
+            cls = ""
+            if k_hi is not None and bool(t.loc[(k_hi, y)].met):
+                cls = "met hi"
+            elif bool(r.met):
+                cls = "met"
+            h.append(f"<td class='n {cls}'>{int(r.max_mm // 1)}</td>")  # rounded down, so a shown value at the threshold is always highlighted
+        h.append("</tr>")
+    h.append(f"<tr class='tot'><td>Seasons reached</td>")
+    for _, _, k, k_hi in SEASON_COLS:
+        lo = int(S(reading, k).years_reached)
+        txt = f"{lo}" if k_hi is None else f"{lo} / {int(S(reading, k_hi).years_reached)}"
+        h.append(f"<td class='n'>{txt} of {N}</td>")
+    h.append("</tr></tbody></table></div>")
+    return "".join(h)
+
+
+SEASON_SECTION = f"""
+<section id="seasons">
+  <h2>Season by season</h2>
+  <p class="sub">The highest rainfall total in each October to December season, in whole mm rounded down, for each trigger's indicator. Highlighted cells reached the threshold. For Isiolo and Samburu, light means 70 mm was reached and dark means 100 mm was reached.</p>
+  <div class="seg" role="group" aria-label="Reading">
+    <button type="button" data-r="county" aria-pressed="true"><span class="key k1"></span>County average</button>
+    <button type="button" data-r="cell" aria-pressed="false"><span class="key k2"></span>Single cell</button>
+  </div>
+  <div class="season-wrap" data-r="county">{season_table("county")}</div>
+  <div class="season-wrap" data-r="cell" hidden>{season_table("cell")}</div>
+</section>"""
 
 
 def dates_list(s):
@@ -305,6 +358,19 @@ ul.dates li{padding:2px 0;break-inside:avoid;color:var(--ink2)}
 ul.notes{padding-left:20px;max-width:80ch;color:var(--ink2)}ul.notes li{margin:6px 0}
 .tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:6px 9px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;z-index:9;max-width:300px}
 .tip .sm{margin-top:2px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--surface);margin:0 0 10px}
+.seg button{border:0;background:transparent;color:var(--ink2);padding:7px 14px;font:inherit;font-size:14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--rule2);color:var(--ink);font-weight:600}
+table.season{font-size:14px}
+table.season th,table.season td{padding:5px 10px}
+table.season td.yr{font-variant-numeric:tabular-nums;color:var(--ink2)}
+table.season td.n{text-align:center}
+table.season th.n{text-align:center}
+table.season.county td.met{background:rgba(42,120,214,.28);font-weight:700}
+table.season.county td.met.hi{background:rgba(42,120,214,.62)}
+table.season.cell td.met{background:rgba(235,104,52,.28);font-weight:700}
+table.season.cell td.met.hi{background:rgba(235,104,52,.62)}
+table.season tr.tot td{border-top:2px solid var(--rule);font-weight:600;background:var(--rule2)}
 footer{margin-top:44px;padding-top:14px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink2)}
 """
 
@@ -352,6 +418,10 @@ document.querySelectorAll('.timeline').forEach(panel => {
   });
   panel.querySelector('.svgwrap').appendChild(svg);
 });
+document.querySelectorAll('#seasons .seg button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#seasons .seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  document.querySelectorAll('#seasons .season-wrap').forEach(w => { w.hidden = w.dataset.r !== b.dataset.r; });
+}));
 """
 
 PAYLOAD_JSON = json.dumps(payload).replace("</", "<\\/")
@@ -383,6 +453,8 @@ html = f"""<!doctype html>
 {findings_html()}
 {summary_table()}
 </section>
+
+{SEASON_SECTION}
 
 {SECTIONS_HTML}
 

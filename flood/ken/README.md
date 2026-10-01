@@ -64,7 +64,7 @@ DSCI_AZ_DB_PROD_HOST=127.0.0.1:15433 python flood/ken/crosscheck_db.py data/ken
 | file | what |
 |---|---|
 | `extract_imerg_counties.py` | reads a Kenya window from each daily IMERG Late v7 COG; writes county `mean_mm` and `max_mm` (wettest pixel at least half inside the county) to `imerg_ken_adm1_daily.parquet` and keeps the grids in `years/`; `--from-grids` recomputes without downloading |
-| `backtest.py` | every date each trigger was reached (first day at the threshold, 30-day cooldown), years reached, Weibull return period, EM-DAT floods reached (threshold reached from 30 days before the start to the end), for both readings (county average, single cell), and each threshold in the eight ASAL counties (`out/counties.csv`); writes `out/` |
+| `backtest.py` | every date each trigger was reached (first day at the threshold, 30-day cooldown), years reached, Weibull return period, EM-DAT floods reached (threshold reached from 30 days before the start to the end), for both readings (county average, single cell), each threshold in the eight ASAL counties (`out/counties.csv`), and the highest total per trigger and season (`out/season_max.csv`); writes `out/` |
 | `independent_check.py` | recomputes every count, including the county table, from the pixel grids and the raw EM-DAT file and compares with `out/` |
 | `crosscheck_db.py` | optional comparison with `public.imerg` |
 | `build_review_page.py` | the page, from `out/` |
