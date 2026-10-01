@@ -22,7 +22,10 @@ The repository is organized into subdirectories, each representing a specific an
 pa-rosea-support/
 ├── R/                            # Scripts for running targets pipeline
 ├── drought/
+│   ├── ago                        # Angola drought hotspots page
+│   ├── hotspots                   # Build for the drought hotspot pages (ASAP, IPC, FEWS NET, WFP)
 │   ├── moz                        # Scripts for MOZ analyses
-│   └── southern-africa            # Scripts for Southern Africa region
+│   ├── southern-africa            # Scripts for Southern Africa region
+│   └── zmb                        # Zambia drought hotspots page
 └── flood/                        # Scripts for flood risk mapping
 ```
