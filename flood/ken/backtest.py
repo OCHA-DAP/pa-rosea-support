@@ -2,12 +2,14 @@
 
 For each trigger as written: every date the observed indicator reached its threshold, how many
 years that happened in, the Weibull return period, and how many recorded EM-DAT floods in the
-trigger's counties it was reached for. Also the "wettest spot" reading of the 150 mm trigger.
+trigger's counties it was reached for. Also the "wettest spot" reading of the 150 mm trigger, and the same thresholds applied to the
+county average of each of the eight ASAL counties the KHF paper names.
 
 Input  (data_dir): imerg_ken_adm1_daily.parquet  county means, from extract_imerg_counties.py
                    years/imerg_ken_grid_YYYY.npz  daily grids, same script (wettest spot only)
                    emdat_ken_floods.parquet       EM-DAT Kenya floods (see README)
-Output (data_dir/out): summary.csv, activations.csv, overall.csv, floods.csv, wettest_spot.csv, meta.json
+Output (data_dir/out): summary.csv, activations.csv, overall.csv, floods.csv, wettest_spot.csv,
+                       counties.csv, meta.json
 
 Run: python flood/ken/backtest.py [data_dir]
 """
@@ -36,6 +38,11 @@ TRIGGERS = {
     "whh_100": (UPPER_EWASO, 7, 100, ["Isiolo", "Samburu"], None),   # upper end of the 70-100 mm range
     "krcs_garissa": (UPPER_TANA, 1, 40, ["Garissa", "Tana River", "Dadaab"], "krcs_garissa"),
 }
+
+
+# the eight ASAL counties at Severity Level 4 in the KHF paper, and the thresholds in its triggers
+COUNTIES = ["Garissa", "Isiolo", "Mandera", "Marsabit", "Samburu", "Tana River", "Turkana", "Wajir"]
+THRESHOLDS = [(7, 150), (7, 100), (7, 70), (1, 40)]
 
 
 def load_rain():
@@ -134,6 +141,22 @@ def main():
                             years_reached=len(yrs), return_period=return_period(len(yrs), n),
                             floods=len(ev), floods_reached=int(sum(reached)), years=" ".join(map(str, yrs))))
 
+    by_county = []
+    for county in COUNTIES:
+        ev = em[em["loc"].str.contains(county.lower().replace(" ", ""), regex=False)]
+        for win, thr in THRESHOLDS:
+            dates = pd.DatetimeIndex([x["date"] for x in activations(rain[county].rolling(win).sum(), thr)])
+            yrs = {d.year for d in dates if d.year <= last_full}
+            reached = sum(((dates >= e.start - pd.Timedelta(days=FLOOD_LEAD)) & (dates <= e.end)).any() for e in ev.itertuples())
+            by_county.append(dict(county=county, window_days=win, threshold_mm=thr, years_reached=len(yrs),
+                                  return_period=return_period(len(yrs), n), floods=len(ev), floods_reached=int(reached)))
+    # consistency: where a county row and a trigger are the same indicator, they must agree
+    bc = pd.DataFrame(by_county).set_index(["county", "window_days", "threshold_mm"])
+    for r in summary:
+        c = TRIGGERS[r["trigger"]][0]
+        if len(c) == 1:
+            assert bc.loc[(c[0], r["window_days"], r["threshold_mm"]), "years_reached"] == r["years_reached"]
+
     overall = []
     for g, members in [("krcs_ne", ["krcs_ne"]), ("all", ["krcs_ne", "whh", "krcs_garissa"])]:
         yrs = sorted(set().union(*[years_by_group[m] for m in members]))
@@ -148,11 +171,13 @@ def main():
     pd.DataFrame(overall).to_csv(OUT / "overall.csv", index=False)
     pd.DataFrame(floods).to_csv(OUT / "floods.csv", index=False)
     wettest_spot(last_full).to_csv(OUT / "wettest_spot.csv", index=False)
+    pd.DataFrame(by_county).to_csv(OUT / "counties.csv", index=False)
     (OUT / "meta.json").write_text(json.dumps(dict(
         first_date=str(rain.index.min().date()), last_date=str(last_date.date()), first_year=first_year,
         last_full_year=last_full, n_years=n, emdat_last=str(em["end"].max().date()))))
     print(pd.DataFrame(summary).drop(columns="years").to_string(index=False))
     print(pd.DataFrame(overall).to_string(index=False))
+    print(bc["years_reached"].unstack(["window_days", "threshold_mm"]).to_string())
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ acts = pd.read_csv(OUT / "activations.csv", parse_dates=["date"])
 ov = pd.read_csv(OUT / "overall.csv").set_index("group")
 fl = pd.read_csv(OUT / "floods.csv")
 wet = pd.read_csv(OUT / "wettest_spot.csv")
+cty = pd.read_csv(OUT / "counties.csv")
 meta = json.loads((OUT / "meta.json").read_text())
 dbc = json.loads((OUT / "db_crosscheck.json").read_text()) if (OUT / "db_crosscheck.json").exists() else None
 
@@ -84,11 +85,12 @@ payload = dict(lanes=lanes, floods=floods, first=f"{FIRST_YEAR}-01-01", last=f"{
 
 # ------------------------------------------------------------------ numbers used in the text (all from the tables)
 ne, alltr = ov.loc["krcs_ne"], ov.loc["all"]
+CR = {(w, t): (int(g.years_reached.min()), int(g.years_reached.max())) for (w, t), g in cty.groupby(["window_days", "threshold_mm"])}
 R = {k: srow(k) for k, *_ in TRIGGERS}
 
 FINDINGS = [
     ("Mandera, Wajir and Marsabit (150 mm)",
-     f"Reached in {int(ne.years_reached)} of the last {N} years in at least one of the three counties. "
+     f"Reached in {int(ne.years_reached)} of {N} years in at least one of the three counties. "
      f"It was reached for {int(R['krcs_wajir'].floods_reached)} of {int(R['krcs_wajir'].floods)} recorded floods in Wajir, "
      f"{int(R['krcs_mandera'].floods_reached)} of {int(R['krcs_mandera'].floods)} in Mandera and "
      f"{int(R['krcs_marsabit'].floods_reached)} of {int(R['krcs_marsabit'].floods)} in Marsabit."),
@@ -99,8 +101,42 @@ FINDINGS = [
      f"Reached in {int(R['krcs_garissa'].years_reached)} of {N} years, and for {int(R['krcs_garissa'].floods_reached)} of "
      f"{int(R['krcs_garissa'].floods)} recorded floods in Garissa, Tana River or Dadaab."),
     ("All triggers together",
-     f"At least one would have been reached in {int(alltr.years_reached)} of {N} years."),
+     f"At least one was reached in {int(alltr.years_reached)} of {N} years."),
+    ("Other counties",
+     f"Applied to the county average in each of the eight ASAL counties named in the allocation, 150 mm in 7 days was reached in "
+     f"{CR[(7, 150)][0]} to {CR[(7, 150)][1]} of {N} years, and 70 mm in 7 days in {CR[(7, 70)][0]} to {CR[(7, 70)][1]} of {N} years."),
 ]
+
+
+COUNTY_COLS = [(7, 150), (7, 100), (7, 70), (1, 40)]
+AS_WRITTEN = {("Mandera", 7, 150), ("Wajir", 7, 150), ("Marsabit", 7, 150)}
+
+
+def county_table():
+    t = cty.set_index(["county", "window_days", "threshold_mm"])
+    h = ["<div class='scroll'><table class='heat'><thead><tr><th>County</th>"]
+    for w, thr in COUNTY_COLS:
+        h.append(f"<th class='n'>{thr} mm in {w} day{'s' if w > 1 else ''}</th>")
+    h.append("</tr></thead><tbody>")
+    for c in sorted(cty.county.unique()):
+        h.append(f"<tr><td>{esc(c)}<div class='sm'>{int(t.loc[(c, 7, 150), 'floods'])} recorded floods</div></td>")
+        for w, thr in COUNTY_COLS:
+            r = t.loc[(c, w, thr)]
+            alpha = 0.06 + 0.44 * int(r.years_reached) / N
+            mark = " aw" if (c, w, thr) in AS_WRITTEN else ""
+            h.append(f"<td class='n cell{mark}' style='background:rgba(42,120,214,{alpha:.2f})'>"
+                     f"<b>{int(r.years_reached)}</b> of {N} years<div class='sm'>{int(r.floods_reached)} of {int(r.floods)} floods</div></td>")
+        h.append("</tr>")
+    h.append("</tbody></table></div>")
+    return "".join(h)
+
+
+COUNTY_SECTION = f"""
+<section id="counties">
+  <h2>The same thresholds in other counties</h2>
+  <p class="sub">Each threshold applied to the county average in the eight ASAL counties the allocation names at Severity Level 4. Each cell gives the years it was reached ({FIRST_YEAR}-{LAST_FULL}) and the recorded floods in that county it was reached for. Outlined cells are the triggers as written. The Isiolo and Samburu and the Garissa triggers average over several counties, so their single-county values here differ from the charts above.</p>
+  {county_table()}
+</section>"""
 
 
 def findings_html():
@@ -195,6 +231,10 @@ h2{font-size:21px;margin:0 0 8px;font-weight:600}
 h4{font-size:13px;margin:10px 0 4px}
 .sub{color:var(--ink2);max-width:80ch;margin:0 0 14px;font-size:15px}
 ul.findings{padding-left:20px;margin:0 0 18px;max-width:80ch}ul.findings li{margin:8px 0}
+table.heat td.cell{text-align:center;white-space:nowrap}
+table.heat td.cell b{font-size:17px}
+table.heat td.aw{outline:2px solid var(--ink);outline-offset:-3px}
+table.heat th.n{text-align:center}
 .panel{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:14px 16px}
 .scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:15px;background:var(--surface);border:1px solid var(--rule)}
@@ -284,19 +324,21 @@ html = f"""<!doctype html>
 <div class="wrap">
 <header>
   <div class="eyebrow">OCHA ROSEA support | Kenya | floods</div>
-  <h1>Kenya flood triggers: how often they would have been reached</h1>
-  <p class="lede">The Kenya Humanitarian Fund's RA2 allocation (September 2026) sets aside USD 4 million for anticipatory action ahead of El Niño floods. This page checks each of its rainfall triggers against rainfall and recorded floods since {FIRST_YEAR}.</p>
+  <h1>Kenya flood triggers: how often the rainfall thresholds are reached</h1>
+  <p class="lede">The Kenya Humanitarian Fund's RA2 allocation (September 2026) sets aside USD 4 million for anticipatory action ahead of El Niño floods. This page looks at how often the rainfall thresholds in its partner triggers have been reached since {FIRST_YEAR}, in the counties they were written for and in the other ASAL counties the allocation names.</p>
 </header>
 
 <div class="note"><b>Different data source: results may vary</b>The triggers are written on forecasts from KMSA (Kenya Meteorological Service Authority). This page uses NASA's IMERG satellite rainfall estimates instead. Totals from the two sources differ, so the dates and counts here may not match what KMSA data would give.</div>
 
 <section id="findings">
-<h2>Key findings</h2>
+<h2>At a glance</h2>
 {findings_html()}
 {summary_table()}
 </section>
 
 {SECTIONS_HTML}
+
+{COUNTY_SECTION}
 
 <section id="notes">
 <h2>What this page does not cover</h2>

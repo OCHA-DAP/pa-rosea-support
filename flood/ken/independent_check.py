@@ -81,6 +81,23 @@ for k, (counties, win, thr, keys) in TRIG.items():
     ok = mine == theirs
     print(f"{'OK ' if ok else 'BAD'} {k:14s} activations, years, floods, floods reached: here {mine} | backtest {theirs}")
     problems += [] if ok else [k]
+cty = pd.read_csv(D / "out" / "counties.csv").set_index(["county", "window_days", "threshold_mm"])
+bad_c = []
+for (county, win, thr), p in cty.iterrows():
+    s = pd.Series(RUN[win] @ W[row[county]], index=idx).iloc[win - 1:]
+    acts, start = [], None
+    for d in s.index[s.values >= thr]:
+        if start is None or (d - start).days > 30:
+            acts.append(d)
+            start = d
+    A = pd.DatetimeIndex(acts)
+    ev = em[em["loc"].str.contains(county.lower().replace(" ", ""), regex=False)]
+    mine = (len({d.year for d in acts if d.year <= last_full}), len(ev),
+            int(sum(((A >= r.s - pd.Timedelta(days=30)) & (A <= r.e)).any() for r in ev.itertuples())))
+    if mine != (int(p.years_reached), int(p.floods), int(p.floods_reached)):
+        bad_c.append((county, win, thr, mine, (int(p.years_reached), int(p.floods), int(p.floods_reached))))
+print(f"{'OK ' if not bad_c else 'BAD'} counties       {len(cty)} county-threshold cells checked, {len(bad_c)} differ {bad_c[:3]}")
+problems += [f"county {b[0]} {b[2]}mm" for b in bad_c]
 for g, yrs in [("krcs_ne", years_ne), ("all", years_any)]:
     ok = len(yrs) == int(ov.loc[g].years_reached)
     print(f"{'OK ' if ok else 'BAD'} {g:14s} years: here {len(yrs)} | backtest {int(ov.loc[g].years_reached)}")
