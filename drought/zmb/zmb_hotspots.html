@@ -154,6 +154,17 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   <nav class="nav" aria-label="Sections" id="nav"></nav>
 </section>
 
+<section aria-labelledby="h-rain">
+  <h2 id="h-rain">October to March seasons</h2>
+  <p class="sub" id="rain-sub"></p>
+  <div class="controls"><label class="clabel" for="rarea">Area</label><select id="rarea"></select></div>
+  <div class="panel scroll"><div id="rchart"></div><div class="legend" id="rlegend"></div></div>
+  <h3 style="margin-top:24px">By province</h3>
+  <p class="small" style="margin:0 0 10px">One row per province, one cell per season. Brown: below normal; green: above. Click a row to show it in the chart above.</p>
+  <div class="controls"><div><span class="clabel">Show</span><span class="seg" id="rds"><button type="button" id="rds-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="rds-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div><div id="rpv-wrap" hidden><span class="clabel">Provinces</span><span class="seg" id="rpv"><button type="button" id="rpv-f" data-v="focus" aria-pressed="true">Of interest</button><button type="button" id="rpv-a" data-v="all" aria-pressed="false"></button></span></div></div>
+  <div class="panel scroll"><div id="rheat"></div><div class="legend" id="rhlegend"></div></div>
+</section>
+
 <section aria-labelledby="h-six" id="s-six" hidden>
   <h2 id="h-six"></h2>
   <p class="sub" id="six-sub"></p>
@@ -167,17 +178,6 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
     <div class="panel"><h3 id="ipc-c-h">IPC</h3><p class="desc" id="ipc-c-d"></p><div class="scroll" id="ipcchart"></div></div>
     <div class="panel"><h3>FEWS NET</h3><p class="desc" id="fews-c-d"></p><div class="scroll" id="fewschart"></div><div class="legend" id="lg-fc"></div></div>
   </div>
-</section>
-
-<section aria-labelledby="h-rain">
-  <h2 id="h-rain">October to March seasons</h2>
-  <p class="sub" id="rain-sub"></p>
-  <div class="controls"><label class="clabel" for="rarea">Area</label><select id="rarea"></select></div>
-  <div class="panel scroll"><div id="rchart"></div><div class="legend" id="rlegend"></div></div>
-  <h3 style="margin-top:24px">By province</h3>
-  <p class="small" style="margin:0 0 10px">Brown shades indicate rainfall or vegetation below normal. Select a province to view it in the chart above.</p>
-  <div class="controls"><span class="clabel">Show</span><span class="seg" id="rds"><button type="button" id="rds-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="rds-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
-  <div class="panel scroll"><div id="rheat"></div><div class="legend" id="rhlegend"></div></div>
 </section>
 
 <section aria-labelledby="h-month" id="s-month" hidden>
@@ -384,12 +384,12 @@ function drawRain(){
   txt(svg,left,fy+fewsH+16,`Blank cells: no FEWS NET report for that month.${a!==NAT?" Faded cells: national phase, not specific to the province.":""}`,{class:"mono",style:"fill:var(--muted)"});
   $("rlegend").innerHTML=`<span class="grp">Rainfall</span>`+vLegend("rain")+`<span><i style="background:var(--d3);border:1px dashed var(--ink);opacity:.8"></i>SEAS5 forecast</span>`+`<span class="grp" style="margin-left:8px">NDVI</span>`+vLegend("ndvi")+`<span class="grp" style="margin-left:8px">IPC / FEWS NET</span>`+phLegend([1,2,3,4]);
 }
-const rh={v:"rain"};
+const rh={v:"rain",p:FOCUS.length?"focus":"all"};
 function drawRainHeat(){
   const box=$("rheat");box.innerHTML="";
   const k=rh.v, avg=p=>mean(RS.map(s=>W[`${k}|${p}|${s}`][5]));
-  const order=[NAT,...[...PROVS].sort((a,b)=>avg(a)-avg(b))];
-  const Wd=Math.max(box.clientWidth,720), left=150, g=2, top=24, ch=22, avgW=46;
+  const order=[NAT,...(rh.p==="focus"?[...FOCUS]:[...PROVS]).sort((a,b)=>avg(a)-avg(b))];
+  const Wd=Math.max(box.clientWidth,720), left=150, g=2, top=24, ch=24, avgW=46;
   const cw=(Wd-left-avgW-14)/RS.length-g, H=top+order.length*(ch+g)+10;
   const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`October to March ${VAR[k].label} compared with normal, by province and season`},box);
   RS.forEach((s,i)=>txt(svg,left+i*(cw+g)+cw/2,top-8,cw>=38?sLab(s):"’"+String(s).slice(2),{"text-anchor":"middle",class:"mono"}));
@@ -402,17 +402,17 @@ function drawRainHeat(){
       const r=W[`${k}|${p}|${s}`], b=vbin(k,r[5]), x=left+i*(cw+g);
       const c=el("rect",{x,y:yy,width:cw,height:ch,rx:2,fill:`var(--d${b})`},svg);
       if(p===rArea){c.setAttribute("stroke","var(--ink)");c.setAttribute("stroke-width","1.2")}
-      if(cw>=30)txt(svg,x+cw/2,yy+ch/2+4,devLab(r[5]),{"text-anchor":"middle",class:"mono",style:`fill:${dInk(b)};font-size:9.5px;pointer-events:none`});
       c.style.cursor="pointer";c.addEventListener("click",()=>{rsel.value=p;setArea(p)});
       hover(c,`<b>${aName(p)} | Oct ${s} to Mar ${s+1}</b><br>${VAR[k].label}: ${VAR[k].val(r)}<br>${devTxt(r[5])}, ${r[6]===1?VAR[k].low+" on record":ord(r[6])+" "+VAR[k].low}`);
     });
     txt(svg,ax,yy+ch/2+4,devLab(avg(p)),{"text-anchor":"middle",class:"mono strong"});
   });
-  $("rhlegend").innerHTML=vLegend(k)+`<span style="margin-left:auto;color:var(--muted)">Values are % above (+) or below (−) normal. Avg: mean over ${sLab(R0)} to ${sLab(RLAST)}.${FOCUS.length?" Provinces of interest in blue.":""}</span>`;
+  $("rhlegend").innerHTML=vLegend(k)+`<span style="margin-left:auto;color:var(--muted)">Avg: mean over ${sLab(R0)} to ${sLab(RLAST)}, % above (+) or below (−) normal</span>`;
 }
 function setArea(p){rArea=p;drawRain();drawRainHeat()}
 rsel.addEventListener("change",()=>setArea(rsel.value));
 seg("rds","rain",v=>{rh.v=v;drawRainHeat()});
+if(FOCUS.length){$("rpv-wrap").hidden=false;$("rpv-a").textContent=`All ${PROVS.length}`;seg("rpv","focus",v=>{rh.p=v;drawRainHeat()})}
 
 /* ---------- month by month, provinces of interest ---------- */
 const N_RECENT=6, RECENT=RS.slice(-N_RECENT), EARLIER=RS.slice(0,-N_RECENT);
@@ -465,33 +465,33 @@ if(FOCUS.length){
 
 /* ---------- the last six seasons ---------- */
 const SIX=[NAT,...FOCUS], RF=WM.rain.first, ALLS=[];for(let y=RF;y<=RLAST;y++)ALLS.push(y);
-const recLab=s=>"’"+String(s+1).slice(2);   // season Oct s to Mar s+1, labelled by the year it ends in
 const rankTxt=r=>r===1?"driest on record":`${ord(r)} driest`;
 function drawRecord(){
   const box=$("record");box.innerHTML="";
-  const Wd=Math.max(box.clientWidth,760), left=200, right=12, top=14, rh=84, gap=16, n=ALLS.length, cw=(Wd-left-right)/n;
+  const Wd=Math.max(box.clientWidth,760), left=200, right=12, top=22, rh=84, gap=16, n=ALLS.length, cw=(Wd-left-right)/n;
   const H=top+SIX.length*(rh+gap)+6;
   const mx=Math.min(0.6,Math.max(...SIX.flatMap(a=>ALLS.map(s=>Math.abs(W[`rain|${a}|${s}`][5]-1)))));
-  const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`Every October to March season since ${sLab(RF)}, driest to wettest, with the last ${N_RECENT} seasons marked`},box);
+  const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`October to March rainfall against normal for every season since ${sLab(RF)}, with the last ${N_RECENT} seasons shaded and the 10 driest seasons numbered`},box);
+  const xr=left+(RECENT[0]-RF)*cw;
+  el("rect",{x:xr,y:top-14,width:(Wd-right)-xr,height:H-top+8,fill:"var(--accent)",opacity:.08},svg);
+  txt(svg,xr+((Wd-right)-xr)/2,top-4,`${sLab(RECENT[0])} to ${sLab(RLAST)}`,{"text-anchor":"middle",class:"mono strong",style:"font-size:10px"});
+  ALLS.forEach((s,i)=>{if(s%5===0&&s<RECENT[0]-1)txt(svg,left+i*cw+cw/2,top-4,sLab(s),{"text-anchor":"middle",class:"mono",style:"font-size:9.5px"})});
   SIX.forEach((a,j)=>{
-    const y0=top+j*(rh+gap), ymid=y0+rh/2, sc=(rh/2-6)/mx;
-    const sorted=ALLS.map(s=>W[`rain|${a}|${s}`]).sort((p,q)=>p[5]-q[5]);
-    const inTen=sorted.slice(0,10).filter(r=>r[2]>=RECENT[0]).length;
+    const y0=top+j*(rh+gap), ymid=y0+rh/2, sc=(rh/2-8)/mx;
+    const rows=ALLS.map(s=>W[`rain|${a}|${s}`]);
+    const inTen=rows.filter(r=>r[6]<=10&&r[2]>=RECENT[0]).length;
     txt(svg,6,ymid-3,aName(a),{class:"strong"});
     txt(svg,6,ymid+12,`${inTen} of the 10 driest in the last ${N_RECENT}`,{style:"font-size:10.5px"});
     el("line",{x1:left,x2:Wd-right,y1:ymid,y2:ymid,stroke:"var(--ink2)","stroke-dasharray":"4 3"},svg);
-    let lastLab=-9;
-    sorted.forEach((r,i)=>{
+    rows.forEach((r,i)=>{
       const rec=r[2]>=RECENT[0], d=Math.max(-mx,Math.min(mx,r[5]-1)), h=Math.abs(d)*sc, x=left+i*cw, bw=Math.max(cw-1.5,1);
-      el("rect",{x,y:d<0?ymid:ymid-h,width:bw,height:Math.max(h,1.5),fill:rec?"var(--d0)":"var(--muted)",opacity:rec?1:0.35,rx:1},svg);
-      if(rec){const stag=(i-lastLab)*cw<26?10:0;lastLab=stag?-9:i;
-        txt(svg,x+cw/2,(d<0?ymid+h+11:ymid-h-4)+(d<0?stag:-stag),recLab(r[2]),{"text-anchor":"middle",class:"mono strong",style:"font-size:9.5px"})}
+      el("rect",{x,y:d<0?ymid:ymid-h,width:bw,height:Math.max(h,1.5),fill:d<0?`var(--d${vbin("rain",r[5])})`:"var(--d5)",opacity:rec?1:0.55,rx:1},svg);
+      if(r[6]<=10)txt(svg,x+cw/2,ymid+h+11,String(r[6]),{"text-anchor":"middle",class:"mono strong",style:"font-size:9.5px"});
       const hit=el("rect",{x,y:y0-8,width:cw,height:rh+16,fill:"transparent"},svg);
       hover(hit,`<b>${aName(a)} | Oct ${r[2]} to Mar ${r[2]+1}</b><br>${fmt(r[3])} mm, ${devTxt(r[5])}<br>${rankTxt(r[6])} of ${n} seasons since ${sLab(RF)}`);
     });
-    if(j===0){txt(svg,left,y0-3,"driest",{class:"mono",style:"font-size:10px"});txt(svg,Wd-right,y0-3,"wettest",{"text-anchor":"end",class:"mono",style:"font-size:10px"})}
   });
-  $("rlg").innerHTML=`<span><i style="background:var(--d0)"></i>Last ${N_RECENT} seasons, ${sLab(RECENT[0])} to ${sLab(RLAST)} (label: year the season ends in)</span><span><i style="background:var(--muted);opacity:.35"></i>Earlier seasons since ${sLab(RF)}</span><span style="margin-left:auto;color:var(--muted)">Bar height: % above or below normal, capped at ${Math.round(mx*100)}%</span>`;
+  $("rlg").innerHTML=`<span class="grp">Rainfall</span>`+vLegend("rain").replace(/<span><i style="background:var\(--d[456]\)"><\/i>[^<]*<\/span>/g,"")+`<span><i style="background:var(--d5)"></i>above normal</span><span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span><span style="margin-left:auto;color:var(--muted)">Numbers: rank among the 10 driest seasons since ${sLab(RF)}. Bar height capped at ${Math.round(mx*100)}%.</span>`;
 }
 function drawSixMaps(){
   const def={}, dry={};
@@ -547,7 +547,7 @@ if(FOCUS.length){
   $("m-def-d").textContent=`Total over the ${N_RECENT} seasons compared with ${N_RECENT} normal seasons.`;
   $("m-dry-h").textContent=`Seasons ${thrTxt(THR.dry)}`;
   $("m-dry-d").textContent=`Number of the last ${N_RECENT} seasons with October to March rainfall ${thrTxt(THR.dry)}.`;
-  $("six-h").textContent=`Every season since ${sLab(RF)}, driest to wettest`;
+  $("six-h").textContent=`Every October to March season since ${sLab(RF)}`;
 }
 
 /* ---------- maps ---------- */
@@ -724,7 +724,7 @@ drawIpcBars();
      return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${devTxt(n[4])} for this model nationally (${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts).${lows.length?` ${thrTxt(THR.dry).replace(/^m/,"M")} in ${lows.length>5?`${lows.length} provinces, lowest `:""}${list(lows.slice(0,5).map(r=>`${r[0]} (${devLab(r[4])})`))}.`:` No province ${thrTxt(THR.dry)}.`}`})()}</dd>
    <dt>IPC</dt><dd>${ipcLine}</dd>
    <dt>FEWS NET</dt><dd>${z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`}</dd>`;
-  $("nav").innerHTML=`${FOCUS.length?`<a href="#h-six">Last ${N_RECENT} seasons</a>`:""}<a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-month">Month by month</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
+  $("nav").innerHTML=`<a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-six">Last ${N_RECENT} seasons</a><a href="#h-month">Month by month</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
 })();
 
 function drawAll(){drawRain();drawRainHeat();drawMonthly();if(FOCUS.length){drawRecord();drawSixMaps();drawIpcChart();drawFewsChart()}}
