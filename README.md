@@ -23,7 +23,7 @@ pa-rosea-support/
 ├── R/                            # Scripts for running targets pipeline
 ├── drought/
 │   ├── ago                        # Angola drought hotspots page
-│   ├── hotspots                   # Build for the drought hotspot pages (ASAP, IPC, FEWS NET, WFP)
+│   ├── hotspots                   # Build for the drought hotspot pages (IPC, FEWS NET, WFP, SEAS5)
 │   ├── moz                        # Scripts for MOZ analyses
 │   ├── southern-africa            # Scripts for Southern Africa region
 │   └── zmb                        # Zambia drought hotspots page
