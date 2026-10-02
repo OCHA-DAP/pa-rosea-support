@@ -363,8 +363,9 @@ function drawRain(){
       if(v){t=pct(v.share);col="var(--p3)";tipT=`${fmt(v.p3)} people in Phase 3+ (${pct(v.share)} of those analysed), ${r.periods.C.frm} to ${r.periods.C.to}<br>${v.basis}`}
       else{t="–";col=null;tipT=`${a} not analysed`}}
     const g=el("rect",{x:x+2,y:iy,width:cw-4,height:ipcH-6,rx:3,fill:col||"none",stroke:col?"none":"var(--rule)"},svg);
-    txt(svg,x+cw/2,iy+14,t,{"text-anchor":"middle",class:"mono",style:`fill:${col?"#fff":"var(--muted)"};font-weight:600;pointer-events:none`});
-    txt(svg,x+cw/2,iy+27,r.label,{"text-anchor":"middle",style:`fill:${col?"#fff":"var(--muted)"};font-size:10px;pointer-events:none`});
+    const small=cw<52;
+    txt(svg,x+cw/2,small?iy+21:iy+14,t,{"text-anchor":"middle",class:"mono",style:`fill:${col?"#fff":"var(--muted)"};font-weight:600;font-size:${small?9.5:10.5}px;pointer-events:none`});
+    if(!small)txt(svg,x+cw/2,iy+27,r.label,{"text-anchor":"middle",style:`fill:${col?"#fff":"var(--muted)"};font-size:10px;pointer-events:none`});
     hover(g,`<b>IPC ${r.label} | ${aName(a)}</b><br>${tipT}`);
   });
   txt(svg,6,fy+11,"FEWS NET",{class:"strong"});txt(svg,6,fy+24,"near term");
@@ -474,7 +475,7 @@ function drawRecord(){
   const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`October to March rainfall against normal for every season since ${sLab(RF)}, with the last ${N_RECENT} seasons shaded and the 10 driest seasons numbered`},box);
   const xr=left+(RECENT[0]-RF)*cw;
   el("rect",{x:xr,y:top-14,width:(Wd-right)-xr,height:H-top+8,fill:"var(--accent)",opacity:.08},svg);
-  txt(svg,xr+((Wd-right)-xr)/2,top-4,`${sLab(RECENT[0])} to ${sLab(RLAST)}`,{"text-anchor":"middle",class:"mono strong",style:"font-size:10px"});
+  txt(svg,Wd-right,top-4,`${sLab(RECENT[0])} to ${sLab(RLAST)}`,{"text-anchor":"end",class:"mono strong",style:"font-size:10px"});
   ALLS.forEach((s,i)=>{if(s%5===0&&s<RECENT[0]-1)txt(svg,left+i*cw+cw/2,top-4,sLab(s),{"text-anchor":"middle",class:"mono",style:"font-size:9.5px"})});
   SIX.forEach((a,j)=>{
     const y0=top+j*(rh+gap), ymid=y0+rh/2, sc=(rh/2-8)/mx;
@@ -632,7 +633,7 @@ function drawIpcBars(){
   Object.keys(byP).sort().forEach(p=>{
     const pr=ipcProv[`${rd.id}|${pk}|${p}`];
     const open=byP[p].some(r=>r[5]>=3||(hasC&&P[r[2]]&&P[r[2]][5]>=3));
-    h+=`<details${open?" open":""}><summary><h4 style="display:inline">${p} | ${fmt(pr.p3)} in Phase 3+ (${pct(pr.share)} of those analysed)</h4>${hzTags(p)}</summary>${pr.basis.startsWith("Total of the municipality")?`<p class="small" style="margin:4px 0 8px">${pr.basis}.</p>`:""}<div style="display:grid;gap:4px;margin-top:8px">`;
+    h+=`<details${open?" open":""}><summary><h4 style="display:inline">${p} | ${short(pr.p3)} in Phase 3+ (${pct(pr.share)} of those analysed)</h4>${hzTags(p)}</summary>${pr.basis.startsWith("Total of the municipality")?`<p class="small" style="margin:4px 0 8px">${pr.basis}.</p>`:""}<div style="display:grid;gap:4px;margin-top:8px">`;
     byP[p].sort((a,b)=>b[8]-a[8]).forEach(r=>{const q=hasC?P[r[2]]:null;
       const t=`<b>${r[2]}${r[3]?" ("+r[3]+")":""}, ${p}</b><br>${rd.periods[pk].frm} to ${rd.periods[pk].to}: Phase ${r[5]}, ${fmt(r[7])} in Phase 3+ (${pct(r[8])}), Phase 4 ${pct(r[10])}`+(q?`<br>${rd.periods.P.frm} to ${rd.periods.P.to}: Phase ${q[5]}, ${fmt(q[7])} in Phase 3+ (${pct(q[8])}), Phase 4 ${pct(q[10])}`:"");
       h+=`<div class="brow" data-tip="${t.replace(/"/g,"&quot;")}"><div class="lab">${r[2]}${r[3]?` <small>${r[3]}</small>`:""}</div>
@@ -684,7 +685,7 @@ drawIpcBars();
   const nIPC=CUR_ROUNDS.length, hasFews=rows.some(r=>r.fews!=null);
   const sub=t=>`<br><span style="font-weight:400">${t}</span>`;
   const th=(label,subt,tipT)=>`<th data-tip="${tipT}">${label}${sub(subt)}</th>`;
-  let h=`<thead><tr>${FOCUS.length?`<th data-tip="Position among the ${PROVS.length} provinces">Rank${sub(`of ${PROVS.length}`)}</th>`:""}<th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall ${thrTxt(THR.dry)}`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI ${thrTxt(THR.low)}`)}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of the population analysed that was in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, above (+) or below (−) the average of the same September forecasts for ${S5.ref[0]} to ${S5.ref[1]}. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
+  let h=`<thead><tr>${FOCUS.length?`<th data-tip="Position among the ${PROVS.length} provinces" style="white-space:nowrap">Rank${sub(`of ${PROVS.length}`)}</th>`:""}<th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall ${thrTxt(THR.dry)}`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI ${thrTxt(THR.low)}`)}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of the population analysed that was in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, above (+) or below (−) the average of the same September forecasts for ${S5.ref[0]} to ${S5.ref[1]}. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
   rows.forEach(r=>{
     h+=`<tr${FOCUS.length&&!isF(r.p)?' class="more"':""}>${FOCUS.length?`<td class="rk">${r.rank}</td>`:""}<td class="pv">${r.p}${hzTags(r.p)}${capTag(r.p)}${nowTag(r.p)}</td>`;
     h+=cell(r.dry,RS.length,r.dry,`<b>${r.p}</b><br>${r.dry} of ${RS.length} seasons with rainfall ${thrTxt(THR.dry)}`);
