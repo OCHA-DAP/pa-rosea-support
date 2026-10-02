@@ -3,10 +3,9 @@
 Pulls every source fresh, cross-checks them, and fills template.html.
 
 Sources
-- JRC ASAP national hotspots (hotspots_ts.zip) and admin-1 warnings (warnings_ts.zip)
 - FEWS NET Data Warehouse: ipcphase.csv, ipcphase JSON (cross-check), ipcpackage shapefiles
 - IPC API (analyses, areas, population; needs IPC_API_KEY) and the HDX IPC country files (cross-check)
-- WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by admin 1
+- WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by admin 1 (seasonal and monthly)
 - HDX COD-AB boundaries (maps, area-to-province lookup)
 - SEAS5 seasonal rainfall forecast, ensemble-mean monthly COGs on the team raster store (needs DSCI_AZ_BLOB_PROD_SAS)
 
@@ -34,18 +33,24 @@ HERE = Path(__file__).parent
 CACHE = Path(os.environ.get("HOTSPOTS_CACHE", Path(tempfile.gettempdir()) / "hotspots_cache"))
 CACHE.mkdir(parents=True, exist_ok=True)
 
-ASAP = "https://agricultural-production-hotspots.ec.europa.eu/files/"
 FDW = "https://fdw.fews.net/api/"
 IPC_API = "https://api.ipcinfo.org/"
 HDX = "https://data.humdata.org/api/3/action/package_show"
-ASAP_FIRST_SEASON = 2001  # warnings start 2001-05; season 2001 = Oct 2001 to Sep 2002
 ONDJFM = (10, 11, 12, 1, 2, 3)
+FIRST_SEASON = 2010  # first October to March season shown on the pages
 
 # Per-country settings. Aliases map a normalised source name to a normalised COD name (see key()),
 # and each one was checked by hand against the COD list for that level.
+# "focus": provinces the page is about (COD names) with the hazards they were listed for; the page
+# shows them first and gives their month-by-month rainfall and NDVI. "renamed": COD provinces that
+# have since been divided, with the current provinces they cover.
 COUNTRIES = {
     "AGO": {
-        "name": "Angola", "iso2": "AO", "asap": "Angola", "capital": "Luanda",
+        "name": "Angola", "iso2": "AO", "capital": "Luanda",
+        "focus": {"Cunene": ["drought"], "Huíla": ["drought"], "Namibe": ["drought", "flood"], "Cuando Cubango": ["drought"],
+                  "Moxico": ["drought"], "Benguela": ["flood"]},
+        # Law of 5 September 2024: 21 provinces. The sources used here still report the former 18.
+        "renamed": {"Cuando Cubango": ["Cuando", "Cubango"], "Moxico": ["Moxico", "Moxico Leste"], "Luanda": ["Luanda", "Icolo e Bengo"]},
         "admin1_alias": {"kuandokubango": "cuandocubango", "kuanzanorte": "cuanzanorte", "kuanzasul": "cuanzasul"},
         "ipc_adm2_alias": {
             "municipiodosgambosexchiange": "gambosexchiange",
@@ -58,7 +63,7 @@ COUNTRIES = {
         "map_labels": ["Namibe", "Huíla", "Cunene", "Cuando Cubango", "Benguela", "Huambo", "Bié", "Luanda", "Malanje", "Moxico"],
     },
     "ZMB": {
-        "name": "Zambia", "iso2": "ZM", "asap": "Zambia", "capital": "Lusaka",
+        "name": "Zambia", "iso2": "ZM", "capital": "Lusaka", "focus": {}, "renamed": {},
         "admin1_alias": {"muchiga": "muchinga", "machinga": "muchinga"},
         "ipc_adm2_alias": {
             "chikankanta": "chikankata", "milengi": "milenge", "chiengi": "chienge",
@@ -111,17 +116,6 @@ def fix_name(s):
     return str(s).replace("�\xad", "í")
 
 
-def decode_lines(raw):
-    """ASAP warnings mix UTF-8 and Latin-1 rows; decode each line on its own."""
-    out = []
-    for line in raw.split(b"\n"):
-        try:
-            out.append(line.decode("utf-8"))
-        except UnicodeDecodeError:
-            out.append(line.decode("latin-1"))
-    return "\n".join(out)
-
-
 def hdx_resource(dataset, suffix):
     meta = get_json(HDX, f"hdx_{dataset}.json", {"id": dataset})
     check(meta.get("success"), f"HDX dataset {dataset} found")
@@ -157,71 +151,8 @@ class Country:
         self.provinces = sorted(self.adm[1]["adm1_name"])
         self.adm1_by_key = {key(p): p for p in self.provinces}
         check(len(self.adm1_by_key) == len(self.provinces), f"{self.name} COD: {len(self.provinces)} province names distinct after normalising")
-
-    # ------------------------------------------------------------ ASAP
-    def load_asap(self):
-        hs_zip = zipfile.ZipFile(fetch(ASAP + "hotspots_ts.zip", "hotspots_ts.zip"))
-        hs = pd.read_csv(hs_zip.open("hotspots_ts.csv"), sep=";")
-        hs = hs[hs["asap0_name"] == self.c["asap"]].copy()
-        hs["date"] = pd.to_datetime(hs["date"])
-        hs = hs.sort_values("date")
-        check(len(hs) > 0 and hs["date"].is_unique, f"ASAP {self.name}: {len(hs)} hotspot assessments, one per date")
-        check(set(hs["hs_code"]) <= {0, 1, 2}, f"ASAP {self.name}: hs_code values {sorted(set(hs['hs_code']))}")
-        names = dict(zip(hs["hs_code"], hs["hs_name"]))
-        known = {0: "No hotspot", 1: "Hotspot", 2: "Major hotspot"}
-        check(all(known[k] == v for k, v in names.items()), f"ASAP {self.name}: hs_code names {names}")
-        txt = hs_zip.open("hotspots_ts.csv").read().decode("utf-8")
-        for code in (1, 2):
-            n = len(re.findall(rf'^\d+;"{self.c["asap"]}";\d{{4}}-\d\d-\d\d;{code};', txt, flags=re.M))
-            check(n == int((hs["hs_code"] == code).sum()), f"ASAP {self.name}: code-{code} months recounted from the raw text ({n})")
-
-        w_zip = zipfile.ZipFile(fetch(ASAP + "warnings_ts.zip", "warnings_ts.zip"))
-        raw = w_zip.open("warnings_ts.csv").read()
-        header = raw.split(b"\n", 1)[0]
-        tag = f';"{self.c["asap"]}";'.encode()
-        w = pd.read_csv(io.StringIO(decode_lines(b"\n".join([header] + [ln for ln in raw.split(b"\n") if tag in ln]))), sep=";")
-        w["date"] = pd.to_datetime(w["date"])
-        w["prov"] = w["asap1_name"].map(self.prov_of)
-        check(w["prov"].notna().all(), f"ASAP {self.name}: warning units all match COD provinces ({sorted(set(w['asap1_name']))})")
-        check(set(w["prov"]) == set(self.provinces), f"ASAP {self.name}: warnings cover all {len(self.provinces)} provinces")
-        check(w.groupby("prov").size().nunique() == 1, f"ASAP {self.name}: same dekad count per province")
-
-        def group(t):
-            if t == "No warning":
-                return 0
-            m = re.fullmatch(r"Warning group (\d)", t)
-            if m:
-                return int(m.group(1))
-            if t in ("Off season", "No crop/rangeland"):
-                return None
-            raise ValueError(t)
-
-        for lc in ("crop", "range"):
-            seen = set(w[f"w_{lc}_gr"])
-            check(seen <= {"No warning", "Off season", "No crop/rangeland"} | {f"Warning group {i}" for i in range(1, 5)},
-                  f"ASAP {self.name} {lc}: warning groups recognised")
-            w[f"g_{lc}"] = w[f"w_{lc}_gr"].map(group)
-        never = sorted(p for p, g in w.groupby("prov") if (g["w_crop_gr"] == "No crop/rangeland").all())
-        w["season"] = w["date"].map(lambda d: d.year if d.month >= 10 else d.year - 1)
-        w = w[w["season"] >= ASAP_FIRST_SEASON]
-        out = {}
-        for lc in ("crop", "range"):
-            s = w.dropna(subset=[f"g_{lc}"])
-            t = s.groupby(["prov", "season"])[f"g_{lc}"].agg(n="size", w1=lambda x: (x >= 1).mean(), w2=lambda x: (x >= 2).mean(), mx="max").reset_index()
-            out[lc] = [[r.prov, int(r.season), int(r.n), round(r.w1, 4), round(r.w2, 4), int(r.mx)] for r in t.itertuples()]
-        check({r[0] for r in out["crop"]} == set(self.provinces) - set(never), f"ASAP {self.name}: provinces without warnings are the never-assessed ones {never}")
-        runs, cur = [], None
-        for d, code in zip(hs["date"], hs["hs_code"]):
-            if code >= 1:
-                if cur is None:
-                    cur = [d.strftime("%Y-%m-%d"), None, 0]
-                    runs.append(cur)
-                cur[1], cur[2] = d.strftime("%Y-%m-%d"), cur[2] + 1
-            else:
-                cur = None
-        self.asap = {"hs": [[d.strftime("%Y-%m-%d"), int(c)] for d, c in zip(hs["date"], hs["hs_code"])],
-                     "crop": out["crop"], "range": out["range"], "never": never, "runs": runs,
-                     "warn_last": w["date"].max().strftime("%Y-%m-%d")}
+        for k in ("focus", "renamed"):
+            check(set(self.c[k]) <= set(self.provinces), f"{self.name}: {k} provinces are COD provinces ({sorted(self.c[k])})")
 
     # ------------------------------------------------------------ FEWS NET
     def load_fews(self):
@@ -491,7 +422,7 @@ class Country:
     def load_wfp(self):
         names = dict(zip(self.adm[1]["adm1_pcode"], self.adm[1]["adm1_name"]))
         area = dict(zip(self.adm[1]["adm1_pcode"], self.adm[1]["area_sqkm"]))
-        out, meta = [], {}
+        out, monthly, meta = [], [], {}
         for var, val, avg, base in (("rain", "rfh", "rfh_avg", ("1989-01-01", "2018-12-31")),
                                     ("ndvi", "vim", "vim_avg", ("2002-07-01", "2018-07-01"))):
             slug = f"{self.low}-{'rainfall' if var == 'rain' else 'ndvi'}-subnational"
@@ -515,6 +446,14 @@ class Country:
             if "version" in d:
                 check((d["version"] == "final").all(), f"WFP {self.name} {var}: every Oct-Mar dekad used is final")
             agg = "sum" if var == "rain" else "mean"
+            d["month"] = d["date"].dt.month
+            check((d.groupby(["PCODE", "season", "month"]).size() == 3).all(), f"WFP {self.name} {var}: three dekads in every month used")
+            mo = d[d["season"] >= FIRST_SEASON].groupby(["PCODE", "season", "month"]).agg(v=(val, agg), n=(avg, agg), px=("n_pixels", "first")).reset_index()
+            mnat = mo.assign(wv=mo.v * mo.px, wn=mo.n * mo.px).groupby(["season", "month"]).agg(wv=("wv", "sum"), wn=("wn", "sum"), px=("px", "sum")).reset_index()
+            mo = pd.concat([mo, mnat.assign(PCODE="_national", v=mnat.wv / mnat.px, n=mnat.wn / mnat.px)[["PCODE", "season", "month", "v", "n"]]], ignore_index=True)
+            mo["area"] = mo["PCODE"].map(lambda p: names.get(p, "_national"))
+            mo["var"] = var
+            monthly.append(mo)
             s = d.groupby(["PCODE", "season"]).agg(v=(val, agg), n=(avg, agg), px=("n_pixels", "first")).reset_index()
             nat = s.assign(wv=s.v * s.px, wn=s.n * s.px).groupby("season").agg(wv=("wv", "sum"), wn=("wn", "sum"), px=("px", "sum")).reset_index()
             nat = nat.assign(PCODE="_national", v=nat.wv / nat.px, n=nat.wn / nat.px)[["PCODE", "season", "v", "n", "px"]]
@@ -538,6 +477,14 @@ class Country:
         meta["odd_units"] = odd
         self.wfp = pd.concat(out, ignore_index=True)
         self.wfp_meta = meta
+        mo = pd.concat(monthly, ignore_index=True)
+        # the six monthly values add up to (rainfall) or average to (NDVI) the seasonal value
+        chk = mo.groupby(["var", "area", "season"]).agg(v=("v", "sum"), n=("n", "sum"), k=("v", "size")).reset_index()
+        chk = chk.merge(self.wfp[["var", "area", "season", "v", "n"]], on=["var", "area", "season"], suffixes=("_m", ""))
+        chk["f"] = chk["var"].map({"rain": 1, "ndvi": 6})
+        check((chk["k"] == 6).all() and ((chk["v_m"] / chk["f"] - chk["v"]).abs() < 1e-6).all() and ((chk["n_m"] / chk["f"] - chk["n"]).abs() < 1e-6).all(),
+              f"WFP {self.name}: monthly values agree with the seasonal totals for every area and season since {FIRST_SEASON}/{FIRST_SEASON + 1 - 2000}")
+        self.wfp_monthly = mo
 
     # ------------------------------------------------------------ SEAS5 rainfall forecast (Oct-Mar)
     def load_seas5(self):
@@ -638,7 +585,7 @@ class Country:
                 crisis.setdefault(lz, set()).add(prov)
         data = {
             "country": {"iso3": self.iso3, "name": self.name, "capital": self.c["capital"]}, "built": pd.Timestamp.today().strftime("%Y-%m-%d"),
-            "provinces": self.provinces, "asap": self.asap, "maps": maps,
+            "provinces": self.provinces, "first_season": FIRST_SEASON, "focus": self.c["focus"], "renamed": self.c["renamed"], "maps": maps,
             "fews": {"monthly": self.fews["monthly"], "first": self.fews["first"], "last": self.fews["last"], "odd_docs": self.fews["odd_docs"],
                      "zones": {k: {x: v[x] for x in ("round", "doc", "from", "to")} for k, v in z.items()},
                      "crisis": {k: sorted(v) for k, v in crisis.items()}},
@@ -646,6 +593,10 @@ class Country:
             "wfp": [[r.var, r.area, int(r.season), round(float(r.v), 4 if r.var == "ndvi" else 1),
                      round(float(r.n), 4 if r.var == "ndvi" else 1), round(float(r.pct), 4), int(r.rank)] for r in self.wfp.itertuples()],
             "wfp_meta": self.wfp_meta,
+            # [var, area, season, [[value, normal] for Oct..Mar]]
+            "wfp_monthly": [[v, a, int(se), [[round(float(r.v), 4 if v == "ndvi" else 1), round(float(r.n), 4 if v == "ndvi" else 1)]
+                                            for r in g.sort_values("month", key=lambda m: m.map(ONDJFM.index)).itertuples()]]
+                            for (v, a, se), g in self.wfp_monthly.groupby(["var", "area", "season"])],
             "seas5": [[r.area, int(r.year), round(float(r.mm), 1), round(float(r.normal), 1), round(float(r.pct), 4), int(r.rank)] for r in self.seas5.itertuples()],
             "seas5_meta": self.seas5_meta,
         }
@@ -686,7 +637,6 @@ def build(iso3):
     CHECKS.clear()
     c = Country(iso3)
     c.load_cod()
-    c.load_asap()
     c.load_fews()
     c.load_ipc()
     c.load_wfp()

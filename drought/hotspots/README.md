@@ -3,16 +3,20 @@
 One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
-- a summary: provinces ranked by how often each source has reported them as affected (dry seasons, low NDVI, ASAP
-  warnings, IPC Phase 3+ share, FEWS NET Crisis months), the SEAS5 rainfall forecast and FEWS NET
-  projection for the coming season, then the current situation in five lines
-- October to March rainfall and NDVI for every season since 2010/11, national and by province, as % of
-  WFP's long-term average, lined up with the IPC analyses and FEWS NET's monthly phase
-- maps of ASAP cropland warnings, IPC area phases (any analysis, current or projection) and FEWS NET
-  livelihood-zone phases
-- a province-by-province table combining the three sources
-- ASAP national hotspot status by month, and ASAP warnings by province and season since 2001
+- a summary: provinces ranked by how often each source has reported them as affected (dry seasons, low NDVI,
+  IPC Phase 3+ share, FEWS NET Crisis months), the SEAS5 rainfall forecast and FEWS NET projection for the
+  coming season, then the current situation in four lines. Where the country entry lists provinces of
+  interest (`focus`), the table shows those first with their rank among all provinces
+- October to March rainfall and NDVI for every season since 2010/11, national and by province, as % above
+  or below WFP's long-term average (normal), lined up with the IPC analyses and FEWS NET's monthly phase
+- for the provinces of interest, rainfall and NDVI month by month (October to March) for the last six
+  seasons, with the 2010/11 to 2019/20 average for comparison, or for every season since 2010/11
+- maps of IPC area phases (any analysis, current or projection) and FEWS NET livelihood-zone phases
+- a province-by-province table of recent IPC analyses and the FEWS NET classification
 - IPC Phase 3+ shares by area for each analysis
+
+Thresholds used in the summary: a dry season is October to March rainfall more than 20% below normal; low
+vegetation is NDVI more than 5% below normal.
 
 ## Build
 
@@ -23,17 +27,18 @@ uv run --with pandas --with geopandas --with requests --with rasterio python dro
 Needs `IPC_API_KEY` and `DSCI_AZ_BLOB_PROD_SAS` (for the SEAS5 forecast COGs). Downloads go to a temp cache (`HOTSPOTS_CACHE` to override;
 `HOTSPOTS_USE_CACHE=1` reuses earlier downloads). The script prints one `[PASS]` line per check,
 `[NOTE]` lines for source issues it works around, and stops on the first failure. To add a country,
-add an entry to `COUNTRIES` in `build_hotspots.py`.
+add an entry to `COUNTRIES` in `build_hotspots.py`; `focus` lists the provinces of interest (COD names) with
+the hazards they were listed for, and `renamed` maps COD provinces that have since been divided to the
+current provinces (Angola has had 21 provinces since September 2024; the sources still report the former 18).
 
 ## Sources
 
 | Source | Endpoint | Used for |
 |---|---|---|
-| JRC ASAP | `agricultural-production-hotspots.ec.europa.eu/files/hotspots_ts.zip`, `warnings_ts.zip` | national hotspots, province warnings |
 | FEWS NET | `fdw.fews.net/api/ipcphase.csv`, `ipcphase/` (JSON), `ipcpackage/` | classifications, zone geometry |
 | IPC | `api.ipcinfo.org/analyses`, `areas`, `population` | area phases and populations, national totals |
 | HDX IPC | `<country>-acute-food-insecurity-country-data` (area, level-1, national files) | published province totals, cross-check |
-| WFP on HDX | `<iso3>-rainfall-subnational` (CHIRPS), `<iso3>-ndvi-subnational` (MODIS) | dekadal rainfall and NDVI by province |
+| WFP on HDX | `<iso3>-rainfall-subnational` (CHIRPS), `<iso3>-ndvi-subnational` (MODIS) | dekadal rainfall and NDVI by province, by season and by month |
 | HDX COD-AB | `cod-ab-<iso3>` | map boundaries, area-to-province lookup |
 | SEAS5 | team raster store `seas5/monthly/processed/precip_em_i<issue>_lt<n>.tif` (prod blob) | October to March rainfall forecast from the latest September issue, against the same forecasts issued every September since 1981 |
 
@@ -52,10 +57,9 @@ add an entry to `COUNTRIES` in `build_hotspots.py`.
 - Angola 2019 IPC areas are communes; they are placed with the parent municipality from HDX.
 - WFP: province PCODEs match COD, the long-term averages equal the dekadal mean over the documented
   reference periods (rainfall 1989-01-01 to 2018-12-31, NDVI 2002-07-01 to 2018-07-01), and every season
-  used is complete and final. WFP's province units differ from COD for Bengo and Luanda (Angola) and for
+  used is complete and final, and the monthly values add up to (rainfall) or average to (NDVI) the seasonal
+  values. WFP's province units differ from COD for Bengo and Luanda (Angola) and for
   Eastern, Muchinga and Southern (Zambia); together they match.
 - SEAS5: every September issue since 1981 has lead times 1 to 6; each COG's tags say mm/day and the expected
   valid month. The forecast is compared with the model's own 1991 to 2020 September forecasts, not with
   observed rainfall, so it shows whether the model expects a drier or wetter season than it usually does.
-- ASAP warning groups are read from the file's own group column; hotspot counts are recounted from the
-  raw text.
