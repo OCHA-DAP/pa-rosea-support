@@ -170,8 +170,13 @@ class Country:
         js = pd.DataFrame(rows)
         k = ["fnid", "scenario_name", "projection_start", "reporting_date"]
         m = csv[k + ["value"]].merge(js[k + ["value"]], on=k, how="outer", suffixes=("_csv", "_json"), indicator=True)
-        check((m["_merge"] == "both").all(), f"FEWS NET {self.name}: CSV and JSON have the same {len(csv)} records")
-        check(((m["value_csv"] == m["value_json"]) | (m["value_csv"].isna() & m["value_json"].isna())).all(), f"FEWS NET {self.name}: CSV and JSON phases identical")
+        # the CSV can run ahead of the JSON endpoint by a report being published; only such newer rows may differ
+        newer = m[(m["_merge"] == "left_only") & (m["reporting_date"] > js["reporting_date"].max())]
+        if len(newer):
+            note(f"FEWS NET {self.name}: {len(newer)} CSV record(s) dated {sorted(set(newer['reporting_date']))} not yet in the JSON endpoint (latest {js['reporting_date'].max()}); kept")
+        both = m[m["_merge"] == "both"]
+        check(len(both) + len(newer) == len(m), f"FEWS NET {self.name}: CSV and JSON have the same {len(both)} records (plus {len(newer)} newer CSV rows)")
+        check(((both["value_csv"] == both["value_json"]) | (both["value_csv"].isna() & both["value_json"].isna())).all(), f"FEWS NET {self.name}: CSV and JSON phases identical")
         check((csv["data_usage_policy"] == "Public").all(), f"FEWS NET {self.name}: all rows public")
         csv["sc"] = csv["scenario_name"].str.strip()
         # document labels: keep the type, drop the country suffix; FDW files some reports under another country's name
