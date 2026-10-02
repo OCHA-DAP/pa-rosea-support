@@ -86,7 +86,8 @@ lanes = {s["id"]: [dict(key=k, fk=FLOOD_KEY.get(k, k), reading=rd, label=f"{LANE
                               for a in acts[(acts.trigger == k) & (acts.reading == rd)].itertuples()])
                    for k in s["keys"] for rd, _ in READINGS] for s in SECTIONS}
 fl1 = fl[fl.reading == "county"]  # the flood list is the same for both readings
-floods = {k: [dict(id=r.disno, s=r.start, e=r.end, a=(None if pd.isna(r.affected) else int(r.affected)))
+# flood periods only (start, end): EM-DAT's terms do not allow republishing its records, so no IDs or impact figures
+floods = {k: [dict(s=r.start, e=r.end)
               for r in g.itertuples()] for k, g in fl1.groupby("trigger")}
 payload = dict(lanes=lanes, floods=floods, first=f"{FIRST_YEAR}-01-01", last=f"{LAST_DATE[:4]}-12-31",
                emLast=meta["emdat_last"])
@@ -371,6 +372,7 @@ table.season.county td.met.hi{background:rgba(42,120,214,.62)}
 table.season.cell td.met{background:rgba(235,104,52,.28);font-weight:700}
 table.season.cell td.met.hi{background:rgba(235,104,52,.62)}
 table.season tr.tot td{border-top:2px solid var(--rule);font-weight:600;background:var(--rule2)}
+.home{display:inline-block;margin:0 0 18px;padding:6px 12px;font:500 13px/1 var(--sans);color:var(--accent);background:var(--surface);border:1px solid var(--rule);border-radius:4px;text-decoration:none}
 footer{margin-top:44px;padding-top:14px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink2)}
 """
 
@@ -398,7 +400,7 @@ document.querySelectorAll('.timeline').forEach(panel => {
     if (g && g.key === fkey(ln)) g.bot = pos[i] + lh; else groups.push({key: fkey(ln), top: pos[i], bot: pos[i] + lh}); });
   groups.forEach(g => (A.floods[g.key] || []).forEach(f => {
     const r = el('rect', {x: x(f.s), y: g.top, width: Math.max(3, x(f.e) - x(f.s)), height: g.bot - g.top, fill: 'var(--band)'});
-    r.addEventListener('pointermove', ev => show(ev, 'Recorded flood', f.s + ' to ' + f.e + (f.a ? ' | ' + f.a.toLocaleString('en') + ' people affected' : '') + ' | EM-DAT ' + f.id));
+    r.addEventListener('pointermove', ev => show(ev, 'Recorded flood', f.s + ' to ' + f.e));
     r.addEventListener('pointerleave', hide); svg.appendChild(r);
   }));
   const ya = +A.first.slice(0, 4), yb = +A.last.slice(0, 4);
@@ -439,6 +441,7 @@ html = f"""<!doctype html>
 </head>
 <body>
 <div class="wrap">
+<a class="home" href="../">← ROSEA analyses</a>
 <header>
   <div class="eyebrow">OCHA ROSEA support | Kenya | floods</div>
   <h1>Kenya flood triggers: how often the rainfall thresholds are reached in October to December</h1>

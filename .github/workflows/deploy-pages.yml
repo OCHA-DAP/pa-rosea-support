@@ -1,8 +1,10 @@
 name: Deploy pages site to GitHub Pages
 
 # Publishes the landing page (pages/) with the drought hotspot pages assembled under
-# /ago/ and /zmb/. The hotspot pages are committed HTML (drought/<iso3>/<iso3>_hotspots.html,
-# built locally by drought/hotspots/build_hotspots.py), so no secrets are needed here.
+# /ago/ and /zmb/ and the Kenya flood triggers page under /ken/. These are committed HTML
+# (drought/<iso3>/<iso3>_hotspots.html, built by drought/hotspots/build_hotspots.py;
+# flood/ken/ken_khf_trigger_review.html, built by flood/ken/build_review_page.py), so no
+# secrets are needed here.
 #
 # Triggers: push to main touching the site files, or a manual run.
 # Template: OCHA-DAP/ds-seas5-skill (itself from ds-geospatial-impact-estimates).
@@ -10,7 +12,7 @@ name: Deploy pages site to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ["pages/**", "drought/*/*_hotspots.html", ".github/workflows/deploy-pages.yml"]
+    paths: ["pages/**", "drought/*/*_hotspots.html", "flood/ken/ken_khf_trigger_review.html", ".github/workflows/deploy-pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -30,7 +32,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble site (landing at /, country pages at /ago/ and /zmb/)
+      - name: Assemble site (landing at /, country pages at /ago/, /zmb/ and /ken/)
         run: |
           mkdir -p site
           rsync -a pages/ site/
@@ -38,8 +40,10 @@ jobs:
             mkdir -p "site/$iso"
             cp "drought/$iso/${iso}_hotspots.html" "site/$iso/index.html"
           done
+          mkdir -p site/ken
+          cp flood/ken/ken_khf_trigger_review.html site/ken/index.html
           test -f site/index.html && test -f site/assets/site.css
-          test -f site/ago/index.html && test -f site/zmb/index.html
+          test -f site/ago/index.html && test -f site/zmb/index.html && test -f site/ken/index.html
       - uses: actions/configure-pages@v5
         with:
           enablement: true
