@@ -7,8 +7,9 @@ One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
   IPC Phase 3+ share, FEWS NET Crisis months), the SEAS5 rainfall forecast and FEWS NET projection for the
   coming season, then the current situation in four lines. Where the country entry lists provinces of
   interest (`focus`), the table shows those first with their rank among all provinces
-- for the provinces of interest, a "last six seasons" section: fact cards from each source, every season since
-  1981/82 sorted driest to wettest with the last six marked, and the rain missing over the six seasons
+- for the provinces of interest, a "last six seasons" section: maps of rainfall over the six seasons against
+  normal and of the number of dry seasons, every season since 1981/82 sorted driest to wettest with the last
+  six marked, IPC Phase 3+ by analysis and the FEWS NET national phase by month
 - October to March rainfall and NDVI for every season since 2010/11, national and by province, as % above
   or below WFP's long-term average (normal), lined up with the IPC analyses and FEWS NET's monthly phase
 - for the provinces of interest, rainfall and NDVI month by month (October to March) for the last six

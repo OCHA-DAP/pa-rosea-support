@@ -107,10 +107,7 @@ table.mo{min-width:0;width:100%;border-spacing:2px}
 .mo tr.ref td.pv{color:var(--ink2);font-weight:400;font-size:12px;white-space:normal}
 .mo td.hd{text-align:left;color:var(--muted);font:500 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;height:auto;padding-top:6px}
 .mline{font-size:13px;color:var(--ink2);margin:8px 0 0}
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;margin:0 0 16px}
-.fact{background:var(--surface);border:1px solid var(--rule);border-top:3px solid var(--accent);border-radius:4px;padding:12px 16px}
-.fact .src{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.fact p{margin:0;font-size:14px}
+.panel .desc{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
 .ipc{display:grid;gap:22px}
 details summary{cursor:pointer;list-style-position:outside}
 .ipc h4{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0 0 8px}
@@ -160,13 +157,16 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 <section aria-labelledby="h-six" id="s-six" hidden>
   <h2 id="h-six"></h2>
   <p class="sub" id="six-sub"></p>
-  <div class="facts" id="six-facts"></div>
-  <h3 id="six-h"></h3>
-  <p class="small" id="six-lead" style="margin:0 0 10px"></p>
+  <div class="maps">
+    <div class="panel map"><h3 id="m-def-h"></h3><p class="desc" id="m-def-d"></p><div id="map-def"></div><div class="legend" id="lg-def"></div></div>
+    <div class="panel map"><h3 id="m-dry-h"></h3><p class="desc" id="m-dry-d"></p><div id="map-dry"></div><div class="legend" id="lg-dry"></div></div>
+  </div>
+  <h3 style="margin-top:24px" id="six-h"></h3>
   <div class="panel scroll"><div id="record"></div><div class="legend" id="rlg"></div></div>
-  <h3 style="margin-top:24px" id="six-h2"></h3>
-  <p class="small" id="six-lead2" style="margin:0 0 10px"></p>
-  <div class="panel scroll"><div id="deficit"></div></div>
+  <div class="maps" style="margin-top:14px">
+    <div class="panel"><h3 id="ipc-c-h">IPC</h3><p class="desc" id="ipc-c-d"></p><div class="scroll" id="ipcchart"></div></div>
+    <div class="panel"><h3>FEWS NET</h3><p class="desc" id="fews-c-d"></p><div class="scroll" id="fewschart"></div><div class="legend" id="lg-fc"></div></div>
+  </div>
 </section>
 
 <section aria-labelledby="h-rain">
@@ -183,7 +183,6 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 <section aria-labelledby="h-month" id="s-month" hidden>
   <h2 id="h-month">Month by month</h2>
   <p class="sub" id="month-sub"></p>
-  <p class="small" id="month-lead" style="margin:0 0 12px"></p>
   <div class="controls">
     <div><span class="clabel">Show</span><span class="seg" id="mv"><button type="button" id="mv-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="mv-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
     <div><span class="clabel">Seasons</span><span class="seg" id="mw"><button type="button" id="mw-rec" data-v="rec" aria-pressed="true"></button><button type="button" id="mw-all" data-v="all" aria-pressed="false"></button></span></div>
@@ -274,8 +273,8 @@ const C=D.country, PROVS=D.provinces, NAT="_national", FOCUS=Object.keys(D.focus
 const isF=p=>p in D.focus;
 const hzTags=p=>(D.focus[p]||[]).map(h=>`<span class="tag hz">${h}</span>`).join("");
 const capTag=p=>p===C.capital?'<span class="tag">capital</span>':"";
+const nowTag=p=>REN[p]?`<span class="tag">now ${list(REN[p])}</span>`:"";
 const aName=a=>a===NAT?`${C.name} (national)`:a;
-const renTxt=ps=>{const r=ps.filter(p=>REN[p]);return r.length?` ${list(r.map(p=>`${p} covers the current provinces of ${list(REN[p])}`))}.`:""};
 $("eyebrow").textContent=`${C.name} | drought | food insecurity`;
 $("title").textContent=`${C.name} drought hotspots`;
 $("meta").textContent=`Updated ${+D.built.slice(8,10)} ${MON[+D.built.slice(5,7)-1]} ${D.built.slice(0,4)}`;
@@ -310,9 +309,9 @@ const baseTxt=k=>`${md(WM[k].base[0])} to ${md(WM[k].base[1])}`;
 const normalTxt=`Normal is the average for the same ten-day periods over ${baseTxt("rain")} for rainfall and ${baseTxt("ndvi")} for NDVI.`;
 const IPC_SEASON={};CUR_ROUNDS.forEach(r=>{IPC_SEASON[seasonOf(mStart(r.periods.C.frm))]=r});
 $("lede").textContent=FOCUS.length
-  ?`October to March rainfall and vegetation since ${sLab(R0)}, with IPC and FEWS NET classifications, for ${list(FOCUS)}, compared with the other provinces of ${C.name}.`
+  ?`${list(FOCUS)}: October to March rainfall and vegetation since ${sLab(R0)}, IPC and FEWS NET classifications, and the rainfall forecast for the coming season.`
   :`Provinces most affected by drought and food insecurity, based on October to March rainfall and vegetation since ${sLab(R0)} and on IPC and FEWS NET classifications.`;
-$("rain-sub").textContent=`Each bar is one season's total rainfall or mean NDVI as a percentage above (+) or below (−) normal; the dashed bar is the SEAS5 forecast for the coming season. ${normalTxt} Beneath each season are the IPC analysis conducted that year and the FEWS NET phase for each month. Select an area to view.`;
+$("rain-sub").textContent=`Season totals as % above (+) or below (−) normal; dashed bar: SEAS5 forecast. Below: IPC analysis of that year and FEWS NET phase by month. ${normalTxt}`;
 const rsel=$("rarea");
 rsel.innerHTML=`<option value="${NAT}">${aName(NAT)}</option>`+(FOCUS.length?`<optgroup label="Provinces of interest">${FOCUS.map(p=>`<option value="${p}">${p}</option>`).join("")}</optgroup><optgroup label="Other provinces">`:"")
   +PROVS.filter(p=>!isF(p)).map(p=>`<option value="${p}">${p}</option>`).join("")+(FOCUS.length?"</optgroup>":"");
@@ -434,7 +433,7 @@ function drawMonthly(){
   let h="";
   FOCUS.forEach(p=>{
     let below=0, months=0, lowM=0, totBelow=0;
-    let t=`<div class="panel"><h3>${p}${hzTags(p)}${capTag(p)}</h3><div class="scroll"><table class="mx mo"><thead><tr><th class="pv">Season</th>${ONDJFM_LAB.map(m=>`<th>${m}</th>`).join("")}<th>Oct to Mar</th></tr></thead><tbody>`;
+    let t=`<div class="panel"><h3>${p}${hzTags(p)}${capTag(p)}${nowTag(p)}</h3><div class="scroll"><table class="mx mo"><thead><tr><th class="pv">Season</th>${ONDJFM_LAB.map(m=>`<th>${m}</th>`).join("")}<th>Oct to Mar</th></tr></thead><tbody>`;
     ss.forEach(s=>{
       const m=WMO[`${k}|${p}|${s}`], r=W[`${k}|${p}|${s}`];
       t+=`<tr><td class="pv">${sLab(s)}</td>`;
@@ -447,7 +446,7 @@ function drawMonthly(){
       const e=moAgg(k,p,EARLIER);
       t+=`<tr class="ref"><td class="pv">${sLab(EARLIER[0])} to ${sLab(EARLIER[EARLIER.length-1])}, average</td>`+e.map((q,j)=>{const b=vbin(k,q);return `<td${j===6?' class="tot"':""} style="background:var(--d${b});color:${dInk(b)}" data-tip="<b>${p} | ${j<6?ONDJFM_LAB[j]:"Oct to Mar"}, ${EARLIER.length} seasons ${sLab(EARLIER[0])} to ${sLab(EARLIER[EARLIER.length-1])}</b><br>${devTxt(q)} on average">${devLab(q)}</td>`}).join("")+`</tr>`;
     }
-    t+=`</tbody></table></div><p class="mline">${ss===RECENT?"Last "+ss.length+" seasons":ss.length+" seasons since "+sLab(ss[0])}: ${V.label.toLowerCase()} below normal in ${below} of ${ss.length} seasons, ${thrTxt(V.thr)} in ${totBelow}. ${lowM} of ${months} months ${thrTxt(V.thr)}.</p></div>`;
+    t+=`</tbody></table></div></div>`;
     h+=t;
   });
   box.innerHTML=h;
@@ -459,19 +458,12 @@ if(FOCUS.length){
   $("s-month").hidden=false;
   $("mw-rec").textContent=`Last ${N_RECENT} seasons (${sLab(RECENT[0])} to ${sLab(RECENT[RECENT.length-1])})`;
   $("mw-all").textContent=`Since ${sLab(R0)}`;
-  $("month-sub").textContent=`Monthly rainfall and NDVI for ${list(FOCUS)}, each month compared with normal for that month. ${normalTxt} The last column is the season as a whole.`;
-  const lead=(()=>{const k="rain";let totBelow=0,n=0,lowM=0,months=0,low=[];
-    FOCUS.forEach(p=>RECENT.forEach(s=>{const r=W[`${k}|${p}|${s}`];n++;if(r[5]<THR.dry)totBelow++;
-      WMO[`${k}|${p}|${s}`].forEach(([v,nn])=>{months++;if(v/nn<THR.dry)lowM++})}));
-    FOCUS.forEach(p=>{const d=RECENT.filter(s=>W[`${k}|${p}|${s}`][5]<THR.dry).length;low.push(`${p} ${d}`)});
-    return `Over the last ${N_RECENT} seasons (${sLab(RECENT[0])} to ${sLab(RECENT[RECENT.length-1])}), October to March rainfall was ${thrTxt(THR.dry)} in ${totBelow} of the ${n} province-seasons (${list(low)} of ${N_RECENT}) and in ${lowM} of the ${months} province-months.${renTxt(FOCUS)}`})();
-  $("month-lead").textContent=lead;
+  $("month-sub").textContent=`Each month compared with normal for that month; the last column is the season as a whole.`;
   seg("mv","rain",v=>{mo.v=v;drawMonthly()});
   seg("mw","rec",v=>{mo.w=v;drawMonthly()});
 }
 
-/* ---------- the last six seasons in the record ---------- */
-let SIXSUM="";
+/* ---------- the last six seasons ---------- */
 const SIX=[NAT,...FOCUS], RF=WM.rain.first, ALLS=[];for(let y=RF;y<=RLAST;y++)ALLS.push(y);
 const recLab=s=>"’"+String(s+1).slice(2);   // season Oct s to Mar s+1, labelled by the year it ends in
 const rankTxt=r=>r===1?"driest on record":`${ord(r)} driest`;
@@ -501,52 +493,61 @@ function drawRecord(){
   });
   $("rlg").innerHTML=`<span><i style="background:var(--d0)"></i>Last ${N_RECENT} seasons, ${sLab(RECENT[0])} to ${sLab(RLAST)} (label: year the season ends in)</span><span><i style="background:var(--muted);opacity:.35"></i>Earlier seasons since ${sLab(RF)}</span><span style="margin-left:auto;color:var(--muted)">Bar height: % above or below normal, capped at ${Math.round(mx*100)}%</span>`;
 }
-function drawDeficit(){
-  const box=$("deficit");box.innerHTML="";
-  const rows=SIX.map(a=>{let v=0,n=0;RECENT.forEach(s=>{const r=W[`rain|${a}|${s}`];v+=r[3];n+=r[4]});return {a,v,n,d:v/n-1}}).sort((p,q)=>p.d-q.d);
-  const Wd=Math.max(box.clientWidth,600), left=200, right=90, top=8, rh=22, g=6, mx=Math.max(0.25,...rows.map(r=>Math.abs(r.d)));
-  const H=top+rows.length*(rh+g);
-  const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`Rainfall over the last ${N_RECENT} seasons compared with normal, by area`},box);
-  const x0=left, sc=(Wd-left-right-260)/mx;
-  rows.forEach((r,j)=>{
-    const y=top+j*(rh+g), w=Math.abs(r.d)*sc;
-    txt(svg,6,y+rh/2+4,aName(r.a),{class:isF(r.a)?"strong":""});
-    el("rect",{x:x0,y,width:Math.max(w,1),height:rh,fill:r.d<0?`var(--d${vbin("rain",1+r.d)})`:"var(--d5)",rx:2},svg);
-    txt(svg,x0+w+6,y+rh/2+4,`${devLab(1+r.d)}, ${(Math.abs(r.d)*N_RECENT).toFixed(1)} seasons of rain ${r.d<0?"missing":"extra"}`,{class:"mono"});
-    hover(el("rect",{x:0,y,width:Wd,height:rh,fill:"transparent"},svg),`<b>${aName(r.a)} | ${sLab(RECENT[0])} to ${sLab(RLAST)}</b><br>${fmt(r.v)} mm fell over the ${N_RECENT} seasons; normal is ${fmt(r.n)} mm<br>${devTxt(1+r.d)} over the period`);
+function drawSixMaps(){
+  const def={}, dry={};
+  PROVS.forEach(p=>{let v=0,n=0;RECENT.forEach(s=>{const r=W[`rain|${p}|${s}`];v+=r[3];n+=r[4]});def[p]=v/n;dry[p]=RECENT.filter(s=>W[`rain|${p}|${s}`][5]<THR.dry).length});
+  let svg=baseMap("map-def");svg.setAttribute("aria-label",`Rainfall October ${RECENT[0]} to March ${RLAST+1} compared with normal, by province`);
+  M.adm1.forEach(([p,d])=>{const b=vbin("rain",def[p]);const n=el("path",{d,class:"u",fill:`var(--d${b})`},svg);
+    hover(n,`<b>${p}</b><br>${devTxt(def[p])} over the ${N_RECENT} seasons<br>${(Math.abs(def[p]-1)*N_RECENT).toFixed(1)} seasons of rain ${def[p]<1?"missing":"extra"}`)});
+  overlay(svg);
+  $("lg-def").innerHTML=vLegend("rain");
+  svg=baseMap("map-dry");svg.setAttribute("aria-label",`Seasons ${thrTxt(THR.dry)} in the last ${N_RECENT}, by province`);
+  M.adm1.forEach(([p,d])=>{const k=dry[p];const n=el("path",{d,class:"u",fill:k?`var(--s${Math.min(5,k)})`:"var(--s0)"},svg);
+    hover(n,`<b>${p}</b><br>${k} of ${N_RECENT} seasons ${thrTxt(THR.dry)}: ${RECENT.filter(s=>W[`rain|${p}|${s}`][5]<THR.dry).map(sLab).join(", ")||"none"}`)});
+  overlay(svg);
+  $("lg-dry").innerHTML=[0,1,2,3,4,5].map(k=>`<span><i style="background:var(--s${k})"></i>${k===5?"5 or 6":k}</span>`).join("");
+}
+function drawIpcChart(){
+  const box=$("ipcchart");box.innerHTML="";
+  const rs=CUR_ROUNDS, Wd=Math.max(box.clientWidth,260), left=8, right=8, top=30, bh=110, H=top+bh+34, cw=(Wd-left-right)/rs.length, mx=Math.max(...rs.map(r=>r.nat.C.p3));
+  const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":"People in IPC Phase 3 or worse, by analysis"},box);
+  rs.forEach((r,i)=>{
+    const x=left+i*cw, bw=Math.min(cw*0.6,90), bx=x+(cw-bw)/2, h=bh*r.nat.C.p3/mx, h4=bh*r.nat.C.p4/mx;
+    el("rect",{x:bx,y:top+bh-h,width:bw,height:h,fill:"var(--p3)",rx:2},svg);
+    if(r.nat.C.p4)el("rect",{x:bx,y:top+bh-h4,width:bw,height:h4,fill:"var(--p4)",rx:2},svg);
+    txt(svg,x+cw/2,top+bh-h-6,short(r.nat.C.p3),{"text-anchor":"middle",class:"mono strong"});
+    txt(svg,x+cw/2,top+bh+16,r.label,{"text-anchor":"middle",class:"mono"});
+    txt(svg,x+cw/2,top+bh+28,`${r.provs.length} ${r.provs.length===1?"province":"provinces"}`,{"text-anchor":"middle",style:"font-size:10px"});
+    hover(el("rect",{x,y:0,width:cw,height:H,fill:"transparent"},svg),`<b>IPC ${r.label}</b><br>${fmt(r.nat.C.p3)} in Phase 3 or worse, of whom ${fmt(r.nat.C.p4)} in Phase 4 (${r.periods.C.frm} to ${r.periods.C.to})<br>Areas analysed in ${list(r.provs)}`);
   });
+  $("ipc-c-d").textContent=`People in Crisis (Phase 3) or worse, current period of each analysis${rs.some(r=>r.nat.C.p4)?"; Emergency (Phase 4) in red":""}.`;
+}
+function drawFewsChart(){
+  const box=$("fewschart");box.innerHTML="";
+  const fm=Object.values(FM[NAT]||{}).sort((a,b)=>a[0].localeCompare(b[0]));if(!fm.length)return;
+  const k=d=>+d.slice(0,4)*12+(+d.slice(5,7)-1), k0=k(fm[0][0]), k1=k(fm[fm.length-1][0]), n=k1-k0+1;
+  const by={};fm.forEach(r=>by[k(r[0])]=r);
+  const Wd=Math.max(box.clientWidth,260), left=8, right=8, top=8, ch=34, H=top+ch+30, cw=(Wd-left-right)/n;
+  const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`FEWS NET national phase by month, ${md(fm[0][0])} to ${md(fm[fm.length-1][0])}`},box);
+  for(let i=0;i<n;i++){
+    const kk=k0+i, r=by[kk], x=left+i*cw, y=Math.floor(kk/12), m=kk%12;
+    const c=el("rect",{x,y:top,width:Math.max(cw-1,1),height:ch,fill:r?`var(--p${r[2]})`:"none",stroke:r?"none":"var(--rule)",rx:1},svg);
+    hover(c,`<b>${MON[m]} ${y}</b><br>${r?`Phase ${r[2]} ${PH[r[2]]} (${r[4]==="national"?"national phase":"highest "+(r[4]==="zones"?"livelihood zone":"district")})<br>${r[3]}`:"No report"}`);
+    if(m===0)txt(svg,x+cw/2,top+ch+14,String(y),{"text-anchor":"middle",class:"mono"});
+  }
+  const cr=fm.filter(r=>r[2]>=3).length;
+  $("fews-c-d").textContent=`Highest phase in the country each report month. Crisis or worse in ${cr} of ${fm.length} months.`;
+  $("lg-fc").innerHTML=phLegend([...new Set(fm.map(r=>r[2]))].sort())+`<span><i style="border:1px solid var(--rule)"></i>No report</span>`;
 }
 if(FOCUS.length){
   $("s-six").hidden=false;
-  const span=`${sLab(RECENT[0])} to ${sLab(RLAST)}`;
-  $("h-six").textContent=`The last ${N_RECENT} seasons, ${span}`;
-  $("six-sub").textContent=`How the last ${N_RECENT} October to March seasons compare with the full rainfall record since ${sLab(RF)}, and what IPC and FEWS NET reported over the same years, for ${C.name} and for ${list(FOCUS)}.`;
-  const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length;
-  const sortedNat=ALLS.map(s=>W[`rain|${NAT}|${s}`]).sort((p,q)=>p[5]-q[5]), natTen=sortedNat.slice(0,10).filter(r=>r[2]>=RECENT[0]).length;
-  const recs=FOCUS.map(p=>{const rs=RECENT.map(s=>W[`rain|${p}|${s}`]).filter(r=>r[6]<=3).sort((a,b)=>a[6]-b[6]);return rs.length?`${p}: ${rs.map(r=>`${rankTxt(r[6])} ${sLab(r[2])}`).join(", ")}`:null}).filter(Boolean);
-  const runs=FOCUS.map(p=>{let k=0;for(let s=RLAST;s>=RF;s--){if(W[`rain|${p}|${s}`][5]<1)k++;else break}return [p,k]}).filter(x=>x[1]>=N_RECENT);
-  const before=ALLS.filter(s=>s<RECENT[0]);
-  const freq=FOCUS.map(p=>({p,b:before.filter(s=>W[`rain|${p}|${s}`][5]<THR.dry).length,a:RECENT.filter(s=>W[`rain|${p}|${s}`][5]<THR.dry).length}));
-  const worse=freq.filter(f=>f.a/N_RECENT>f.b/before.length);
-  const nlow=FOCUS.map(p=>{const rs=RECENT.map(s=>W[`ndvi|${p}|${s}`]).filter(r=>r[6]===1);return rs.length?`${p} (${sLab(rs[0][2])})`:null}).filter(Boolean);
-  const nlast=W[`ndvi|${NAT}|${RLAST}`], nAbove=FOCUS.filter(p=>W[`ndvi|${p}|${RLAST}`][5]>=1);
-  const fmN=Object.values(FM[NAT]||{}).sort((a,b)=>a[0].localeCompare(b[0])), fCr=fmN.filter(r=>r[2]>=3).length;
-  const firstR=CUR_ROUNDS[0], lastR=CUR_ROUNDS[CUR_ROUNDS.length-1];
-  const z2=D.maps.fews.filter(z=>z[5]>=3), crisisF=FOCUS.filter(p=>z2.some(z=>z[1]===p));
-  const fcLow=FOCUS.map(p=>fc(p)).filter(r=>r&&r[4]<1).sort((a,b)=>a[4]-b[4]);
-  const fact=(src,t)=>`<div class="fact"><div class="src">${src}</div><p>${t}</p></div>`;
-  $("six-facts").innerHTML=
-    fact("Rainfall, national",`${natBelow===N_RECENT?`Each of the last ${N_RECENT} seasons`:`${natBelow} of the last ${N_RECENT} seasons`} below normal. ${natTen} of the 10 driest seasons since ${sLab(RF)} fall in these ${N_RECENT} years.`)
-   +fact("Rainfall, provinces of interest",`${recs.length?recs.join("; ")+". ":""}${runs.length?`${list(runs.map(x=>x[0]))}: every season since ${sLab(RLAST-Math.min(...runs.map(x=>x[1]))+1)} below normal. `:""}Seasons ${thrTxt(THR.dry)} were more frequent in these ${N_RECENT} years than in the ${before.length} seasons before in ${worse.length===FOCUS.length?"every province of interest":list(worse.map(f=>f.p))}.`)
-   +fact("Vegetation (NDVI)",`${nlow.length?`Lowest October to March NDVI since ${sLab(WM.ndvi.first)} in ${list(nlow)}. `:""}In ${sLab(RLAST)} NDVI was ${devTxt(nlast[5])} nationally${nAbove.length?` and at or above normal in ${list(nAbove)}`:""}.`)
-   +fact("IPC",`${fmt(firstR.nat.C.p3)} people in Crisis (Phase 3) or worse in ${firstR.label}, ${fmt(lastR.nat.C.p3)} in ${lastR.label}${CUR_ROUNDS.length===2?` (${(lastR.nat.C.p3/firstR.nat.C.p3).toFixed(1)} times as many)`:""}. No IPC analysis of ${C.name} since ${lastR.label}.`)
-   +fact("FEWS NET",`${C.name} at Crisis (Phase 3) in ${fCr} of the ${fmN.length} report months from ${md(fmN[0][0])} to ${md(fmN[fmN.length-1][0])}.${crisisF.length?` Crisis projected again for ${covLab(ZN.ML2)} in ${list(crisisF)}.`:""}`)
-   +fact("Forecast",`SEAS5 (issued ${md(S5.issued)}) expects ${fcLab} rainfall ${devTxt(fc(NAT)[4])} for this model nationally${fcLow.length?`, and below its normal in ${list(fcLow.map(r=>`${r[0]} (${devLab(r[4])})`))}`:""}.`);
-  SIXSUM=`Nationally, ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons`:`${natBelow} of the last ${N_RECENT} seasons`} was below normal and ${natTen} of the 10 driest seasons since ${sLab(RF)} fall in these ${N_RECENT} years; FEWS NET has reported Crisis in ${fCr} of ${fmN.length} months since ${md(fmN[0][0])}.`;
-  $("six-h").textContent=`Where the last ${N_RECENT} seasons sit in the record`;
-  $("six-lead").textContent=`Every October to March season since ${sLab(RF)}, sorted from driest to wettest. The last ${N_RECENT} seasons are in dark brown. Hover over a bar for the season.`;
-  $("six-h2").textContent=`Rain missing over the ${N_RECENT} seasons`;
-  $("six-lead2").textContent=`Total rainfall from October ${RECENT[0]} to March ${RLAST+1} compared with ${N_RECENT} normal seasons. One season of rain missing means the shortfall equals a whole normal season.`;
+  $("h-six").textContent=`The last ${N_RECENT} seasons, ${sLab(RECENT[0])} to ${sLab(RLAST)}`;
+  $("six-sub").textContent=`October to March rainfall over the last ${N_RECENT} seasons against normal and against the record since ${sLab(RF)}, with the IPC and FEWS NET classifications of the same years.`;
+  $("m-def-h").textContent=`Rainfall, October ${RECENT[0]} to March ${RLAST+1}`;
+  $("m-def-d").textContent=`Total over the ${N_RECENT} seasons compared with ${N_RECENT} normal seasons.`;
+  $("m-dry-h").textContent=`Seasons ${thrTxt(THR.dry)}`;
+  $("m-dry-d").textContent=`Number of the last ${N_RECENT} seasons with October to March rainfall ${thrTxt(THR.dry)}.`;
+  $("six-h").textContent=`Every season since ${sLab(RF)}, driest to wettest`;
 }
 
 /* ---------- maps ---------- */
@@ -685,7 +686,7 @@ drawIpcBars();
   const th=(label,subt,tipT)=>`<th data-tip="${tipT}">${label}${sub(subt)}</th>`;
   let h=`<thead><tr>${FOCUS.length?`<th data-tip="Position among the ${PROVS.length} provinces">Rank${sub(`of ${PROVS.length}`)}</th>`:""}<th class="pv">Province</th>${th("Dry seasons",`since ${sLab(R0)}, of ${RS.length}`,`Seasons with October to March rainfall ${thrTxt(THR.dry)}`)}${th("Low vegetation",`seasons, of ${RS.length}`,`Seasons with October to March NDVI ${thrTxt(THR.low)}`)}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of the population analysed that was in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, above (+) or below (−) the average of the same September forecasts for ${S5.ref[0]} to ${S5.ref[1]}. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
   rows.forEach(r=>{
-    h+=`<tr${FOCUS.length&&!isF(r.p)?' class="more"':""}>${FOCUS.length?`<td class="rk">${r.rank}</td>`:""}<td class="pv">${r.p}${hzTags(r.p)}${capTag(r.p)}</td>`;
+    h+=`<tr${FOCUS.length&&!isF(r.p)?' class="more"':""}>${FOCUS.length?`<td class="rk">${r.rank}</td>`:""}<td class="pv">${r.p}${hzTags(r.p)}${capTag(r.p)}${nowTag(r.p)}</td>`;
     h+=cell(r.dry,RS.length,r.dry,`<b>${r.p}</b><br>${r.dry} of ${RS.length} seasons with rainfall ${thrTxt(THR.dry)}`);
     h+=cell(r.low,RS.length,r.low,`<b>${r.p}</b><br>${r.low} of ${RS.length} seasons with NDVI ${thrTxt(THR.low)}`);
     h+=r.ipc==null?`<td class="na" data-tip="<b>${r.p}</b><br>Not covered by any IPC analysis">–</td>`
@@ -703,7 +704,7 @@ drawIpcBars();
   if(FOCUS.length){
     $("hot-h").textContent="Provinces of interest";
     const fr=rows.filter(r=>isF(r.p));
-    $("hot-lead").textContent=`${SIXSUM} ${list(fr.map(r=>`${r.p} ${ord(r.rank)}`))} of the ${PROVS.length} provinces, ranked by how often rainfall, vegetation, IPC and FEWS NET have reported them as affected.${renTxt(FOCUS)}`;
+    $("hot-lead").textContent=`${list(fr.map(r=>`${r.p} ${ord(r.rank)}`))} of the ${PROVS.length} provinces, ranked by how often rainfall, vegetation, IPC and FEWS NET have reported them as affected.`;
     $("hot-note").innerHTML=`${noteBase} <button type="button" class="linkbtn" id="hot-more">Show all ${PROVS.length} provinces</button>`;
     $("hot-more").onclick=()=>{const t=$("hot"), on=t.classList.toggle("all");$("hot-more").textContent=on?"Show the provinces of interest only":`Show all ${PROVS.length} provinces`};
   }else{
@@ -726,7 +727,7 @@ drawIpcBars();
   $("nav").innerHTML=`${FOCUS.length?`<a href="#h-six">Last ${N_RECENT} seasons</a>`:""}<a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-month">Month by month</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
 })();
 
-function drawAll(){drawRain();drawRainHeat();drawMonthly();if(FOCUS.length){drawRecord();drawDeficit()}}
+function drawAll(){drawRain();drawRainHeat();drawMonthly();if(FOCUS.length){drawRecord();drawSixMaps();drawIpcChart();drawFewsChart()}}
 drawAll();
 let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(drawAll,120)});
 </script>
