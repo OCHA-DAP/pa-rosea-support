@@ -40,7 +40,7 @@ current provinces (Angola has had 21 provinces since September 2024; the sources
 |---|---|---|
 | FEWS NET | `fdw.fews.net/api/ipcphase.csv`, `ipcphase/` (JSON), `ipcpackage/` | classifications, zone geometry |
 | IPC | `api.ipcinfo.org/analyses`, `areas`, `population` | area phases and populations, national totals |
-| HDX IPC | `<country>-acute-food-insecurity-country-data` (area, level-1, national files) | published province totals, cross-check |
+| HDX IPC | `<country>-acute-food-insecurity-country-data` (area, level-1, national files; `hdx_snapshots/` holds the 2026-10-02 copy of the Angola history files, which HDX replaced with latest-analysis files on 2026-10-05) | published province totals, cross-check |
 | WFP on HDX | `<iso3>-rainfall-subnational` (CHIRPS), `<iso3>-ndvi-subnational` (MODIS) | dekadal rainfall and NDVI by province, by season and by month |
 | HDX COD-AB | `cod-ab-<iso3>` | map boundaries, area-to-province lookup |
 | SEAS5 | team raster store `seas5/monthly/processed/precip_em_i<issue>_lt<n>.tif` (prod blob) | October to March rainfall forecast from the latest September issue, against the same forecasts issued every September since 1981 |
@@ -49,7 +49,8 @@ current provinces (Angola has had 21 provinces since September 2024; the sources
 
 - FEWS NET CSV and JSON return identical records (the CSV may carry a newer report not yet in the JSON endpoint;
   such rows are noted and kept); the latest shapefile package matches the record.
-- IPC API area figures match the HDX area file. National totals come from the IPC API and match HDX;
+- IPC API area figures match the HDX area file. Where HDX only publishes the latest analysis (Angola since
+  2026-10-05), earlier analyses are read from `hdx_snapshots/` and noted. National totals come from the IPC API and match HDX;
   area sums match them within rounding, except the Zambia Jul 2024 projection, where IPC's published
   national and Eastern totals are 54,214 above the sum of the districts (API and HDX agree). The pages use
   the published figures.

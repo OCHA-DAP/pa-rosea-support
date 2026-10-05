@@ -116,10 +116,14 @@ def fix_name(s):
     return str(s).replace("�\xad", "í")
 
 
-def hdx_resource(dataset, suffix):
+def hdx_resources(dataset, suffix):
     meta = get_json(HDX, f"hdx_{dataset}.json", {"id": dataset})
     check(meta.get("success"), f"HDX dataset {dataset} found")
-    urls = [r["url"] for r in meta["result"]["resources"] if r["name"].endswith(suffix)]
+    return [r["url"] for r in meta["result"]["resources"] if r["name"].endswith(suffix)]
+
+
+def hdx_resource(dataset, suffix):
+    urls = hdx_resources(dataset, suffix)
     check(len(urls) == 1, f"HDX {dataset}: one resource ending {suffix}")
     return urls[0]
 
@@ -285,8 +289,27 @@ class Country:
 
         # HDX files (same consensus figures, second publisher); rounds matched by period start month
         def hdx(level):
-            url = hdx_resource(f"{self.name.lower()}-acute-food-insecurity-country-data", f"_{level}_long.csv")
-            h = pd.read_csv(fetch(url, f"ipc_{self.low}_{level}_long.csv"), skiprows=[1], encoding="utf-8", encoding_errors="replace")
+            # HDX publishes a full history file (_long.csv) and a latest-analysis file (_long_latest.csv). Since
+            # 2026-10-05 the Angola dataset has only the latest file; earlier analyses come from the copy of the
+            # full file taken on 2026-10-02 (hdx_snapshots/), so the cross-checks still cover them.
+            ds = f"{self.name.lower()}-acute-food-insecurity-country-data"
+            urls = hdx_resources(ds, f"_{level}_long.csv")
+            def read(path):  # skip the HXL tag row only when there is one
+                hxl = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()[1].startswith("#")
+                return pd.read_csv(path, skiprows=[1] if hxl else None, encoding="utf-8", encoding_errors="replace")
+            if urls:
+                check(len(urls) == 1, f"HDX {ds}: one resource ending _{level}_long.csv")
+                h = read(fetch(urls[0], f"ipc_{self.low}_{level}_long.csv"))
+            else:
+                h = read(fetch(hdx_resource(ds, f"_{level}_long_latest.csv"), f"ipc_{self.low}_{level}_long_latest.csv"))
+                snap = HERE / "hdx_snapshots" / f"ipc_{self.low}_{level}_long.csv"
+                check(snap.exists(), f"HDX {ds}: full history file missing on HDX and a snapshot exists for {level}")
+                old = read(snap)
+                old = old[~old["Date of analysis"].isin(set(h["Date of analysis"]))]
+                check(set(h.columns) == set(old.columns), f"HDX {ds} {level}: snapshot columns match the current file")
+                note(f"HDX {ds} {level}: HDX now carries only {sorted(set(h['Date of analysis']))}; "
+                     f"{sorted(set(old['Date of analysis']))} taken from the 2026-10-02 snapshot of the full HDX file")
+                h = pd.concat([h, old], ignore_index=True)
             h["per"] = h["Validity period"].map({"current": "C", "first projection": "P", "second projection": "P2"})
             h["frm"] = pd.to_datetime(h["From"]).dt.strftime("%Y-%m-01")
             return h[h["per"].isin(["C", "P"])]

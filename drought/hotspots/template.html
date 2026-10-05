@@ -47,6 +47,7 @@ h3{font-size:15px;margin:0 0 4px;font-weight:600}
 .glance h3{font-size:14px;margin:0 0 4px}
 .tag{display:inline-block;font:500 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);border:1px solid var(--rule);border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:1px}
 .tag.hz{color:var(--accent);border-color:var(--accent)}
+.tag.now{text-transform:none;letter-spacing:0;color:var(--muted);border-style:dashed}
 table.hot{min-width:720px}
 .hot th{max-width:120px}
 .hot th.pv{white-space:nowrap}
@@ -212,7 +213,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-mx">
   <h2 id="h-mx">Province detail</h2>
-  <p class="sub">Recent IPC analyses and the FEWS NET classification, one row per province. Hover over a cell for details.</p>
+  <p class="sub">Share in Phase 3+ in the recent IPC analyses, and the current and projected FEWS NET phase, by province.</p>
   <div class="panel scroll"><table class="mx" id="mx"></table>
     <div class="legend"><span class="grp">IPC share</span><span id="mxseq" style="display:contents"></span>
       <span class="grp" style="margin-left:6px">Phase</span><span id="mxph" style="display:contents"></span>
@@ -223,7 +224,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section aria-labelledby="h-ipc">
   <h2 id="h-ipc">IPC by area</h2>
-  <p class="sub">Share of the population in Crisis (Phase 3) or worse: the bar shows the current period (Emergency in red) and the tick the projection. Provinces with an area in Crisis or worse are expanded.</p>
+  <p class="sub">Share of the population in Crisis (Phase 3) or worse by area: bar for the current period (Emergency in red), tick for the projection.</p>
   <div class="controls"><label class="clabel" for="ipcr">Analysis</label><select id="ipcr"></select></div>
   <div class="panel"><div class="ipc" id="ipc"></div></div>
 </section>
@@ -273,7 +274,7 @@ const C=D.country, PROVS=D.provinces, NAT="_national", FOCUS=Object.keys(D.focus
 const isF=p=>p in D.focus;
 const hzTags=p=>(D.focus[p]||[]).map(h=>`<span class="tag hz">${h}</span>`).join("");
 const capTag=p=>p===C.capital?'<span class="tag">capital</span>':"";
-const nowTag=p=>REN[p]?`<span class="tag">now ${list(REN[p])}</span>`:"";
+const nowTag=p=>REN[p]?`<span class="tag now">now ${list(REN[p])}</span>`:"";
 const aName=a=>a===NAT?`${C.name} (national)`:a;
 $("eyebrow").textContent=`${C.name} | drought | food insecurity`;
 $("title").textContent=`${C.name} drought hotspots`;
@@ -291,7 +292,7 @@ const THR={dry:0.8,low:0.95};   // dry season: rainfall more than 20% below norm
 const S5=D.seas5_meta, F5={};D.seas5.forEach(r=>{F5[`${r[0]}|${r[1]}`]=r});   // [area, issue year, mm, normal, pct, rank]
 const fc=a=>F5[`${a}|${S5.season}`];
 const fcLab=`${MON[9]} ${S5.season} to ${MON[2]} ${S5.season+1}`;
-const fcTip=(a,r)=>`<b>${aName(a)} | forecast ${fcLab}</b><br>SEAS5 issued ${md(S5.issued)}: ${fmt(r[2])} mm, ${devTxt(r[4])} for this model (its ${S5.ref[0]} to ${S5.ref[1]} September forecasts average ${fmt(r[3])} mm)<br>${r[5]===1?"Driest":ord(r[5])+" driest"} of the ${S5.n} September forecasts since ${S5.first}`;
+const fcTip=(a,r)=>`<b>${aName(a)} | forecast ${fcLab}</b><br>SEAS5 issued ${md(S5.issued)}: ${fmt(r[2])} mm, ${devTxt(r[4]).replace("normal","the model's normal")} (its ${S5.ref[0]} to ${S5.ref[1]} September forecasts average ${fmt(r[3])} mm)<br>${r[5]===1?"Driest":ord(r[5])+" driest"} of the ${S5.n} September forecasts since ${S5.first}`;
 
 /* ---------- October to March seasons ---------- */
 const WM=D.wfp_meta, R0=D.first_season, RLAST=Math.min(WM.rain.last,WM.ndvi.last), RS=[];for(let y=R0;y<=RLAST;y++)RS.push(y);
@@ -309,7 +310,7 @@ const baseTxt=k=>`${md(WM[k].base[0])} to ${md(WM[k].base[1])}`;
 const normalTxt=`Normal is the average for the same ten-day periods over ${baseTxt("rain")} for rainfall and ${baseTxt("ndvi")} for NDVI.`;
 const IPC_SEASON={};CUR_ROUNDS.forEach(r=>{IPC_SEASON[seasonOf(mStart(r.periods.C.frm))]=r});
 $("lede").textContent=FOCUS.length
-  ?`${list(FOCUS)}: October to March rainfall and vegetation since ${sLab(R0)}, IPC and FEWS NET classifications, and the rainfall forecast for the coming season.`
+  ?`Rainfall, vegetation and food security in ${list(FOCUS)}: October to March seasons since ${sLab(R0)}, IPC and FEWS NET classifications, and the forecast for the coming season.`
   :`Provinces most affected by drought and food insecurity, based on October to March rainfall and vegetation since ${sLab(R0)} and on IPC and FEWS NET classifications.`;
 $("rain-sub").textContent=`Season totals as % above (+) or below (−) normal; dashed bar: SEAS5 forecast. Below: IPC analysis of that year and FEWS NET phase by month. ${normalTxt}`;
 const rsel=$("rarea");
@@ -701,11 +702,11 @@ drawIpcBars();
   });
   $("hot").innerHTML=h+"</tbody>";
   $("hot").querySelectorAll("[data-tip]").forEach(td=>hover(td,td.dataset.tip));
-  const noteBase=`Provinces are ranked by their average position across the columns with data. The final two columns are projections and are excluded from the ranking. Hover over a column heading for the definition.`;
+  const noteBase=`Rank: average position across the columns with data; the two projection columns are not ranked. Hover over a heading for its definition.`;
   if(FOCUS.length){
     $("hot-h").textContent="Provinces of interest";
     const fr=rows.filter(r=>isF(r.p));
-    $("hot-lead").textContent=`${list(fr.map(r=>`${r.p} ${ord(r.rank)}`))} of the ${PROVS.length} provinces, ranked by how often rainfall, vegetation, IPC and FEWS NET have reported them as affected.`;
+    $("hot-lead").textContent=`Rank among the ${PROVS.length} provinces, by how often rainfall, vegetation, IPC and FEWS NET have reported them as affected: ${list(fr.map(r=>`${r.p} ${ord(r.rank)}`))}.`;
     $("hot-note").innerHTML=`${noteBase} <button type="button" class="linkbtn" id="hot-more">Show all ${PROVS.length} provinces</button>`;
     $("hot-more").onclick=()=>{const t=$("hot"), on=t.classList.toggle("all");$("hot-more").textContent=on?"Show the provinces of interest only":`Show all ${PROVS.length} provinces`};
   }else{
@@ -722,7 +723,7 @@ drawIpcBars();
   $("now").innerHTML=`
    <dt>Last season</dt><dd>${sLab(lastS)}: rainfall ${devTxt(rl[5])} nationally, NDVI ${devTxt(nl[5])}.${dryProvs.length?` Rainfall ${thrTxt(THR.dry)} in ${dryProvs.length>5?`${dryProvs.length} provinces, lowest `:""}${list(dryProvs.slice(0,5).map(p=>`${p} (${devLab(W[`rain|${p}|${lastS}`][5])})`))}.`:` No province ${thrTxt(THR.dry)}.`}</dd>
    <dt>Forecast</dt><dd>${(()=>{const n=fc(NAT);const lows=PROVS.map(p=>fc(p)).filter(r=>r&&r[4]<THR.dry).sort((a,b)=>a[4]-b[4]);
-     return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${devTxt(n[4])} for this model nationally (${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts).${lows.length?` ${thrTxt(THR.dry).replace(/^m/,"M")} in ${lows.length>5?`${lows.length} provinces, lowest `:""}${list(lows.slice(0,5).map(r=>`${r[0]} (${devLab(r[4])})`))}.`:` No province ${thrTxt(THR.dry)}.`}`})()}</dd>
+     return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${devTxt(n[4]).replace("normal","the model's normal")} nationally, ${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts.${lows.length?` ${thrTxt(THR.dry).replace(/^m/,"M")} in ${lows.length>5?`${lows.length} provinces, lowest `:""}${list(lows.slice(0,5).map(r=>`${r[0]} (${devLab(r[4])})`))}.`:` Lowest: ${list(FOCUS.length?FOCUS.map(p=>fc(p)).filter(Boolean).sort((a,b)=>a[4]-b[4]).slice(0,3).map(r=>`${r[0]} (${devLab(r[4])})`):PROVS.map(p=>fc(p)).filter(Boolean).sort((a,b)=>a[4]-b[4]).slice(0,3).map(r=>`${r[0]} (${devLab(r[4])})`))}.`}`})()}</dd>
    <dt>IPC</dt><dd>${ipcLine}</dd>
    <dt>FEWS NET</dt><dd>${z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`}</dd>`;
   $("nav").innerHTML=`<a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-six">Last ${N_RECENT} seasons</a><a href="#h-month">Month by month</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
