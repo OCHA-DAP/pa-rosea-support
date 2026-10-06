@@ -125,6 +125,9 @@ details.sec>summary .hint{font-size:13px;color:var(--muted);margin-left:auto}
 details.sec>.body{margin-top:14px;border-top:1px solid var(--rule2);padding-top:14px}
 details.rank{margin-top:18px;border-top:1px solid var(--rule2);padding-top:12px}details.rank summary{cursor:pointer;font:600 14px var(--sans)}details.rank summary:hover{color:var(--accent)}
 .panel .desc{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
+.terms{display:grid;grid-template-columns:max-content 1fr;gap:8px 16px;margin:0;font-size:14px;max-width:960px}
+.terms dt{font-weight:600;color:var(--ink)}.terms dd{margin:0;color:var(--ink2)}
+@media (max-width:640px){.terms{grid-template-columns:1fr;gap:2px}.terms dd{margin-bottom:8px}}
 .ipc{display:grid;gap:22px}
 details summary{cursor:pointer;list-style-position:outside}
 .ipc h4{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0 0 8px}
@@ -185,6 +188,11 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   </details>
   <nav class="nav" aria-label="Sections" id="nav"></nav>
 </section>
+
+<details class="sec" id="d-read" open>
+  <summary><h2 id="h-read">Reading this page</h2><span class="hint">what the terms mean</span></summary>
+  <div class="body"><dl class="terms" id="terms"></dl></div>
+</details>
 
 <details class="sec" id="s-month" hidden open>
   <summary><h2 id="h-month">Within the season: rainfall and vegetation month by month</h2><span class="hint">three-month rainfall totals and monthly NDVI, by province</span></summary>
@@ -480,6 +488,20 @@ function drawIpcBars(){
 ipcSel.addEventListener("change",drawIpcBars);
 drawIpcBars();
 
+/* ---------- reading this page ---------- */
+(function(){
+  const terms=[
+    ["Season","October to March, the main rainy season. A season is named by both years it spans: 2020/21 is October 2020 to March 2021."],
+    ["Normal",`The average for the same period over many years: ${md(WM.rain.base[0]).slice(-4)} to ${md(WM.rain.base[1]).slice(-4)} for rainfall and ${md(WM.ndvi.base[0]).slice(-4)} to ${md(WM.ndvi.base[1]).slice(-4)} for vegetation. −20% means a fifth less than normal; 0% means normal.`],
+    ["Rainfall","Satellite rainfall estimates adjusted with rain gauges (CHIRPS), totalled over the season or over three months, by province."],
+    ["End-of-season NDVI","A satellite measure of how green the land is in March, when crops are maturing. It reflects pasture and bush as well as crops, and responds to late rain."],
+    ["IPC","The Integrated Food Security Phase Classification, a five-phase scale agreed by UN agencies, governments and NGOs. Phase 3 (Crisis): households have food gaps or can only meet food needs by using up assets. Phase 4 (Emergency): large food gaps, very high acute malnutrition or extreme loss of assets. Figures are people in Phase 3 or worse."],
+    ["FEWS NET","The Famine Early Warning Systems Network, created by USAID, which classifies food security on the same scale by livelihood zone (areas where people make a living in similar ways) and projects it several months ahead."],
+    ["Forecast",`The ECMWF seasonal model SEAS5, issued ${md(S5.issued)}. Its ${fcLab} rainfall is compared with what the same model forecast in Septembers ${S5.ref[0]} to ${S5.ref[1]}, so it shows whether the model expects a drier or wetter season than usual, not observed rainfall.`],
+    ["Provinces",`${PROVS.length} provinces as in the official boundaries used by the data sources.${Object.keys(REN).length?` Since September 2024 ${list(Object.keys(REN).map(p=>`${p} covers ${list(REN[p])}`))}.`:""}`]];
+  $("terms").innerHTML=terms.map(([t,d])=>`<dt>${t}</dt><dd>${d}</dd>`).join("");
+})();
+
 /* ---------- sources ---------- */
 (function(){
   const F=D.fews, odd=WM.odd_units, ren=Object.keys(REN);
@@ -554,7 +576,7 @@ drawIpcBars();
      return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${devTxt(n[4]).replace("normal","the model's normal")} nationally, ${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts. Lowest: ${list(lows.map(r=>`${r[0]} (${devLab(r[4])})`))}.`})()}</dd>
    <dt>IPC</dt><dd>${ipcLine}</dd>
    <dt>FEWS NET</dt><dd>${z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`}</dd>`;
-  $("nav").innerHTML=`<span class="clabel">Sections</span><a href="#h-month">Within the season</a><a href="#h-mx">IPC and FEWS NET by province</a><a href="#h-ipc">IPC by municipality</a><a href="#h-src">Sources and methods</a>`;
+  $("nav").innerHTML=`<span class="clabel">Sections</span><a href="#h-read">Reading this page</a><a href="#h-month">Within the season</a><a href="#h-mx">IPC and FEWS NET by province</a><a href="#h-ipc">IPC by municipality</a><a href="#h-src">Sources and methods</a>`;
   document.querySelectorAll("#nav a").forEach(x=>x.addEventListener("click",()=>{const t=document.querySelector(x.getAttribute("href"));const d=t&&t.closest("details");if(d)d.open=true}));
 })();
 
