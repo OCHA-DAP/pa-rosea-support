@@ -106,9 +106,7 @@ table.mx{border-collapse:separate;border-spacing:2px;min-width:720px;width:100%}
 .mgrid h3{margin-bottom:8px}
 table.mo{min-width:0;width:100%;border-spacing:2px}
 .mo td.pv{font-size:12.5px;padding-right:6px}
-.mo td.tot{font-weight:600}
-.mo tr.ref td{border-top:2px solid var(--rule)}
-.mo tr.ref td.pv{color:var(--ink2);font-weight:400;font-size:12px;white-space:normal}
+.mo td{height:26px;font-size:10.5px;font-weight:400}.mo td.tot{font-weight:600}
 .mo td.hd{text-align:left;color:var(--muted);font:500 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;height:auto;padding-top:6px}
 .mline{font-size:13px;color:var(--ink2);margin:8px 0 0}
 .minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:12px}
@@ -176,7 +174,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
     <div class="panel map"><h3 id="m-ipc2-h"></h3><p class="desc" id="m-ipc2-d"></p><div id="map-ipc2"></div><div class="legend" id="lg-ipc2"></div></div>
     <div class="panel map"><h3 id="m-fp-h"></h3><p class="desc" id="m-fp-d"></p><div id="map-fp"></div><div class="legend" id="lg-fp"></div></div>
   </div>
-  <details class="rank" id="rank-box">
+  <details class="rank" id="rank-box" open>
     <summary id="hot-h">How the provinces rank</summary>
     <p class="small" id="hot-lead" style="margin:8px 0 8px"></p>
     <div class="scroll"><table class="mx hot" id="hot"></table></div>
@@ -200,7 +198,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   </div>
 </details>
 
-<details class="sec" id="d-mx">
+<details class="sec" id="d-mx" open>
   <summary><h2 id="h-mx">Province detail</h2><span class="hint">recent IPC analyses and FEWS NET by province</span></summary>
   <div class="body">
   <p class="sub">Share in Phase 3+ in the recent IPC analyses, and the current and projected FEWS NET phase, by province.</p>
@@ -213,7 +211,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   </div>
 </details>
 
-<details class="sec" id="d-ipc">
+<details class="sec" id="d-ipc" open>
   <summary><h2 id="h-ipc">IPC by area</h2><span class="hint">Phase 3+ share by municipality</span></summary>
   <div class="body">
   <p class="sub">Share of the population in Crisis (Phase 3) or worse by area: bar for the current period (Emergency in red), tick for the projection.</p>
@@ -222,7 +220,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   </div>
 </details>
 
-<details class="sec" id="d-src">
+<details class="sec" id="d-src" open>
   <summary><h2 id="h-src">Sources</h2><span class="hint">data, definitions and known issues</span></summary>
   <div class="body"><ul class="notes" id="src"></ul></div>
 </details>
@@ -311,35 +309,20 @@ $("lede").textContent=FOCUS.length
 /* ---------- month by month, provinces of interest ---------- */
 const N_RECENT=6, RECENT=RS.slice(-N_RECENT), EARLIER=RS.slice(0,-N_RECENT);
 const mo={v:"rain",w:"rec"};
-// season totals or means recomputed from the monthly values over a set of seasons, per month and for the season
-function moAgg(k,p,ss){
-  const out=[];
-  for(let j=0;j<=6;j++){
-    let v=0,n=0,c=0;
-    ss.forEach(s=>{if(j<6){const x=WMO[`${k}|${p}|${s}`][j];v+=x[0];n+=x[1]}else{const r=W[`${k}|${p}|${s}`];v+=r[3];n+=r[4]}c++});
-    out.push(v/n);
-  }
-  return out;
-}
 function drawMonthly(){
   const k=mo.v, V=VAR[k], ss=mo.w==="rec"?RECENT:RS, box=$("mgrid");box.innerHTML="";
   let h="";
   SHOW.forEach(p=>{
     let below=0, months=0;
-    let t=`<div class="panel"><h3>${p}${hzTags(p)}${capTag(p)}${nowTag(p)}</h3><div class="scroll"><table class="mx mo"><thead><tr><th class="pv">Season</th>${(k==="rain"?R3_LAB:ONDJFM_LAB).map(m=>`<th>${m}</th>`).join("")}${k==="rain"?"<th>Oct to Mar</th>":""}</tr></thead><tbody>`;
+    let t=`<div class="panel"><h3>${p}${hzTags(p)}${capTag(p)}${nowTag(p)}</h3><div class="scroll"><table class="mx mo"><thead><tr><th class="pv">Season</th>${(k==="rain"?R3_LAB.slice(2):ONDJFM_LAB).map(m=>`<th>${m}</th>`).join("")}${k==="rain"?"<th>Oct to Mar</th>":""}</tr></thead><tbody>`;
     ss.forEach(s=>{
       const m=WMO[`${k}|${p}|${s}`], r=W[`${k}|${p}|${s}`];
       t+=`<tr><td class="pv">${sLab(s)}</td>`;
-      const wj=k==="rain"?worst(p,s)[1]:-1;
-      m.forEach(([v,n],j)=>{const q=v/n, b=vbin(k,q), mon=(9+j)%12, yr=mon>=9?s:s+1; months++;
-        t+=`<td style="background:var(--d${b});color:${dInk(b)}${j===wj?";outline:2px solid var(--ink);outline-offset:-2px":""}" data-tip="<b>${p} | ${k==="rain"?r3Span(j,s):MON[mon]+" "+yr}</b><br>${k==="rain"?"Rainfall over the three months":"NDVI"}: ${V.mval(v,n)}<br>${devTxt(q)}">${devLab(q)}</td>`});
+      m.forEach(([v,n],j)=>{if(k==="rain"&&j<2)return;const q=v/n, b=vbin(k,q), mon=(9+j)%12, yr=mon>=9?s:s+1; months++;
+        t+=`<td style="background:var(--d${b});color:${dInk(b)}" data-tip="<b>${p} | ${k==="rain"?r3Span(j,s):MON[mon]+" "+yr}</b><br>${k==="rain"?"Rainfall over the three months":"NDVI"}: ${V.mval(v,n)}<br>${devTxt(q)}">${devLab(q)}</td>`});
       const b=vbin(k,r[5]); if(r[5]<1)below++;
       t+=(k==="rain"?`<td class="tot" style="background:var(--d${b});color:${dInk(b)}" data-tip="<b>${p} | Oct ${s} to Mar ${s+1}</b><br>${V.label}: ${V.val(r)}<br>${devTxt(r[5])}, ${r[6]===1?V.low+" on record":ord(r[6])+" "+V.low} (${WM[k].n} seasons since ${sLab(WM[k].first)})">${devLab(r[5])}</td>`:"")+`</tr>`;
     });
-    if(mo.w==="rec"&&EARLIER.length){
-      const e=moAgg(k,p,EARLIER);
-      t+=`<tr class="ref"><td class="pv">${sLab(EARLIER[0])} to ${sLab(EARLIER[EARLIER.length-1])}, average</td>`+e.slice(0,k==="rain"?7:6).map((q,j)=>{const b=vbin(k,q);return `<td${j===6?' class="tot"':""} style="background:var(--d${b});color:${dInk(b)}" data-tip="<b>${p} | ${j<6?(k==="rain"?R3_LAB[j]:ONDJFM_LAB[j]):"Oct to Mar"}, ${EARLIER.length} seasons ${sLab(EARLIER[0])} to ${sLab(EARLIER[EARLIER.length-1])}</b><br>${devTxt(q)} on average">${devLab(q)}</td>`}).join("")+`</tr>`;
-    }
     t+=`</tbody></table></div></div>`;
     h+=t;
   });
@@ -353,7 +336,7 @@ const r3Span=(j,s)=>{const m=(9+j)%12, y=m>=9?s:s+1, m0=(m+10)%12, y0=m0>m?y-1:y
   $("s-month").hidden=false;
   $("mw-rec").textContent=`Last ${N_RECENT} seasons (${sLab(RECENT[0])} to ${sLab(RECENT[RECENT.length-1])})`;
   $("mw-all").textContent=`Since ${sLab(R0)}`;
-  $("month-sub").textContent=`Rainfall: the three months ending in each month, compared with normal for those months, and the season total in the last column; the driest three-month stretch of each season is outlined. NDVI: the monthly mean compared with normal for that month.`;
+  $("month-sub").textContent=`Rainfall: three-month totals through the season (October to December, then each month to the end of March) against normal for those months, and the season total in the last column. NDVI: each month against normal for that month.`;
   seg("mv","rain",v=>{mo.v=v;drawMonthly()});
   seg("mw","rec",v=>{mo.w=v;drawMonthly()});
 }
@@ -428,7 +411,6 @@ function drawMinis(){
   $("k-lead").textContent=`${FOCUS.length?list(FOCUS)+": ":""}October to March rainfall over the last ${N_RECENT} seasons against the record since ${sLab(RF)}. Nationally ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons was`:`${natBelow} of the last ${N_RECENT} seasons were`} below normal and ${natTen} of the 10 driest seasons on record fall in this period.${recs.length?` ${list(recs)} had ${recs.length===1?"its":"their"} driest season on record in these years.`:""}`;
   seg("kv","rain",v=>{kv.v=v;drawMinis()});
 }
-if(!FOCUS.length)$("rank-box").open=true;
 
 /* ---------- maps ---------- */
 const M=D.maps;
