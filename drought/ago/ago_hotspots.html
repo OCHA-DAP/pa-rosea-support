@@ -595,9 +595,9 @@ function drawMinis(){
   const k=kv.v, V=VAR[k], box=$("kminis");box.innerHTML="";
   const Wd=520, H=132, left=44, right=8, top=14, bh=84, mx=V.half*1.2;
   SIX.forEach(a=>{
-    const aRec=avgDev(k,a,RECENT), aPrev=avgDev(k,a,EARLIER);
+    const aRec=avgDev(k,a,RECENT);
     const d=document.createElement("div");d.className="mini";
-    d.innerHTML=`<h4>${aName(a)}${hzTags(a)}</h4><div class="sub2">Last ${N_RECENT} seasons on average <b>${devTxt(aRec)}</b>; ${sLab(EARLIER[0])} to ${sLab(EARLIER[EARLIER.length-1])}: ${devTxt(aPrev)}</div>`;
+    d.innerHTML=`<h4>${aName(a)}${hzTags(a)}</h4><div class="sub2">Last ${N_RECENT} seasons on average <b>${devTxt(aRec)}</b></div>`;
     const svg=el("svg",{viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`${aName(a)}: ${V.label} against normal, ${sLab(R0)} to ${sLab(RLAST)}`},d);
     const f=k==="rain"?fc(a):null, nslots=RS.length+(f?1:0);
     const cw=(Wd-left-right)/nslots, ymid=top+bh/2, sc=(bh/2)/mx, xr=left+(RECENT[0]-R0)*cw, xf=left+RS.length*cw;
