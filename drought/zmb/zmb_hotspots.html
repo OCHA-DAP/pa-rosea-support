@@ -68,6 +68,7 @@ svg text{font-family:var(--sans);fill:var(--ink2);font-size:11px}
 svg .mono{font-family:var(--mono);font-size:10.5px}
 svg .strong{fill:var(--ink);font-weight:600}
 .maps{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+#kmaps{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
 .map h3{margin-bottom:2px}
 .map .desc{font-size:12.5px;color:var(--ink2);margin:0 0 8px;min-height:2.6em}
 .map svg{width:100%;height:auto}
@@ -173,6 +174,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   <div class="maps" id="kmaps" hidden style="margin-top:20px">
     <div class="panel map"><h3 id="m-rk-h"></h3><p class="desc" id="m-rk-d"></p><div id="map-rk"></div><div class="legend" id="lg-rk"></div></div>
     <div class="panel map"><h3 id="m-ipc2-h"></h3><p class="desc" id="m-ipc2-d"></p><div id="map-ipc2"></div><div class="legend" id="lg-ipc2"></div></div>
+    <div class="panel map"><h3 id="m-fp-h"></h3><p class="desc" id="m-fp-d"></p><div id="map-fp"></div><div class="legend" id="lg-fp"></div></div>
   </div>
   <details class="rank" id="rank-box">
     <summary id="hot-h">How the provinces rank</summary>
@@ -555,6 +557,11 @@ function drawSixMaps(){
   });
   overlay(svg);
   $("lg-ipc2").innerHTML=phLegend([1,2,3,4,5].filter(q=>D.ipc.some(x=>x[0]===rd.id&&x[1]===per&&x[5]===q)))+`<span><i style="background:var(--land)"></i>Not analysed</span>`;
+  const z=ZN.ML2;
+  svg=baseMap("map-fp");svg.setAttribute("aria-label",`FEWS NET projected phase by livelihood zone, ${covLab(z)}`);
+  M.fews.forEach(f=>{const n3=el("path",{d:f[6],class:"u",fill:`var(--p${f[5]})`},svg);hover(n3,`<b>${f[2]}</b><br>${f[1]} province<br>Phase ${f[5]} ${PH[f[5]]}<br>${z.doc}, ${md(z.round)}`)});
+  overlay(svg);
+  $("lg-fp").innerHTML=phLegend([...new Set(M.fews.map(f=>f[5]))].sort());
 }
 function drawIpcChart(){
   const box=$("ipcchart");box.innerHTML="";
@@ -626,6 +633,9 @@ if(FOCUS.length){
   $("m-rk-d").textContent=`How many of the ${N_RECENT} October to March seasons from ${sLab(RECENT[0])} to ${sLab(RLAST)} had less rain than normal. Hover for the seasons and the average shortfall.`;
   {const rd=CUR_ROUNDS[CUR_ROUNDS.length-1];$("m-ipc2-h").textContent=`IPC, ${rd.label}: ${short(rd.nat.C.p3)} people in Crisis (Phase 3) or worse`;
   $("m-ipc2-d").textContent=`Phase by area analysed, ${rd.periods.C.frm} to ${rd.periods.C.to}. The latest IPC analysis of ${C.name}${CUR_ROUNDS.length>1?`; the ${CUR_ROUNDS[0].label} analysis found ${short(CUR_ROUNDS[0].nat.C.p3)}`:""}.`}
+  {const z2=D.maps.fews.filter(z=>z[5]>=3), cp=[...new Set(z2.map(z=>z[1]))].sort();
+  $("m-fp-h").textContent=`FEWS NET projection, ${covLab(ZN.ML2)}`;
+  $("m-fp-d").textContent=`Projected phase by livelihood zone (${ZN.ML2.doc}, ${md(ZN.ML2.round)}).${cp.length?` Crisis expected in ${list(cp)}.`:""}`}
   $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, with the forecast for ${sLab(S5.season)}`;
   const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length, natTen=nat.filter(r=>r[6]<=10).length;
   const recs=FOCUS.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
