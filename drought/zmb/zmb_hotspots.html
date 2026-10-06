@@ -599,8 +599,16 @@ function drawMinis(){
     const d=document.createElement("div");d.className="mini";
     d.innerHTML=`<h4>${aName(a)}${hzTags(a)}</h4><div class="sub2">Last ${N_RECENT} seasons on average <b>${devTxt(aRec)}</b>; ${sLab(EARLIER[0])} to ${sLab(EARLIER[EARLIER.length-1])}: ${devTxt(aPrev)}</div>`;
     const svg=el("svg",{viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`${aName(a)}: ${V.label} against normal, ${sLab(R0)} to ${sLab(RLAST)}`},d);
-    const cw=(Wd-left-right)/RS.length, ymid=top+bh/2, sc=(bh/2)/mx, xr=left+(RECENT[0]-R0)*cw;
-    el("rect",{x:xr,y:top-4,width:Wd-right-xr,height:bh+8,fill:"var(--accent)",opacity:.09,rx:2},svg);
+    const f=k==="rain"?fc(a):null, nslots=RS.length+(f?1:0);
+    const cw=(Wd-left-right)/nslots, ymid=top+bh/2, sc=(bh/2)/mx, xr=left+(RECENT[0]-R0)*cw, xf=left+RS.length*cw;
+    el("rect",{x:xr,y:top-4,width:(f?xf:Wd-right)-xr,height:bh+8,fill:"var(--accent)",opacity:.09,rx:2},svg);
+    if(f){const dv=Math.max(-mx,Math.min(mx,f[4]-1)), h=Math.abs(dv)*sc, b=vbin("rain",f[4]);
+      el("line",{x1:xf,x2:xf,y1:top-4,y2:top+bh+4,stroke:"var(--rule)","stroke-dasharray":"3 3"},svg);
+      el("rect",{x:xf+2,y:dv<0?ymid:ymid-h,width:Math.max(cw-4,1),height:Math.max(h,1.2),fill:`var(--d${b})`,opacity:.55,stroke:"var(--ink)","stroke-dasharray":"3 2",rx:1},svg);
+      txt(svg,xf+cw/2,dv<0?ymid+h+9:ymid-h-3,devLab(f[4]),{"text-anchor":"middle",class:"mono",style:"font-size:7.5px"});
+      txt(svg,xf+cw/2,H-4,sLab2(S5.season),{"text-anchor":"middle",class:"mono strong",style:"font-size:8.5px"});
+      txt(svg,xf+cw/2,H-12,"forecast",{"text-anchor":"middle",style:"font-size:7px"});
+      hover(el("rect",{x:xf,y:top-4,width:cw,height:bh+8,fill:"transparent"},svg),fcTip(a,f))}
     [[mx*0.8,devLab(1+mx*0.8)],[0,"normal"],[-mx*0.8,devLab(1-mx*0.8)]].forEach(([t,l])=>{const y=ymid-t*sc;el("line",{x1:left,x2:Wd-right,y1:y,y2:y,stroke:t?"var(--rule2)":"var(--ink2)","stroke-dasharray":t?"":"3 3"},svg);txt(svg,left-4,y+3.5,l,{"text-anchor":"end",class:"mono",style:"font-size:9px"})});
     RS.forEach((s,i)=>{const r=W[`${k}|${a}|${s}`], dv=Math.max(-mx,Math.min(mx,r[5]-1)), h=Math.abs(dv)*sc, x=left+i*cw, b=vbin(k,r[5]);
       el("rect",{x:x+2,y:dv<0?ymid:ymid-h,width:Math.max(cw-4,1),height:Math.max(h,1.2),fill:`var(--d${b})`,rx:1},svg);
@@ -609,7 +617,7 @@ function drawMinis(){
     RS.forEach((s,i)=>{if(i%2===0||s===RLAST)txt(svg,left+i*cw+cw/2,H-4,sLab2(s),{"text-anchor":"middle",class:s>=RECENT[0]?"mono strong":"mono",style:"font-size:8.5px"})});
     box.appendChild(d);
   });
-  $("kminis-lg").innerHTML=`<span class="grp">${V.label}</span>`+vLegend(k)+`<span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span>`;
+  $("kminis-lg").innerHTML=`<span class="grp">${V.label}</span>`+vLegend(k)+`<span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span>`+(k==="rain"?`<span><i style="background:var(--d3);border:1px dashed var(--ink);opacity:.8"></i>SEAS5 forecast ${fcLab}, against the model's own ${S5.ref[0]} to ${S5.ref[1]} September forecasts</span>`:"");
 }
 if(FOCUS.length){
   $("s-six").hidden=false;$("kmaps").hidden=false;$("kminis-wrap").hidden=false;
@@ -620,7 +628,7 @@ if(FOCUS.length){
   $("m-rk-d").textContent=`For each province, where its driest season of ${sLab(RECENT[0])} to ${sLab(RLAST)} ranks among all ${ALLS.length} October to March seasons on record.`;
   {const rd=CUR_ROUNDS[CUR_ROUNDS.length-1];$("m-ipc2-h").textContent=`IPC, ${rd.label}: ${short(rd.nat.C.p3)} people in Crisis (Phase 3) or worse`;
   $("m-ipc2-d").textContent=`Phase by area analysed, ${rd.periods.C.frm} to ${rd.periods.C.to}. The latest IPC analysis of ${C.name}${CUR_ROUNDS.length>1?`; the ${CUR_ROUNDS[0].label} analysis found ${short(CUR_ROUNDS[0].nat.C.p3)}`:""}.`}
-  $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, ${C.name} and the provinces of interest`;
+  $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, with the forecast for ${sLab(S5.season)}`;
   const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length, natTen=nat.filter(r=>r[6]<=10).length;
   const recs=FOCUS.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
   $("k-lead").textContent=`${list(FOCUS)}: October to March rainfall over the last ${N_RECENT} seasons against the record since ${sLab(RF)}. Nationally ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons`:`${natBelow} of the last ${N_RECENT} seasons`} was below normal and ${natTen} of the 10 driest seasons on record fall in this period.${recs.length?` ${list(recs)} had their driest season on record in these years.`:""}`;
