@@ -614,7 +614,7 @@ function drawMinis(){
       el("rect",{x:x+2,y:dv<0?ymid:ymid-h,width:Math.max(cw-4,1),height:Math.max(h,1.2),fill:`var(--d${b})`,rx:1},svg);
       txt(svg,x+cw/2,dv<0?ymid+h+9:ymid-h-3,devLab(r[5]),{"text-anchor":"middle",class:"mono",style:"font-size:7.5px"});
       hover(el("rect",{x,y:top-4,width:cw,height:bh+8,fill:"transparent"},svg),`<b>${aName(a)} | ${sLab(s)}</b><br>${V.label}: ${V.val(r)}<br>${devTxt(r[5])}, ${r[6]===1?V.low+" on record":ord(r[6])+" "+V.low} of ${WM[k].n} seasons since ${sLab(WM[k].first)}`)});
-    RS.forEach((s,i)=>{if(i%2===0||s===RLAST)txt(svg,left+i*cw+cw/2,H-4,sLab2(s),{"text-anchor":"middle",class:s>=RECENT[0]?"mono strong":"mono",style:"font-size:8.5px"})});
+    RS.forEach((s,i)=>{if(i%2===0||(s===RLAST&&!f))txt(svg,left+i*cw+cw/2,H-4,sLab2(s),{"text-anchor":"middle",class:s>=RECENT[0]?"mono strong":"mono",style:"font-size:8.5px"})});
     box.appendChild(d);
   });
   $("kminis-lg").innerHTML=`<span class="grp">${V.label}</span>`+vLegend(k)+`<span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span>`+(k==="rain"?`<span><i style="background:var(--d3);border:1px dashed var(--ink);opacity:.8"></i>SEAS5 forecast ${fcLab}, against the model's own ${S5.ref[0]} to ${S5.ref[1]} September forecasts</span>`:"");
