@@ -5,7 +5,7 @@ Pulls every source fresh, cross-checks them, and fills template.html.
 Sources
 - FEWS NET Data Warehouse: ipcphase.csv, ipcphase JSON (cross-check), ipcpackage shapefiles
 - IPC API (analyses, areas, population; needs IPC_API_KEY) and the HDX IPC country files (cross-check)
-- WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by admin 1 (seasonal and monthly)
+- WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by admin 1 (monthly; seasonal = Oct-Mar rainfall total, March NDVI)
 - HDX COD-AB boundaries (maps, area-to-province lookup)
 - SEAS5 seasonal rainfall forecast, ensemble-mean monthly COGs on the team raster store (needs DSCI_AZ_BLOB_PROD_SAS)
 
@@ -174,13 +174,19 @@ class Country:
         js = pd.DataFrame(rows)
         k = ["fnid", "scenario_name", "projection_start", "reporting_date"]
         m = csv[k + ["value"]].merge(js[k + ["value"]], on=k, how="outer", suffixes=("_csv", "_json"), indicator=True)
-        # the CSV can run ahead of the JSON endpoint by a report being published; only such newer rows may differ
-        newer = m[(m["_merge"] == "left_only") & (m["reporting_date"] > js["reporting_date"].max())]
-        if len(newer):
-            note(f"FEWS NET {self.name}: {len(newer)} CSV record(s) dated {sorted(set(newer['reporting_date']))} not yet in the JSON endpoint (latest {js['reporting_date'].max()}); kept")
+        # While a report is being published, one endpoint can carry its rows before the other. Rows in only one
+        # source are accepted when they belong to the latest report; the record used is the union of the two.
+        latest = max(csv["reporting_date"].max(), js["reporting_date"].max())
+        one = m[m["_merge"] != "both"]
+        check((one["reporting_date"] == latest).all(), f"FEWS NET {self.name}: CSV and JSON differ only for the latest report ({latest})")
         both = m[m["_merge"] == "both"]
-        check(len(both) + len(newer) == len(m), f"FEWS NET {self.name}: CSV and JSON have the same {len(both)} records (plus {len(newer)} newer CSV rows)")
-        check(((both["value_csv"] == both["value_json"]) | (both["value_csv"].isna() & both["value_json"].isna())).all(), f"FEWS NET {self.name}: CSV and JSON phases identical")
+        check(((both["value_csv"] == both["value_json"]) | (both["value_csv"].isna() & both["value_json"].isna())).all(), f"FEWS NET {self.name}: CSV and JSON phases identical for the {len(both)} shared records")
+        if len(one):
+            src = {"left_only": "CSV", "right_only": "JSON"}
+            note(f"FEWS NET {self.name}: {latest} report partly published: " + "; ".join(f"{n} records only in the {src[w]} endpoint" for w, n in one["_merge"].value_counts().items() if n) + "; the union is used")
+            extra = js.merge(one[one["_merge"] == "right_only"][k], on=k)
+            csv = pd.concat([csv, extra[csv.columns]], ignore_index=True)
+        check(not csv.duplicated(k).any(), f"FEWS NET {self.name}: {len(csv)} records, one per unit, scenario, period and report")
         check((csv["data_usage_policy"] == "Public").all(), f"FEWS NET {self.name}: all rows public")
         csv["sc"] = csv["scenario_name"].str.strip()
         # document labels: keep the type, drop the country suffix; FDW files some reports under another country's name
@@ -482,7 +488,9 @@ class Country:
             mo["area"] = mo["PCODE"].map(lambda p: names.get(p, "_national"))
             mo["var"] = var
             monthly.append(mo)
-            s = d.groupby(["PCODE", "season"]).agg(v=(val, agg), n=(avg, agg), px=("n_pixels", "first")).reset_index()
+            # seasonal indicator: rainfall total over October to March; NDVI at the end of the season (March mean)
+            ds = d if var == "rain" else d[d["month"] == 3]
+            s = ds.groupby(["PCODE", "season"]).agg(v=(val, agg), n=(avg, agg), px=("n_pixels", "first")).reset_index()
             nat = s.assign(wv=s.v * s.px, wn=s.n * s.px).groupby("season").agg(wv=("wv", "sum"), wn=("wn", "sum"), px=("px", "sum")).reset_index()
             nat = nat.assign(PCODE="_national", v=nat.wv / nat.px, n=nat.wn / nat.px)[["PCODE", "season", "v", "n", "px"]]
             s = pd.concat([s, nat], ignore_index=True)
@@ -506,12 +514,13 @@ class Country:
         self.wfp = pd.concat(out, ignore_index=True)
         self.wfp_meta = meta
         mo = pd.concat(monthly, ignore_index=True)
-        # the six monthly values add up to (rainfall) or average to (NDVI) the seasonal value
-        chk = mo.groupby(["var", "area", "season"]).agg(v=("v", "sum"), n=("n", "sum"), k=("v", "size")).reset_index()
+        # the six monthly rainfall values add up to the seasonal total; the March NDVI value is the seasonal NDVI value
+        check((mo.groupby(["var", "area", "season"]).size() == 6).all(), f"WFP {self.name}: six monthly values for every area and season since {FIRST_SEASON}")
+        chk = mo[mo["var"] == "rain"].groupby(["area", "season"]).agg(v=("v", "sum"), n=("n", "sum")).reset_index().assign(var="rain")
+        chk = pd.concat([chk, mo[(mo["var"] == "ndvi") & (mo["month"] == 3)][["var", "area", "season", "v", "n"]]], ignore_index=True)
         chk = chk.merge(self.wfp[["var", "area", "season", "v", "n"]], on=["var", "area", "season"], suffixes=("_m", ""))
-        chk["f"] = chk["var"].map({"rain": 1, "ndvi": 6})
-        check((chk["k"] == 6).all() and ((chk["v_m"] / chk["f"] - chk["v"]).abs() < 1e-6).all() and ((chk["n_m"] / chk["f"] - chk["n"]).abs() < 1e-6).all(),
-              f"WFP {self.name}: monthly values agree with the seasonal totals for every area and season since {FIRST_SEASON}/{FIRST_SEASON + 1 - 2000}")
+        check(len(chk) == len(mo) / 6 and ((chk["v_m"] - chk["v"]).abs() < 1e-6).all() and ((chk["n_m"] - chk["n"]).abs() < 1e-6).all(),
+              f"WFP {self.name}: monthly rainfall adds up to the seasonal total and March NDVI equals the seasonal NDVI value, every area and season since {FIRST_SEASON}")
         self.wfp_monthly = mo
 
     # ------------------------------------------------------------ SEAS5 rainfall forecast (Oct-Mar)
