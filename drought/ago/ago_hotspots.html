@@ -108,6 +108,25 @@ table.mo{min-width:0;width:100%;border-spacing:2px}
 .mo tr.ref td.pv{color:var(--ink2);font-weight:400;font-size:12px;white-space:normal}
 .mo td.hd{text-align:left;color:var(--muted);font:500 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;height:auto;padding-top:6px}
 .mline{font-size:13px;color:var(--ink2);margin:8px 0 0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px;margin:0 0 16px}
+.stat{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:12px 14px}
+.stat b{display:block;font:600 30px/1.1 var(--sans);font-variant-numeric:tabular-nums;color:var(--ink);margin:2px 0 4px}
+.stat span{color:var(--ink2);font-size:12.5px;line-height:1.4;display:block}
+.stat .src{font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.mini{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:12px 14px 8px}
+.mini h4{margin:0;font:600 14px var(--sans);color:var(--ink)}
+.mini .sub2{font-size:12px;color:var(--ink2);margin:2px 0 6px}
+.mini svg{width:100%;height:auto}
+details.sec{margin-top:28px;border-top:1px solid var(--rule);padding-top:10px}
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::before{content:'+';font:500 18px var(--mono);color:var(--accent);width:18px}
+details.sec[open]>summary::before{content:'−'}
+details.sec>summary h2{margin:0}
+details.sec>summary .hint{font-size:13px;color:var(--muted);margin-left:auto}
+details.sec>.body{margin-top:12px}
+details.rank{margin-top:16px}details.rank summary{cursor:pointer;font:600 14px var(--sans)}
 .panel .desc{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
 .ipc{display:grid;gap:22px}
 details summary{cursor:pointer;list-style-position:outside}
@@ -146,17 +165,32 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 
 <section class="glance" aria-labelledby="h-glance">
   <h2 id="h-glance">Summary</h2>
-  <h3 id="hot-h">Provinces most frequently affected</h3>
-  <p class="small" id="hot-lead" style="margin:0 0 8px"></p>
-  <div class="scroll"><table class="mx hot" id="hot"></table></div>
-  <p class="small" id="hot-note" style="margin:8px 0 0"></p>
-  <h3 style="margin-top:16px">Latest</h3>
-  <dl id="now"></dl>
+  <p class="small" id="k-lead" style="margin:0 0 12px"></p>
+  <div class="stats" id="kstats" hidden></div>
+  <div class="maps" id="kmaps" hidden>
+    <div class="panel map"><h3 id="m-def-h"></h3><p class="desc" id="m-def-d"></p><div id="map-def"></div><div class="legend" id="lg-def"></div></div>
+    <div class="panel map"><h3 id="m-dry-h"></h3><p class="desc" id="m-dry-d"></p><div id="map-dry"></div><div class="legend" id="lg-dry"></div></div>
+  </div>
+  <div id="kminis-wrap" hidden>
+    <h3 style="margin-top:18px" id="kminis-h"></h3>
+    <p class="small" id="kminis-sub" style="margin:0 0 10px"></p>
+    <div class="minis" id="kminis"></div>
+    <div class="legend" id="kminis-lg"></div>
+  </div>
+  <details class="rank" id="rank-box">
+    <summary id="hot-h">How the provinces rank</summary>
+    <p class="small" id="hot-lead" style="margin:8px 0 8px"></p>
+    <div class="scroll"><table class="mx hot" id="hot"></table></div>
+    <p class="small" id="hot-note" style="margin:8px 0 0"></p>
+    <h3 style="margin-top:16px">Latest</h3>
+    <dl id="now"></dl>
+  </details>
   <nav class="nav" aria-label="Sections" id="nav"></nav>
 </section>
 
-<section aria-labelledby="h-rain">
-  <h2 id="h-rain">October to March seasons</h2>
+<details class="sec" id="d-rain" open>
+  <summary><h2 id="h-rain">October to March seasons</h2><span class="hint">rainfall, NDVI, IPC and FEWS NET by season</span></summary>
+  <div class="body">
   <p class="sub" id="rain-sub"></p>
   <div class="controls"><label class="clabel" for="rarea">Area</label><select id="rarea"></select></div>
   <div class="panel scroll"><div id="rchart"></div><div class="legend" id="rlegend"></div></div>
@@ -164,25 +198,25 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   <p class="small" style="margin:0 0 10px">One row per province, one cell per season: rainfall total or end-of-season (March) NDVI. Brown: below normal; green: above. Click a row to show it in the chart above.</p>
   <div class="controls"><div><span class="clabel">Show</span><span class="seg" id="rds"><button type="button" id="rds-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="rds-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div><div id="rpv-wrap" hidden><span class="clabel">Provinces</span><span class="seg" id="rpv"><button type="button" id="rpv-f" data-v="focus" aria-pressed="true">Of interest</button><button type="button" id="rpv-a" data-v="all" aria-pressed="false"></button></span></div></div>
   <div class="panel scroll"><div id="rheat"></div><div class="legend" id="rhlegend"></div></div>
-</section>
-
-<section aria-labelledby="h-six" id="s-six" hidden>
-  <h2 id="h-six"></h2>
-  <p class="sub" id="six-sub"></p>
-  <div class="maps">
-    <div class="panel map"><h3 id="m-def-h"></h3><p class="desc" id="m-def-d"></p><div id="map-def"></div><div class="legend" id="lg-def"></div></div>
-    <div class="panel map"><h3 id="m-dry-h"></h3><p class="desc" id="m-dry-d"></p><div id="map-dry"></div><div class="legend" id="lg-dry"></div></div>
   </div>
-  <h3 style="margin-top:24px" id="six-h"></h3>
+</details>
+
+<details class="sec" id="s-six" hidden>
+  <summary><h2 id="h-six"></h2><span class="hint">every season since 1981/82, IPC and FEWS NET</span></summary>
+  <div class="body">
+  <p class="sub" id="six-sub"></p>
+  <h3 id="six-h"></h3>
   <div class="panel scroll"><div id="record"></div><div class="legend" id="rlg"></div></div>
   <div class="maps" style="margin-top:14px">
     <div class="panel"><h3 id="ipc-c-h">IPC</h3><p class="desc" id="ipc-c-d"></p><div class="scroll" id="ipcchart"></div></div>
     <div class="panel"><h3>FEWS NET</h3><p class="desc" id="fews-c-d"></p><div class="scroll" id="fewschart"></div><div class="legend" id="lg-fc"></div></div>
   </div>
-</section>
+  </div>
+</details>
 
-<section aria-labelledby="h-month" id="s-month" hidden>
-  <h2 id="h-month">Month by month</h2>
+<details class="sec" id="s-month" hidden>
+  <summary><h2 id="h-month">Month by month</h2><span class="hint">three-month rainfall and monthly NDVI</span></summary>
+  <div class="body">
   <p class="sub" id="month-sub"></p>
   <div class="controls">
     <div><span class="clabel">Show</span><span class="seg" id="mv"><button type="button" id="mv-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="mv-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
@@ -190,10 +224,12 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   </div>
   <div class="mgrid" id="mgrid"></div>
   <div class="legend" id="mlegend"></div>
-</section>
+  </div>
+</details>
 
-<section aria-labelledby="h-where">
-  <h2 id="h-where">Maps</h2>
+<details class="sec" id="d-where">
+  <summary><h2 id="h-where">Maps</h2><span class="hint">IPC areas and FEWS NET livelihood zones</span></summary>
+  <div class="body">
   <div class="maps">
     <div class="panel map">
       <h3>IPC area classification</h3>
@@ -209,10 +245,12 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
     </div>
   </div>
   <p class="small" id="map-note" style="margin-top:10px"></p>
-</section>
+  </div>
+</details>
 
-<section aria-labelledby="h-mx">
-  <h2 id="h-mx">Province detail</h2>
+<details class="sec" id="d-mx">
+  <summary><h2 id="h-mx">Province detail</h2><span class="hint">recent IPC analyses and FEWS NET by province</span></summary>
+  <div class="body">
   <p class="sub">Share in Phase 3+ in the recent IPC analyses, and the current and projected FEWS NET phase, by province.</p>
   <div class="panel scroll"><table class="mx" id="mx"></table>
     <div class="legend"><span class="grp">IPC share</span><span id="mxseq" style="display:contents"></span>
@@ -220,19 +258,22 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
       <span><i class="hatch"></i>Not analysed</span></div>
   </div>
   <p class="small" style="margin-top:10px" id="mx-note"></p>
-</section>
+  </div>
+</details>
 
-<section aria-labelledby="h-ipc">
-  <h2 id="h-ipc">IPC by area</h2>
+<details class="sec" id="d-ipc">
+  <summary><h2 id="h-ipc">IPC by area</h2><span class="hint">Phase 3+ share by municipality</span></summary>
+  <div class="body">
   <p class="sub">Share of the population in Crisis (Phase 3) or worse by area: bar for the current period (Emergency in red), tick for the projection.</p>
   <div class="controls"><label class="clabel" for="ipcr">Analysis</label><select id="ipcr"></select></div>
   <div class="panel"><div class="ipc" id="ipc"></div></div>
-</section>
+  </div>
+</details>
 
-<section aria-labelledby="h-src">
-  <h2 id="h-src">Sources</h2>
-  <ul class="notes" id="src"></ul>
-</section>
+<details class="sec" id="d-src">
+  <summary><h2 id="h-src">Sources</h2><span class="hint">data, definitions and known issues</span></summary>
+  <div class="body"><ul class="notes" id="src"></ul></div>
+</details>
 
 <footer>OCHA Centre for Humanitarian Data | Data Science team | <span class="email">ocha-datascience@un.org</span></footer>
 </div>
@@ -543,16 +584,57 @@ function drawFewsChart(){
   $("fews-c-d").textContent=`Highest phase in the country each report month. Crisis or worse in ${cr} of ${fm.length} months.`;
   $("lg-fc").innerHTML=phLegend([...new Set(fm.map(r=>r[2]))].sort())+`<span><i style="border:1px solid var(--rule)"></i>No report</span>`;
 }
+function drawMinis(){
+  const box=$("kminis");box.innerHTML="";
+  const Wd=300, H=96, left=34, right=6, top=8, bh=60, mx=0.6;
+  SIX.forEach(a=>{
+    const rows=RS.map(s=>W[`rain|${a}|${s}`]), inTen=ALLS.map(s=>W[`rain|${a}|${s}`]).filter(r=>r[6]<=10&&r[2]>=RECENT[0]).length;
+    const below=RECENT.filter(s=>W[`rain|${a}|${s}`][5]<1).length;
+    const d=document.createElement("div");d.className="mini";
+    d.innerHTML=`<h4>${aName(a)}${hzTags(a)}</h4><div class="sub2">${below} of the last ${N_RECENT} seasons below normal; ${inTen} of the 10 driest since ${sLab(RF)}</div>`;
+    const svg=el("svg",{viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`${aName(a)}: October to March rainfall against normal, ${sLab(R0)} to ${sLab(RLAST)}`},d);
+    const cw=(Wd-left-right)/RS.length, ymid=top+bh/2, sc=(bh/2)/mx, xr=left+(RECENT[0]-R0)*cw;
+    el("rect",{x:xr,y:top-4,width:Wd-right-xr,height:bh+8,fill:"var(--accent)",opacity:.09,rx:2},svg);
+    [[0.5,"+50%"],[0,"normal"],[-0.5,"−50%"]].forEach(([t,l])=>{const y=ymid-t*sc;el("line",{x1:left,x2:Wd-right,y1:y,y2:y,stroke:t?"var(--rule2)":"var(--ink2)","stroke-dasharray":t?"":"3 3"},svg);txt(svg,left-4,y+3.5,l,{"text-anchor":"end",class:"mono",style:"font-size:8.5px"})});
+    rows.forEach((r,i)=>{const dv=Math.max(-mx,Math.min(mx,r[5]-1)), h=Math.abs(dv)*sc, x=left+i*cw, b=vbin("rain",r[5]);
+      el("rect",{x:x+1,y:dv<0?ymid:ymid-h,width:Math.max(cw-2,1),height:Math.max(h,1),fill:dv<0?`var(--d${b})`:"var(--d5)",rx:1},svg);
+      hover(el("rect",{x,y:top-4,width:cw,height:bh+8,fill:"transparent"},svg),`<b>${aName(a)} | Oct ${r[2]} to Mar ${r[2]+1}</b><br>${fmt(r[3])} mm, ${devTxt(r[5])}<br>${rankTxt(r[6])} of ${ALLS.length} seasons since ${sLab(RF)}`)});
+    txt(svg,left+cw/2,H-4,"’"+String(R0).slice(2),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
+    txt(svg,xr+cw/2,H-4,"’"+String(RECENT[0]).slice(2),{"text-anchor":"middle",class:"mono strong",style:"font-size:8.5px"});
+    txt(svg,left+(RS.length-0.5)*cw,H-4,"’"+String(RLAST).slice(2),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
+    box.appendChild(d);
+  });
+  $("kminis-lg").innerHTML=`<span class="grp">Rainfall</span>`+vLegend("rain").replace(/<span><i style="background:var\(--d[456]\)"><\/i>[^<]*<\/span>/g,"")+`<span><i style="background:var(--d5)"></i>above normal</span><span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span>`;
+}
 if(FOCUS.length){
-  $("s-six").hidden=false;
-  $("h-six").textContent=`The last ${N_RECENT} seasons, ${sLab(RECENT[0])} to ${sLab(RLAST)}`;
-  $("six-sub").textContent=`October to March rainfall over the last ${N_RECENT} seasons against normal and against the record since ${sLab(RF)}, with the IPC and FEWS NET classifications of the same years.`;
+  $("s-six").hidden=false;$("kstats").hidden=false;$("kmaps").hidden=false;$("kminis-wrap").hidden=false;
+  $("h-six").textContent=`The last ${N_RECENT} seasons in the record since ${sLab(RF)}`;
+  $("six-sub").textContent=`Every October to March season since ${sLab(RF)}, with the last ${N_RECENT} shaded, then IPC and FEWS NET over the same years.`;
   $("m-def-h").textContent=`Rainfall, October ${RECENT[0]} to March ${RLAST+1}`;
   $("m-def-d").textContent=`Total over the ${N_RECENT} seasons compared with ${N_RECENT} normal seasons.`;
   $("m-dry-h").textContent=`Seasons ${thrTxt(THR.dry)}`;
   $("m-dry-d").textContent=`Number of the last ${N_RECENT} seasons with October to March rainfall ${thrTxt(THR.dry)}.`;
   $("six-h").textContent=`Every October to March season since ${sLab(RF)}`;
+  $("kminis-h").textContent=`October to March rainfall against normal, ${sLab(R0)} to ${sLab(RLAST)}`;
+  $("kminis-sub").textContent=`One bar per season; the last ${N_RECENT} seasons are shaded. Hover over a bar for the season.`;
+  // headline figures
+  const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length;
+  const natTen=ALLS.map(s=>W[`rain|${NAT}|${s}`]).filter(r=>r[6]<=10&&r[2]>=RECENT[0]).length;
+  const fmN=Object.values(FM[NAT]||{}), fCr=fmN.filter(r=>r[2]>=3).length;
+  const firstR=CUR_ROUNDS[0], lastR=CUR_ROUNDS[CUR_ROUNDS.length-1];
+  const z2=D.maps.fews.filter(z=>z[5]>=3), crisisF=FOCUS.filter(p=>z2.some(z=>z[1]===p));
+  const recs=FOCUS.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
+  const tile=(src,big,t)=>`<div class="stat"><div class="src">${src}</div><b>${big}</b><span>${t}</span></div>`;
+  $("kstats").innerHTML=
+    tile("Rainfall",`${natBelow} of ${N_RECENT}`,`of the last ${N_RECENT} seasons below normal nationally (${sLab(RECENT[0])} to ${sLab(RLAST)})`)
+   +tile("Rainfall",`${natTen} of 10`,`of the driest seasons since ${sLab(RF)} fell in these ${N_RECENT} years`)
+   +(recs.length?tile("Rainfall",`${recs.length} of ${FOCUS.length}`,`provinces of interest had their driest season on record in these ${N_RECENT} years (${list(recs)})`):"")
+   +tile("IPC",short(lastR.nat.C.p3),`people in Crisis or worse, ${lastR.label}${CUR_ROUNDS.length>1?`, ${(lastR.nat.C.p3/firstR.nat.C.p3).toFixed(1)} times ${firstR.label}`:""}; no analysis since`)
+   +tile("FEWS NET",`${fCr} of ${fmN.length}`,`report months since ${md(fmN[0][0])} with part of ${C.name} at Crisis`)
+   +tile("FEWS NET",`${crisisF.length} of ${FOCUS.length}`,`provinces of interest projected at Crisis, ${covLab(ZN.ML2)}`);
+  $("k-lead").textContent=`${list(FOCUS)}: how the last ${N_RECENT} October to March seasons compare with normal and with the record, and what IPC and FEWS NET have reported.`;
 }
+if(!FOCUS.length){$("rank-box").open=true;$("k-lead").textContent=`Provinces ranked by how often rainfall, vegetation, IPC and FEWS NET have reported them as affected.`}
 
 /* ---------- maps ---------- */
 const M=D.maps;
@@ -706,7 +788,7 @@ drawIpcBars();
   $("hot").querySelectorAll("[data-tip]").forEach(td=>hover(td,td.dataset.tip));
   const noteBase=`Rank: average position across the columns with data; the two projection columns are not ranked. Hover over a heading for its definition.`;
   if(FOCUS.length){
-    $("hot-h").textContent="Provinces of interest";
+    $("hot-h").textContent=`How the ${PROVS.length} provinces rank`;
     const fr=rows.filter(r=>isF(r.p));
     $("hot-lead").textContent=`Rank among the ${PROVS.length} provinces, by how often rainfall, vegetation, IPC and FEWS NET have reported them as affected: ${list(fr.map(r=>`${r.p} ${ord(r.rank)}`))}.`;
     $("hot-note").innerHTML=`${noteBase} <button type="button" class="linkbtn" id="hot-more">Show all ${PROVS.length} provinces</button>`;
@@ -728,10 +810,12 @@ drawIpcBars();
      return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${devTxt(n[4]).replace("normal","the model's normal")} nationally, ${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts.${lows.length?` ${thrTxt(THR.dry).replace(/^m/,"M")} in ${lows.length>5?`${lows.length} provinces, lowest `:""}${list(lows.slice(0,5).map(r=>`${r[0]} (${devLab(r[4])})`))}.`:` Lowest: ${list(FOCUS.length?FOCUS.map(p=>fc(p)).filter(Boolean).sort((a,b)=>a[4]-b[4]).slice(0,3).map(r=>`${r[0]} (${devLab(r[4])})`):PROVS.map(p=>fc(p)).filter(Boolean).sort((a,b)=>a[4]-b[4]).slice(0,3).map(r=>`${r[0]} (${devLab(r[4])})`))}.`}`})()}</dd>
    <dt>IPC</dt><dd>${ipcLine}</dd>
    <dt>FEWS NET</dt><dd>${z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`}</dd>`;
-  $("nav").innerHTML=`<a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-six">Last ${N_RECENT} seasons</a><a href="#h-month">Month by month</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
+  $("nav").innerHTML=`<span class="clabel">Detail</span><a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-six">Record since ${sLab(WM.rain.first)}</a><a href="#h-month">Month by month</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
+  document.querySelectorAll("#nav a").forEach(x=>x.addEventListener("click",()=>{const t=document.querySelector(x.getAttribute("href"));const d=t&&t.closest("details");if(d)d.open=true}));
 })();
 
-function drawAll(){drawRain();drawRainHeat();drawMonthly();if(FOCUS.length){drawRecord();drawSixMaps();drawIpcChart();drawFewsChart()}}
+function drawAll(){drawRain();drawRainHeat();drawMonthly();if(FOCUS.length){drawRecord();drawSixMaps();drawIpcChart();drawFewsChart();drawMinis()}}
+document.querySelectorAll("details.sec").forEach(d=>d.addEventListener("toggle",()=>{if(d.open)drawAll()}));
 drawAll();
 let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(drawAll,120)});
 </script>
