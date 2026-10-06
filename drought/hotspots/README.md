@@ -13,8 +13,9 @@ One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 - October to March rainfall totals and end-of-season NDVI (the March mean) for every season since 2010/11,
   national and by province, as % above or below WFP's long-term average (normal), lined up with the IPC
   analyses and FEWS NET's monthly phase
-- for the provinces of interest, rainfall and NDVI month by month (October to March) for the last six
-  seasons, with the 2010/11 to 2019/20 average for comparison, or for every season since 2010/11
+- for the provinces of interest, month by month for the last six seasons (or every season since 2010/11),
+  with the 2010/11 to 2019/20 average for comparison: WFP's rolling three-month rainfall total to the end of
+  each month (Aug to Oct through Jan to Mar) and the monthly mean NDVI, each against its normal
 - maps of IPC area phases (any analysis, current or projection) and FEWS NET livelihood-zone phases
 - a province-by-province table of recent IPC analyses and the FEWS NET classification
 - IPC Phase 3+ shares by area for each analysis
@@ -63,8 +64,9 @@ current provinces (Angola has had 21 provinces since September 2024; the sources
 - Angola 2019 IPC areas are communes; they are placed with the parent municipality from HDX.
 - WFP: province PCODEs match COD, the long-term averages equal the dekadal mean over the documented
   reference periods (rainfall 1989-01-01 to 2018-12-31, NDVI 2002-07-01 to 2018-07-01), and every season
-  used is complete and final, the monthly rainfall values add up to the seasonal total and the March NDVI value
-  equals the seasonal NDVI value. WFP's province units differ from COD for Bengo and Luanda (Angola) and for
+  used is complete and final, WFP's three-month rainfall total (`r3h`) equals the nine-dekad sum, the Oct to Dec
+  and Jan to Mar three-month totals add up to the seasonal total, and the March NDVI value equals the seasonal
+  NDVI value. WFP's province units differ from COD for Bengo and Luanda (Angola) and for
   Eastern, Muchinga and Southern (Zambia); together they match.
 - SEAS5: every September issue since 1981 has lead times 1 to 6; each COG's tags say mm/day and the expected
   valid month. The forecast is compared with the model's own 1991 to 2020 September forecasts, not with
