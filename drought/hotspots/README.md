@@ -3,22 +3,14 @@
 One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
-- a summary. Where the country entry lists provinces of interest (`focus`): a map of how the driest of the last
-  six seasons ranks in each province's record since 1981/82, the IPC area map of the latest analysis, and one small chart per province of every season since 2010/11 (rainfall or NDVI);
-  then, folded, the ranking table
-  (average rainfall and NDVI deviation over the last six seasons, IPC Phase 3+ share, FEWS NET Crisis months,
-  the SEAS5 forecast and FEWS NET projection) and the current situation in four lines. Without `focus`, the
-  ranking table is shown open
-- for the provinces of interest, a "last six seasons" section: maps of rainfall over the six seasons against
-  normal and of the number of dry seasons, every season since 1981/82 sorted driest to wettest with the last
-  six marked, IPC Phase 3+ by analysis and the FEWS NET national phase by month
-- October to March rainfall totals and end-of-season NDVI (the March mean) for every season since 2010/11,
-  national and by province, as % above or below WFP's long-term average (normal), lined up with the IPC
-  analyses and FEWS NET's monthly phase
-- for the provinces of interest, month by month for the last six seasons (or every season since 2010/11),
-  with the 2010/11 to 2019/20 average for comparison: WFP's rolling three-month rainfall total to the end of
-  each month (Aug to Oct through Jan to Mar) and the monthly mean NDVI, each against its normal
-- maps of IPC area phases (any analysis, current or projection) and FEWS NET livelihood-zone phases
+- a summary: one small chart per province (provinces of interest where set, otherwise every province) of every
+  October to March season since 2010/11 against normal, with the SEAS5 forecast for the coming season and a
+  rainfall/NDVI toggle; three maps (seasons below normal in the last six, the latest IPC projection by area,
+  the FEWS NET projection by livelihood zone); then, folded, the ranking table (average rainfall and NDVI
+  deviation over the last six seasons, IPC Phase 3+ share, FEWS NET Crisis months, the SEAS5 forecast and
+  FEWS NET projection) and the current situation in four lines
+- month by month: WFP's rolling three-month rainfall total to the end of each month (Aug to Oct through Jan to
+  Mar) and the monthly mean NDVI, each against normal, for the last six seasons or every season since 2010/11
 - a province-by-province table of recent IPC analyses and the FEWS NET classification
 - IPC Phase 3+ shares by area for each analysis
 
