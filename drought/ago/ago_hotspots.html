@@ -172,7 +172,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   </div>
   <div class="maps" id="kmaps" hidden style="margin-top:20px">
     <div class="panel map"><h3 id="m-rk-h"></h3><p class="desc" id="m-rk-d"></p><div id="map-rk"></div><div class="legend" id="lg-rk"></div></div>
-    <div class="panel map"><h3 id="m-def-h"></h3><p class="desc" id="m-def-d"></p><div id="map-def"></div><div class="legend" id="lg-def"></div></div>
+    <div class="panel map"><h3 id="m-ipc2-h"></h3><p class="desc" id="m-ipc2-d"></p><div id="map-ipc2"></div><div class="legend" id="lg-ipc2"></div></div>
   </div>
   <details class="rank" id="rank-box">
     <summary id="hot-h">How the provinces rank</summary>
@@ -541,8 +541,6 @@ function drawRecord(){
 }
 const RKB=[[1,"driest on record",5],[2,"2nd or 3rd driest",4],[4,"4th or 5th",3],[6,"6th to 10th",2],[11,"11th to 22nd",1],[23,"23rd or wetter",0]];
 const rkBin=r=>{for(let i=RKB.length-1;i>=0;i--)if(r>=RKB[i][0])return RKB[i];return RKB[0]};
-const DFB=[[1.25,"1.25 or more",5],[1,"1 to 1.25",4],[0.75,"0.75 to 1",3],[0.5,"0.5 to 0.75",2],[0.25,"0.25 to 0.5",1],[0,"under 0.25",0]];
-const dfBin=v=>{for(const b of DFB)if(v>=b[0])return b;return null};
 function drawSixMaps(){
   const n=ALLS.length;
   let svg=baseMap("map-rk");svg.setAttribute("aria-label",`Rank of the driest of the last ${N_RECENT} seasons among the ${n} seasons since ${sLab(RF)}, by province`);
@@ -551,12 +549,14 @@ function drawSixMaps(){
     hover(el1,`<b>${p}</b><br>Driest of the last ${N_RECENT} seasons: ${sLab(best[2])}, ${devTxt(best[5])}<br>${rankTxt(best[6])} of the ${n} seasons since ${sLab(RF)}`)});
   overlay(svg);
   $("lg-rk").innerHTML=RKB.map(b=>`<span><i style="background:var(--s${b[2]})"></i>${b[1]}</span>`).join("");
-  svg=baseMap("map-def");svg.setAttribute("aria-label",`Rain missing over the last ${N_RECENT} seasons, in seasons of normal rain, by province`);
-  M.adm1.forEach(([p,d])=>{let v=0,nn=0;RECENT.forEach(s=>{const r=W[`rain|${p}|${s}`];v+=r[3];nn+=r[4]});const miss=(1-v/nn)*N_RECENT, b=dfBin(miss);
-    const el1=el("path",{d,class:"u",fill:b?`var(--s${b[2]})`:"var(--d4)"},svg);
-    hover(el1,`<b>${p}</b><br>${fmt(v)} mm fell from October ${RECENT[0]} to March ${RLAST+1}; ${N_RECENT} normal seasons would bring ${fmt(nn)} mm<br>${devTxt(v/nn)} over the period: ${Math.abs(miss).toFixed(1)} seasons of rain ${miss>=0?"missing":"extra"}`)});
+  const rd=CUR_ROUNDS[CUR_ROUNDS.length-1], per="C", pr=rd.periods[per];
+  svg=baseMap("map-ipc2");svg.setAttribute("aria-label",`IPC overall phase by area, ${rd.label}`);
+  D.ipc.filter(x=>x[0]===rd.id&&x[1]===per).forEach(x=>{
+    const n2=el("path",{d:M.ipc[x[11]],class:"u",fill:x[5]?`var(--p${x[5]})`:"url(#map-ipc2-h)"},svg);
+    hover(n2,x[5]?`<b>${x[2]}${x[3]?" ("+x[3]+")":""}, ${x[4]}</b><br>${pr.frm} to ${pr.to}: Phase ${x[5]} ${PH[x[5]]}<br>${fmt(x[7])} in Phase 3+ (${pct(x[8])}) of ${fmt(x[6])}`:`<b>${x[2]}, ${x[4]}</b><br>Listed by IPC without an area phase`);
+  });
   overlay(svg);
-  $("lg-def").innerHTML=DFB.map(b=>`<span><i style="background:var(--s${b[2]})"></i>${b[1]}</span>`).join("")+`<span><i style="background:var(--d4)"></i>surplus</span>`;
+  $("lg-ipc2").innerHTML=phLegend([1,2,3,4,5].filter(q=>D.ipc.some(x=>x[0]===rd.id&&x[1]===per&&x[5]===q)))+`<span><i style="background:var(--land)"></i>Not analysed</span>`;
 }
 function drawIpcChart(){
   const box=$("ipcchart");box.innerHTML="";
@@ -618,8 +618,8 @@ if(FOCUS.length){
   $("six-h").textContent=`Every October to March season since ${sLab(RF)}`;
   $("m-rk-h").textContent=`The driest of the last ${N_RECENT} seasons, ranked against the record since ${sLab(RF)}`;
   $("m-rk-d").textContent=`For each province, where its driest season of ${sLab(RECENT[0])} to ${sLab(RLAST)} ranks among all ${ALLS.length} October to March seasons on record.`;
-  $("m-def-h").textContent=`Rain missing over the ${N_RECENT} seasons, ${sLab(RECENT[0])} to ${sLab(RLAST)}`;
-  $("m-def-d").textContent=`Total shortfall against normal over the ${N_RECENT} seasons, expressed in seasons of normal rain. One season missing means the shortfall equals a whole normal season's rain.`;
+  {const rd=CUR_ROUNDS[CUR_ROUNDS.length-1];$("m-ipc2-h").textContent=`IPC, ${rd.label}: ${short(rd.nat.C.p3)} people in Crisis (Phase 3) or worse`;
+  $("m-ipc2-d").textContent=`Phase by area analysed, ${rd.periods.C.frm} to ${rd.periods.C.to}. The latest IPC analysis of ${C.name}${CUR_ROUNDS.length>1?`; the ${CUR_ROUNDS[0].label} analysis found ${short(CUR_ROUNDS[0].nat.C.p3)}`:""}.`}
   $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, ${C.name} and the provinces of interest`;
   const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length, natTen=nat.filter(r=>r[6]<=10).length;
   const recs=FOCUS.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
