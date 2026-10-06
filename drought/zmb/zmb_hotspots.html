@@ -539,14 +539,14 @@ function drawRecord(){
   });
   $("rlg").innerHTML=`<span class="grp">Rainfall</span>`+vLegend("rain").replace(/<span><i style="background:var\(--d[456]\)"><\/i>[^<]*<\/span>/g,"")+`<span><i style="background:var(--d5)"></i>above normal</span><span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span><span style="margin-left:auto;color:var(--muted)">Numbers: rank among the 10 driest seasons since ${sLab(RF)}. Bar height capped at ${Math.round(mx*100)}%.</span>`;
 }
-const RKB=[[1,"driest on record",5],[2,"2nd or 3rd driest",4],[4,"4th or 5th",3],[6,"6th to 10th",2],[11,"11th to 22nd",1],[23,"23rd or wetter",0]];
+const RKB=[[1,"lowest on record",5],[2,"2nd or 3rd lowest",4],[4,"4th or 5th lowest",3],[6,"6th to 10th lowest",2],[11,"11th to 22nd",1],[23,"23rd or higher",0]];
 const rkBin=r=>{for(let i=RKB.length-1;i>=0;i--)if(r>=RKB[i][0])return RKB[i];return RKB[0]};
 function drawSixMaps(){
   const n=ALLS.length;
   let svg=baseMap("map-rk");svg.setAttribute("aria-label",`Rank of the driest of the last ${N_RECENT} seasons among the ${n} seasons since ${sLab(RF)}, by province`);
   M.adm1.forEach(([p,d])=>{const best=RECENT.map(s=>W[`rain|${p}|${s}`]).sort((x,y)=>x[6]-y[6])[0], b=rkBin(best[6]);
     const el1=el("path",{d,class:"u",fill:`var(--s${b[2]})`},svg);
-    hover(el1,`<b>${p}</b><br>Driest of the last ${N_RECENT} seasons: ${sLab(best[2])}, ${devTxt(best[5])}<br>${rankTxt(best[6])} of the ${n} seasons since ${sLab(RF)}`)});
+    hover(el1,`<b>${p}</b><br>Lowest rainfall since ${sLab(RECENT[0])}: ${sLab(best[2])}, ${devTxt(best[5])}<br>${best[6]===1?"The lowest":ord(best[6])+" lowest"} of the ${n} seasons on record`)});
   overlay(svg);
   $("lg-rk").innerHTML=RKB.map(b=>`<span><i style="background:var(--s${b[2]})"></i>${b[1]}</span>`).join("");
   const rd=CUR_ROUNDS[CUR_ROUNDS.length-1], per="C", pr=rd.periods[per];
@@ -624,8 +624,8 @@ if(FOCUS.length){
   $("h-six").textContent=`The last ${N_RECENT} seasons in the record since ${sLab(RF)}`;
   $("six-sub").textContent=`Every October to March season total since ${sLab(RF)}, with the last ${N_RECENT} shaded, then IPC and FEWS NET over the same years.`;
   $("six-h").textContent=`Every October to March season since ${sLab(RF)}`;
-  $("m-rk-h").textContent=`The driest of the last ${N_RECENT} seasons, ranked against the record since ${sLab(RF)}`;
-  $("m-rk-d").textContent=`For each province, where its driest season of ${sLab(RECENT[0])} to ${sLab(RLAST)} ranks among all ${ALLS.length} October to March seasons on record.`;
+  $("m-rk-h").textContent=`How unusual was the worst recent season?`;
+  $("m-rk-d").textContent=`Each province's lowest October to March rainfall since ${sLab(RECENT[0])}, placed among its ${ALLS.length} seasons on record (${sLab(RF)} to ${sLab(RLAST)}). Dark brown: the lowest ever recorded.`;
   {const rd=CUR_ROUNDS[CUR_ROUNDS.length-1];$("m-ipc2-h").textContent=`IPC, ${rd.label}: ${short(rd.nat.C.p3)} people in Crisis (Phase 3) or worse`;
   $("m-ipc2-d").textContent=`Phase by area analysed, ${rd.periods.C.frm} to ${rd.periods.C.to}. The latest IPC analysis of ${C.name}${CUR_ROUNDS.length>1?`; the ${CUR_ROUNDS[0].label} analysis found ${short(CUR_ROUNDS[0].nat.C.p3)}`:""}.`}
   $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, with the forecast for ${sLab(S5.season)}`;
