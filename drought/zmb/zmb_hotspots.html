@@ -425,7 +425,7 @@ function drawMinis(){
   $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, with the forecast for ${sLab(S5.season)}`;
   const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length, natTen=nat.filter(r=>r[6]<=10).length;
   const recs=SHOW.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
-  $("k-lead").textContent=`${FOCUS.length?list(FOCUS)+": ":""}October to March rainfall over the last ${N_RECENT} seasons against the record since ${sLab(RF)}. Nationally ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons`:`${natBelow} of the last ${N_RECENT} seasons`} was below normal and ${natTen} of the 10 driest seasons on record fall in this period.${recs.length?` ${list(recs)} had ${recs.length===1?"its":"their"} driest season on record in these years.`:""}`;
+  $("k-lead").textContent=`${FOCUS.length?list(FOCUS)+": ":""}October to March rainfall over the last ${N_RECENT} seasons against the record since ${sLab(RF)}. Nationally ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons was`:`${natBelow} of the last ${N_RECENT} seasons were`} below normal and ${natTen} of the 10 driest seasons on record fall in this period.${recs.length?` ${list(recs)} had ${recs.length===1?"its":"their"} driest season on record in these years.`:""}`;
   seg("kv","rain",v=>{kv.v=v;drawMinis()});
 }
 if(!FOCUS.length)$("rank-box").open=true;
