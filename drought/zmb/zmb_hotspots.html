@@ -43,22 +43,23 @@ h2{font-size:21px;margin:0 0 6px;font-weight:600;letter-spacing:-.005em;text-wra
 h3{font-size:15px;margin:0 0 4px;font-weight:600}
 .sub{color:var(--ink2);max-width:74ch;margin:0 0 16px}
 .small{font-size:13px;color:var(--ink2)}
-.glance{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:4px;padding:16px 20px;margin-top:22px}
-.glance h2{font-size:17px;margin:0 0 10px}
+.glance{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:22px 24px 18px;margin-top:24px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px -18px rgba(0,0,0,.25)}
+.glance h2{font-size:13px;margin:0 0 6px;font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .glance h3{font-size:14px;margin:0 0 4px}
-.tag{display:inline-block;font:500 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);border:1px solid var(--rule);border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:1px}
-.tag.hz{color:var(--accent);border-color:var(--accent)}
-.tag.now{text-transform:none;letter-spacing:0;color:var(--muted);border-style:dashed}
+.tag{display:inline-block;font:500 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);background:var(--rule2);border:0;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.tag.hz{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.tag.now{text-transform:none;letter-spacing:0;color:var(--muted);background:transparent;border:1px dashed var(--rule)}
 table.hot{min-width:720px}
 .hot th{max-width:120px}
 .hot th.pv{white-space:nowrap}
 .hot td.rk{font-weight:600;color:var(--ink)}
 .hot tr.more{display:none}.hot.all tr.more{display:table-row}
 .linkbtn{font:500 13px var(--sans);color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.glance .panel{background:var(--bg);border-color:var(--rule2)}
 .glance dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0;font-size:14px}
 .glance dt{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:3px}
 .glance dd{margin:0}
-.nav{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;font-size:13px}
+.nav{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:16px;font-size:13px;align-items:center}
 .nav a{color:var(--accent);text-decoration:none}.nav a:hover{text-decoration:underline}
 .panel{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:18px}
 .scroll{overflow-x:auto}
@@ -110,24 +111,26 @@ table.mo{min-width:0;width:100%;border-spacing:2px}
 .mo td.hd{text-align:left;color:var(--muted);font:500 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;height:auto;padding-top:6px}
 .mline{font-size:13px;color:var(--ink2);margin:8px 0 0}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px;margin:0 0 16px}
-.stat{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:12px 14px}
-.stat b{display:block;font:600 30px/1.1 var(--sans);font-variant-numeric:tabular-nums;color:var(--ink);margin:2px 0 4px}
+.stat{background:var(--bg);border:1px solid var(--rule2);border-top:3px solid var(--src,var(--accent));border-radius:6px;padding:12px 14px 12px}
+.stat[data-src="Rainfall"]{--src:var(--d1)}.stat[data-src="IPC"]{--src:var(--p3)}.stat[data-src="FEWS NET"]{--src:var(--p2)}
+.stat b{display:block;font:700 32px/1.05 var(--sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink);margin:4px 0 6px}
 .stat span{color:var(--ink2);font-size:12.5px;line-height:1.4;display:block}
 .stat .src{font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
-.mini{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:12px 14px 8px}
+.minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:12px}
+.mini{background:var(--bg);border:1px solid var(--rule2);border-radius:6px;padding:12px 14px 8px}
 .mini h4{margin:0;font:600 14px var(--sans);color:var(--ink)}
 .mini .sub2{font-size:12px;color:var(--ink2);margin:2px 0 6px}
 .mini svg{width:100%;height:auto}
-details.sec{margin-top:28px;border-top:1px solid var(--rule);padding-top:10px}
-details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px}
+details.sec{margin-top:14px;border:1px solid var(--rule);border-radius:8px;padding:12px 18px;background:var(--surface)}
+details.sec[open]{padding-bottom:20px}
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px}details.sec>summary:hover h2{color:var(--accent)}
 details.sec>summary::-webkit-details-marker{display:none}
 details.sec>summary::before{content:'+';font:500 18px var(--mono);color:var(--accent);width:18px}
 details.sec[open]>summary::before{content:'−'}
-details.sec>summary h2{margin:0}
+details.sec>summary h2{margin:0;font-size:18px}
 details.sec>summary .hint{font-size:13px;color:var(--muted);margin-left:auto}
-details.sec>.body{margin-top:12px}
-details.rank{margin-top:16px}details.rank summary{cursor:pointer;font:600 14px var(--sans)}
+details.sec>.body{margin-top:14px;border-top:1px solid var(--rule2);padding-top:14px}
+details.rank{margin-top:18px;border-top:1px solid var(--rule2);padding-top:12px}details.rank summary{cursor:pointer;font:600 14px var(--sans)}details.rank summary:hover{color:var(--accent)}
 .panel .desc{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
 .ipc{display:grid;gap:22px}
 details summary{cursor:pointer;list-style-position:outside}
@@ -625,7 +628,7 @@ if(FOCUS.length){
   const firstR=CUR_ROUNDS[0], lastR=CUR_ROUNDS[CUR_ROUNDS.length-1];
   const z2=D.maps.fews.filter(z=>z[5]>=3), crisisF=FOCUS.filter(p=>z2.some(z=>z[1]===p));
   const recs=FOCUS.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
-  const tile=(src,big,t)=>`<div class="stat"><div class="src">${src}</div><b>${big}</b><span>${t}</span></div>`;
+  const tile=(src,big,t)=>`<div class="stat" data-src="${src}"><div class="src">${src}</div><b>${big}</b><span>${t}</span></div>`;
   $("kstats").innerHTML=
     tile("Rainfall",`${natBelow} of ${N_RECENT}`,`of the last ${N_RECENT} seasons below normal nationally (${sLab(RECENT[0])} to ${sLab(RLAST)})`)
    +tile("Rainfall",`${natTen} of 10`,`of the driest seasons since ${sLab(RF)} fell in these ${N_RECENT} years`)
