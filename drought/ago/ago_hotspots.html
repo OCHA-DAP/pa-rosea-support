@@ -110,13 +110,9 @@ table.mo{min-width:0;width:100%;border-spacing:2px}
 .mo tr.ref td.pv{color:var(--ink2);font-weight:400;font-size:12px;white-space:normal}
 .mo td.hd{text-align:left;color:var(--muted);font:500 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;height:auto;padding-top:6px}
 .mline{font-size:13px;color:var(--ink2);margin:8px 0 0}
-.mapstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px;margin-bottom:6px}
-.smap{background:var(--bg);border:1px solid var(--rule2);border-radius:6px;padding:8px 8px 4px}
-.smap h4{margin:0 0 2px;font:600 12.5px var(--sans);color:var(--ink)}.smap .v{font:500 11px var(--mono);color:var(--ink2);margin-bottom:4px}
-.smap svg{width:100%;height:auto}.smap path.u{stroke:var(--border);stroke-width:.8}.smap path.u:hover{stroke:var(--ink);stroke-width:1.6}.smap path.a1{fill:none;stroke:var(--ink2);stroke-width:.8;opacity:.7;pointer-events:none}.smap path.a1.fo{stroke:var(--ink);stroke-width:2.2;opacity:1}
-.minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:12px}
+.minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:12px}
 .mini{background:var(--bg);border:1px solid var(--rule2);border-radius:6px;padding:12px 14px 8px}
-.mini h4{margin:0;font:600 14px var(--sans);color:var(--ink)}
+.mini h4{margin:0;font:600 15px var(--sans);color:var(--ink)}
 .mini .sub2{font-size:12px;color:var(--ink2);margin:2px 0 6px}
 .mini svg{width:100%;height:auto}
 details.sec{margin-top:14px;border:1px solid var(--rule);border-radius:8px;padding:12px 18px;background:var(--surface)}
@@ -168,17 +164,15 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 <section class="glance" aria-labelledby="h-glance">
   <h2 id="h-glance">Summary</h2>
   <p class="small" id="k-lead" style="margin:0 0 12px"></p>
-  <div id="kmaps" hidden>
-    <h3 id="ks-r-h"></h3>
-    <div class="mapstrip" id="strip-rain"></div><div class="legend" id="lg-strip-rain" style="margin-bottom:16px"></div>
-    <h3 id="ks-n-h"></h3>
-    <div class="mapstrip" id="strip-ndvi"></div><div class="legend" id="lg-strip-ndvi"></div>
-  </div>
   <div id="kminis-wrap" hidden>
-    <h3 style="margin-top:20px" id="kminis-h"></h3>
+    <h3 id="kminis-h"></h3>
     <div class="controls"><span class="clabel">Show</span><span class="seg" id="kv"><button type="button" id="kv-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="kv-n" data-v="ndvi" aria-pressed="false">End-of-season NDVI</button></span></div>
     <div class="minis" id="kminis"></div>
     <div class="legend" id="kminis-lg"></div>
+  </div>
+  <div class="maps" id="kmaps" hidden style="margin-top:20px">
+    <div class="panel map"><h3 id="m-rk-h"></h3><p class="desc" id="m-rk-d"></p><div id="map-rk"></div><div class="legend" id="lg-rk"></div></div>
+    <div class="panel map"><h3 id="m-def-h"></h3><p class="desc" id="m-def-d"></p><div id="map-def"></div><div class="legend" id="lg-def"></div></div>
   </div>
   <details class="rank" id="rank-box">
     <summary id="hot-h">How the provinces rank</summary>
@@ -545,23 +539,24 @@ function drawRecord(){
   });
   $("rlg").innerHTML=`<span class="grp">Rainfall</span>`+vLegend("rain").replace(/<span><i style="background:var\(--d[456]\)"><\/i>[^<]*<\/span>/g,"")+`<span><i style="background:var(--d5)"></i>above normal</span><span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span><span style="margin-left:auto;color:var(--muted)">Numbers: rank among the 10 driest seasons since ${sLab(RF)}. Bar height capped at ${Math.round(mx*100)}%.</span>`;
 }
-function smallMap(box,k,s){
-  const d=document.createElement("div");d.className="smap";
-  const r=W[`${k}|${NAT}|${s}`];
-  d.innerHTML=`<h4>${sLab(s)}</h4><div class="v">${C.name}: ${devLab(r[5])}</div>`;
-  const svg=el("svg",{viewBox:`-6 -6 ${M.w+12} ${M.h+12}`,role:"img","aria-label":`${VAR[k].label} against normal by province, ${sLab(s)}`},d);
-  el("path",{d:M.outline,fill:"var(--land)"},svg);
-  M.adm1.forEach(([p,pd])=>{const q=W[`${k}|${p}|${s}`], b=vbin(k,q[5]);const n=el("path",{d:pd,class:"u",fill:`var(--d${b})`},svg);
-    hover(n,`<b>${p} | ${sLab(s)}</b><br>${VAR[k].label}: ${VAR[k].val(q)}<br>${devTxt(q[5])}, ${q[6]===1?VAR[k].low+" on record":ord(q[6])+" "+VAR[k].low} of ${WM[k].n} seasons since ${sLab(WM[k].first)}`)});
-  M.adm1.forEach(r2=>el("path",{d:r2[1],class:"a1"},svg));
-  M.adm1.filter(r2=>isF(r2[0])).forEach(r2=>el("path",{d:r2[1],class:"a1 fo"},svg));
-  box.appendChild(d);
-}
-function drawStrips(){
-  [["rain","strip-rain","lg-strip-rain"],["ndvi","strip-ndvi","lg-strip-ndvi"]].forEach(([k,id,lg])=>{
-    const box=$(id);box.innerHTML="";RECENT.forEach(s=>smallMap(box,k,s));
-    $(lg).innerHTML=`<span class="grp">${VAR[k].label}</span>`+vLegend(k)+(FOCUS.length?`<span style="margin-left:auto;color:var(--muted)">Thick outlines: provinces of interest</span>`:"");
-  });
+const RKB=[[1,"driest on record",5],[2,"2nd or 3rd driest",4],[4,"4th or 5th",3],[6,"6th to 10th",2],[11,"11th to 22nd",1],[23,"23rd or wetter",0]];
+const rkBin=r=>{for(let i=RKB.length-1;i>=0;i--)if(r>=RKB[i][0])return RKB[i];return RKB[0]};
+const DFB=[[1.25,"1.25 or more",5],[1,"1 to 1.25",4],[0.75,"0.75 to 1",3],[0.5,"0.5 to 0.75",2],[0.25,"0.25 to 0.5",1],[0,"under 0.25",0]];
+const dfBin=v=>{for(const b of DFB)if(v>=b[0])return b;return null};
+function drawSixMaps(){
+  const n=ALLS.length;
+  let svg=baseMap("map-rk");svg.setAttribute("aria-label",`Rank of the driest of the last ${N_RECENT} seasons among the ${n} seasons since ${sLab(RF)}, by province`);
+  M.adm1.forEach(([p,d])=>{const best=RECENT.map(s=>W[`rain|${p}|${s}`]).sort((x,y)=>x[6]-y[6])[0], b=rkBin(best[6]);
+    const el1=el("path",{d,class:"u",fill:`var(--s${b[2]})`},svg);
+    hover(el1,`<b>${p}</b><br>Driest of the last ${N_RECENT} seasons: ${sLab(best[2])}, ${devTxt(best[5])}<br>${rankTxt(best[6])} of the ${n} seasons since ${sLab(RF)}`)});
+  overlay(svg);
+  $("lg-rk").innerHTML=RKB.map(b=>`<span><i style="background:var(--s${b[2]})"></i>${b[1]}</span>`).join("");
+  svg=baseMap("map-def");svg.setAttribute("aria-label",`Rain missing over the last ${N_RECENT} seasons, in seasons of normal rain, by province`);
+  M.adm1.forEach(([p,d])=>{let v=0,nn=0;RECENT.forEach(s=>{const r=W[`rain|${p}|${s}`];v+=r[3];nn+=r[4]});const miss=(1-v/nn)*N_RECENT, b=dfBin(miss);
+    const el1=el("path",{d,class:"u",fill:b?`var(--s${b[2]})`:"var(--d4)"},svg);
+    hover(el1,`<b>${p}</b><br>${fmt(v)} mm fell from October ${RECENT[0]} to March ${RLAST+1}; ${N_RECENT} normal seasons would bring ${fmt(nn)} mm<br>${devTxt(v/nn)} over the period: ${Math.abs(miss).toFixed(1)} seasons of rain ${miss>=0?"missing":"extra"}`)});
+  overlay(svg);
+  $("lg-def").innerHTML=DFB.map(b=>`<span><i style="background:var(--s${b[2]})"></i>${b[1]}</span>`).join("")+`<span><i style="background:var(--d4)"></i>surplus</span>`;
 }
 function drawIpcChart(){
   const box=$("ipcchart");box.innerHTML="";
@@ -598,7 +593,7 @@ function drawFewsChart(){
 const kv={v:"rain"};
 function drawMinis(){
   const k=kv.v, V=VAR[k], box=$("kminis");box.innerHTML="";
-  const Wd=300, H=100, left=40, right=6, top=10, bh=60, mx=V.half*1.2;
+  const Wd=520, H=132, left=44, right=8, top=14, bh=84, mx=V.half*1.2;
   SIX.forEach(a=>{
     const aRec=avgDev(k,a,RECENT), aPrev=avgDev(k,a,EARLIER);
     const d=document.createElement("div");d.className="mini";
@@ -606,13 +601,12 @@ function drawMinis(){
     const svg=el("svg",{viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`${aName(a)}: ${V.label} against normal, ${sLab(R0)} to ${sLab(RLAST)}`},d);
     const cw=(Wd-left-right)/RS.length, ymid=top+bh/2, sc=(bh/2)/mx, xr=left+(RECENT[0]-R0)*cw;
     el("rect",{x:xr,y:top-4,width:Wd-right-xr,height:bh+8,fill:"var(--accent)",opacity:.09,rx:2},svg);
-    [[mx*0.8,devLab(1+mx*0.8)],[0,"normal"],[-mx*0.8,devLab(1-mx*0.8)]].forEach(([t,l])=>{const y=ymid-t*sc;el("line",{x1:left,x2:Wd-right,y1:y,y2:y,stroke:t?"var(--rule2)":"var(--ink2)","stroke-dasharray":t?"":"3 3"},svg);txt(svg,left-4,y+3.5,l,{"text-anchor":"end",class:"mono",style:"font-size:8.5px"})});
+    [[mx*0.8,devLab(1+mx*0.8)],[0,"normal"],[-mx*0.8,devLab(1-mx*0.8)]].forEach(([t,l])=>{const y=ymid-t*sc;el("line",{x1:left,x2:Wd-right,y1:y,y2:y,stroke:t?"var(--rule2)":"var(--ink2)","stroke-dasharray":t?"":"3 3"},svg);txt(svg,left-4,y+3.5,l,{"text-anchor":"end",class:"mono",style:"font-size:9px"})});
     RS.forEach((s,i)=>{const r=W[`${k}|${a}|${s}`], dv=Math.max(-mx,Math.min(mx,r[5]-1)), h=Math.abs(dv)*sc, x=left+i*cw, b=vbin(k,r[5]);
-      el("rect",{x:x+1,y:dv<0?ymid:ymid-h,width:Math.max(cw-2,1),height:Math.max(h,1.2),fill:`var(--d${b})`,rx:1},svg);
+      el("rect",{x:x+2,y:dv<0?ymid:ymid-h,width:Math.max(cw-4,1),height:Math.max(h,1.2),fill:`var(--d${b})`,rx:1},svg);
+      txt(svg,x+cw/2,dv<0?ymid+h+9:ymid-h-3,devLab(r[5]),{"text-anchor":"middle",class:"mono",style:"font-size:7.5px"});
       hover(el("rect",{x,y:top-4,width:cw,height:bh+8,fill:"transparent"},svg),`<b>${aName(a)} | ${sLab(s)}</b><br>${V.label}: ${V.val(r)}<br>${devTxt(r[5])}, ${r[6]===1?V.low+" on record":ord(r[6])+" "+V.low} of ${WM[k].n} seasons since ${sLab(WM[k].first)}`)});
-    txt(svg,left+cw/2,H-4,sLab2(R0),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
-    txt(svg,xr+cw/2,H-4,sLab2(RECENT[0]),{"text-anchor":"middle",class:"mono strong",style:"font-size:8.5px"});
-    txt(svg,left+(RS.length-0.5)*cw,H-4,sLab2(RLAST),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
+    RS.forEach((s,i)=>{if(i%2===0||s===RLAST)txt(svg,left+i*cw+cw/2,H-4,sLab2(s),{"text-anchor":"middle",class:s>=RECENT[0]?"mono strong":"mono",style:"font-size:8.5px"})});
     box.appendChild(d);
   });
   $("kminis-lg").innerHTML=`<span class="grp">${V.label}</span>`+vLegend(k)+`<span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span>`;
@@ -622,10 +616,14 @@ if(FOCUS.length){
   $("h-six").textContent=`The last ${N_RECENT} seasons in the record since ${sLab(RF)}`;
   $("six-sub").textContent=`Every October to March season total since ${sLab(RF)}, with the last ${N_RECENT} shaded, then IPC and FEWS NET over the same years.`;
   $("six-h").textContent=`Every October to March season since ${sLab(RF)}`;
-  $("ks-r-h").textContent=`October to March rainfall against normal, by province`;
-  $("ks-n-h").textContent=`End-of-season (March) NDVI against normal, by province`;
+  $("m-rk-h").textContent=`The driest of the last ${N_RECENT} seasons, ranked against the record since ${sLab(RF)}`;
+  $("m-rk-d").textContent=`For each province, where its driest season of ${sLab(RECENT[0])} to ${sLab(RLAST)} ranks among all ${ALLS.length} October to March seasons on record.`;
+  $("m-def-h").textContent=`Rain missing over the ${N_RECENT} seasons, ${sLab(RECENT[0])} to ${sLab(RLAST)}`;
+  $("m-def-d").textContent=`Total shortfall against normal over the ${N_RECENT} seasons, expressed in seasons of normal rain. One season missing means the shortfall equals a whole normal season's rain.`;
   $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, ${C.name} and the provinces of interest`;
-  $("k-lead").textContent=`${list(FOCUS)}: how far October to March rainfall and end-of-season vegetation were from normal in each of the last ${N_RECENT} seasons. ${normalTxt}`;
+  const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length, natTen=nat.filter(r=>r[6]<=10).length;
+  const recs=FOCUS.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
+  $("k-lead").textContent=`${list(FOCUS)}: October to March rainfall over the last ${N_RECENT} seasons against the record since ${sLab(RF)}. Nationally ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons`:`${natBelow} of the last ${N_RECENT} seasons`} was below normal and ${natTen} of the 10 driest seasons on record fall in this period.${recs.length?` ${list(recs)} had their driest season on record in these years.`:""}`;
   seg("kv","rain",v=>{kv.v=v;drawMinis()});
 }
 if(!FOCUS.length){$("rank-box").open=true;$("k-lead").textContent=`Provinces ranked by how often rainfall, vegetation, IPC and FEWS NET have reported them as affected.`}
@@ -806,7 +804,7 @@ drawIpcBars();
   document.querySelectorAll("#nav a").forEach(x=>x.addEventListener("click",()=>{const t=document.querySelector(x.getAttribute("href"));const d=t&&t.closest("details");if(d)d.open=true}));
 })();
 
-function drawAll(){drawRain();drawRainHeat();drawMonthly();if(FOCUS.length){drawRecord();drawStrips();drawIpcChart();drawFewsChart();drawMinis()}}
+function drawAll(){drawRain();drawRainHeat();drawMonthly();if(FOCUS.length){drawRecord();drawSixMaps();drawIpcChart();drawFewsChart();drawMinis()}}
 document.querySelectorAll("details.sec").forEach(d=>d.addEventListener("toggle",()=>{if(d.open)drawAll()}));
 drawAll();
 let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(drawAll,120)});

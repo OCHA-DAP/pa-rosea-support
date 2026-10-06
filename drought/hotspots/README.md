@@ -3,9 +3,10 @@
 One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
-- a summary. Where the country entry lists provinces of interest (`focus`): one small map per season for the
-  last six seasons of October to March rainfall against normal, the same for end-of-season NDVI, and one small
-  chart per province of every season since 2010/11 (rainfall or NDVI); then, folded, the ranking table
+- a summary. Where the country entry lists provinces of interest (`focus`): a map of how the driest of the last
+  six seasons ranks in each province's record since 1981/82, a map of the rain missing over the six seasons (in
+  seasons of normal rain), and one small chart per province of every season since 2010/11 (rainfall or NDVI);
+  then, folded, the ranking table
   (average rainfall and NDVI deviation over the last six seasons, IPC Phase 3+ share, FEWS NET Crisis months,
   the SEAS5 forecast and FEWS NET projection) and the current situation in four lines. Without `focus`, the
   ranking table is shown open
