@@ -288,7 +288,7 @@ function seg(id,init,cb){const b=[...document.querySelectorAll(`#${id} button`)]
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const short=n=>n>=1e6?(n/1e6).toFixed(2)+"M":Math.round(n/1e3)+"k";
 const fmt=n=>Math.round(n).toLocaleString("en-US"), pct=v=>Math.round(v*100)+"%";
-const sLab=s=>s+"/"+String(s+1).slice(2);
+const sLab=s=>s+"/"+String(s+1).slice(2), sLab2=s=>String(s).slice(2)+"/"+String(s+1).slice(2);   // 2020/21 and 20/21
 const md=s=>{const d=new Date(s.slice(0,10)+"T00:00");return MON[d.getMonth()]+" "+d.getFullYear()};
 const mStart=l=>{const [m,y]=l.split(" ");return `${y}-${String(MON.indexOf(m)+1).padStart(2,"0")}-01`};
 const seasonOf=d=>{const t=new Date(d.slice(0,10)+"T00:00");return t.getMonth()>=9?t.getFullYear():t.getFullYear()-1};
@@ -388,18 +388,18 @@ function drawRain(){
   const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`October to March rainfall and end-of-season NDVI compared with normal for ${aName(a)}, with IPC and FEWS NET`},box);
   const yr=barPanel(svg,"rain",a,left,right,Wd,cw,t1,bh1,f?[f[4]]:[]);
   barPanel(svg,"ndvi",a,left,right,Wd,cw,t2,bh2);
-  RS.forEach((s,i)=>txt(svg,left+i*cw+cw/2,yLab,cw>=46?sLab(s):"’"+String(s).slice(2),{"text-anchor":"middle",class:"mono"}));
+  RS.forEach((s,i)=>txt(svg,left+i*cw+cw/2,yLab,cw>=46?sLab(s):sLab2(s),{"text-anchor":"middle",class:"mono"}));
   if(f){
     const x=left+RS.length*cw, bw=Math.min(cw*0.56,34), bx=x+(cw-bw)/2, v=f[4], y1=yr(1), yv=yr(v);
     el("line",{x1:x,x2:x,y1:t1,y2:yLab+4,stroke:"var(--rule)","stroke-dasharray":"3 3"},svg);
     el("rect",{x:bx,y:Math.min(y1,yv),width:bw,height:Math.max(Math.abs(yv-y1),1.5),rx:2,fill:`var(--d${vbin("rain",v)})`,opacity:.55,stroke:"var(--ink)","stroke-dasharray":"3 2"},svg);
     txt(svg,x+cw/2,v<1?yv+13:yv-5,devLab(v),{"text-anchor":"middle",class:"mono"});
-    txt(svg,x+cw/2,yLab,cw>=46?sLab(S5.season):"’"+String(S5.season).slice(2),{"text-anchor":"middle",class:"mono strong"});
+    txt(svg,x+cw/2,yLab,cw>=46?sLab(S5.season):sLab2(S5.season),{"text-anchor":"middle",class:"mono strong"});
     txt(svg,x+cw/2,yLab+12,"forecast",{"text-anchor":"middle",style:"font-size:10px"});
     const hit=el("rect",{x,y:t1,width:cw,height:bh1,fill:"transparent"},svg);hover(hit,fcTip(a,f));
   }
   el("line",{x1:left,x2:Wd-right,y1:iy-6,y2:iy-6,stroke:"var(--rule)"},svg);
-  txt(svg,6,iy+15,"IPC",{class:"strong"});txt(svg,6,iy+29,"Phase 3+");
+  txt(svg,6,iy+12,"IPC Phase 3+",{class:"strong"});txt(svg,6,iy+24,"analysis after",{style:"font-size:10px"});txt(svg,6,iy+34,"that season",{style:"font-size:10px"});
   RS.forEach((s,i)=>{
     const r=IPC_SEASON[s]; if(!r)return;
     const x=left+i*cw; let t,col,tipT;
@@ -438,7 +438,7 @@ function drawRainHeat(){
   const Wd=Math.max(box.clientWidth,720), left=150, g=2, top=24, ch=24, avgW=46;
   const cw=(Wd-left-avgW-14)/RS.length-g, H=top+order.length*(ch+g)+10;
   const svg=el("svg",{width:Wd,height:H,viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":`${VAR[k].label} compared with normal, by province and season`},box);
-  RS.forEach((s,i)=>txt(svg,left+i*(cw+g)+cw/2,top-8,cw>=38?sLab(s):"’"+String(s).slice(2),{"text-anchor":"middle",class:"mono"}));
+  RS.forEach((s,i)=>txt(svg,left+i*(cw+g)+cw/2,top-8,cw>=38?sLab(s):sLab2(s),{"text-anchor":"middle",class:"mono"}));
   const ax=left+RS.length*(cw+g)+14+avgW/2; txt(svg,ax,top-8,"avg",{"text-anchor":"middle"});
   order.forEach((p,j)=>{
     const yy=top+j*(ch+g)+(j>0?6:0);
@@ -601,9 +601,9 @@ function drawMinis(){
       el("rect",{x:x+1,y:y0,width:Math.max(cw-2,1),height:Math.max(h,1.5),fill:q<1?`var(--d${b})`:"var(--d5)",rx:1},svg);
       const r=W[`rain|${a}|${s}`];
       hover(el("rect",{x,y:top-4,width:cw,height:bh+8,fill:"transparent"},svg),`<b>${aName(a)} | ${sLab(s)}</b><br>Driest three months: ${WIN[w[1]]}, ${devTxt(q)}${q<THR.dry?" (dry season)":""}<br>Season total Oct to Mar: ${devTxt(r[5])}`)});
-    txt(svg,left+cw/2,H-4,"’"+String(R0).slice(2),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
-    txt(svg,xr+cw/2,H-4,"’"+String(RECENT[0]).slice(2),{"text-anchor":"middle",class:"mono strong",style:"font-size:8.5px"});
-    txt(svg,left+(RS.length-0.5)*cw,H-4,"’"+String(RLAST).slice(2),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
+    txt(svg,left+cw/2,H-4,sLab2(R0),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
+    txt(svg,xr+cw/2,H-4,sLab2(RECENT[0]),{"text-anchor":"middle",class:"mono strong",style:"font-size:8.5px"});
+    txt(svg,left+(RS.length-0.5)*cw,H-4,sLab2(RLAST),{"text-anchor":"middle",class:"mono",style:"font-size:8.5px"});
     box.appendChild(d);
   });
   $("kminis-lg").innerHTML=`<span class="grp">Driest three months</span>`+vLegend("rain").replace(/<span><i style="background:var\(--d[456]\)"><\/i>[^<]*<\/span>/g,"")+`<span><i style="background:var(--d5)"></i>at or above normal</span><span><i style="border-top:2px dashed var(--d1);height:0"></i>dry-season threshold</span><span><i style="background:var(--accent);opacity:.15"></i>Last ${N_RECENT} seasons</span>`;
