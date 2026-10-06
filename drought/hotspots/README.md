@@ -3,24 +3,21 @@
 One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
-- a summary: provinces ranked by how often each source has reported them as affected (dry seasons, low NDVI,
-  IPC Phase 3+ share, FEWS NET Crisis months), the SEAS5 rainfall forecast and FEWS NET projection for the
-  coming season, then the current situation in four lines. Where the country entry lists provinces of
-  interest (`focus`), the table shows those first with their rank among all provinces
-- for the provinces of interest, a "last six seasons" section: maps of rainfall over the six seasons against
-  normal and of the number of dry seasons, every season since 1981/82 sorted driest to wettest with the last
-  six marked, IPC Phase 3+ by analysis and the FEWS NET national phase by month
-- October to March rainfall totals and end-of-season NDVI (the March mean) for every season since 2010/11,
-  national and by province, as % above or below WFP's long-term average (normal), lined up with the IPC
-  analyses and FEWS NET's monthly phase
-- for the provinces of interest, rainfall and NDVI month by month (October to March) for the last six
-  seasons, with the 2010/11 to 2019/20 average for comparison, or for every season since 2010/11
-- maps of IPC area phases (any analysis, current or projection) and FEWS NET livelihood-zone phases
-- a province-by-province table of recent IPC analyses and the FEWS NET classification
-- IPC Phase 3+ shares by area for each analysis
+- Summary: one chart per province (provinces of interest where set, otherwise every province) of every
+  October to March season since 2010/11 against normal, with the SEAS5 forecast for the coming season and a
+  rainfall/NDVI toggle; three maps (seasons below normal in the last six, the latest IPC projection by area,
+  the FEWS NET projection by livelihood zone); the ranking of all provinces (average rainfall and NDVI
+  deviation over the last six seasons, IPC Phase 3+ share, FEWS NET Crisis months, the SEAS5 forecast and
+  FEWS NET projection); and the latest season, forecast and classifications in four lines
+- Within the season: WFP's rolling three-month rainfall total through the season (Oct to Dec, then each month
+  to the end of March) and the monthly mean NDVI, each against normal, for the last six seasons or every
+  season since 2010/11
+- IPC and FEWS NET by province: recent IPC analyses and the current and projected FEWS NET phase
+- IPC by municipality: share in Crisis or worse for each analysis
+- Sources and methods
 
-Thresholds used in the summary: a dry season is October to March rainfall more than 20% below normal; low
-end-of-season NDVI is March NDVI more than 5% below normal.
+No fixed thresholds are used: the pages show each season's deviation from normal and average it over the last
+six seasons where a single figure per province is needed.
 
 ## Build
 
@@ -63,8 +60,9 @@ current provinces (Angola has had 21 provinces since September 2024; the sources
 - Angola 2019 IPC areas are communes; they are placed with the parent municipality from HDX.
 - WFP: province PCODEs match COD, the long-term averages equal the dekadal mean over the documented
   reference periods (rainfall 1989-01-01 to 2018-12-31, NDVI 2002-07-01 to 2018-07-01), and every season
-  used is complete and final, the monthly rainfall values add up to the seasonal total and the March NDVI value
-  equals the seasonal NDVI value. WFP's province units differ from COD for Bengo and Luanda (Angola) and for
+  used is complete and final, WFP's three-month rainfall total (`r3h`) equals the nine-dekad sum, the Oct to Dec
+  and Jan to Mar three-month totals add up to the seasonal total, and the March NDVI value equals the seasonal
+  NDVI value. WFP's province units differ from COD for Bengo and Luanda (Angola) and for
   Eastern, Muchinga and Southern (Zambia); together they match.
 - SEAS5: every September issue since 1981 has lead times 1 to 6; each COG's tags say mm/day and the expected
   valid month. The forecast is compared with the model's own 1991 to 2020 September forecasts, not with

@@ -5,7 +5,8 @@ Pulls every source fresh, cross-checks them, and fills template.html.
 Sources
 - FEWS NET Data Warehouse: ipcphase.csv, ipcphase JSON (cross-check), ipcpackage shapefiles
 - IPC API (analyses, areas, population; needs IPC_API_KEY) and the HDX IPC country files (cross-check)
-- WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by admin 1 (monthly; seasonal = Oct-Mar rainfall total, March NDVI)
+- WFP on HDX: dekadal CHIRPS rainfall and MODIS NDVI by admin 1 (seasonal = Oct-Mar rainfall total, March NDVI;
+  month by month = WFP's rolling three-month rainfall total to the end of each month, monthly mean NDVI)
 - HDX COD-AB boundaries (maps, area-to-province lookup)
 - SEAS5 seasonal rainfall forecast, ensemble-mean monthly COGs on the team raster store (needs DSCI_AZ_BLOB_PROD_SAS)
 
@@ -471,6 +472,16 @@ class Country:
             check((got["max"] - got["min"]).abs().max() == 0, f"WFP {self.name} {var}: {avg} constant per province and dekad")
             gap = (got["min"] - lta.reindex(got.index)).abs().max()
             check(gap < 1e-3 * max(1, lta.abs().max()), f"WFP {self.name} {var}: {avg} equals the {base[0]} to {base[1]} dekadal mean (max diff {gap:.2g})")
+            if var == "rain":  # WFP's rolling three-month total (r3h) is the sum of the dekad and the eight before it
+                d = d.sort_values(["PCODE", "date"])
+                d["roll"] = d.groupby("PCODE")["rfh"].transform(lambda x: x.rolling(9).sum())
+                d["roll_avg"] = d.groupby("PCODE")["rfh_avg"].transform(lambda x: x.rolling(9).sum())
+                r3 = d[(d["date"].dt.day == 21) & (d["date"].dt.year >= FIRST_SEASON)]
+                check((r3["roll"] - r3["r3h"]).abs().max() < 0.01, f"WFP {self.name} rain: r3h equals the nine-dekad rainfall sum (max diff {(r3['roll'] - r3['r3h']).abs().max():.2g} mm)")
+                g3 = ((r3["roll_avg"] - r3["r3h_avg"]).abs() / r3["r3h_avg"].clip(lower=1)).max()
+                check(g3 < 0.05, f"WFP {self.name} rain: r3h_avg within 5% of the nine-dekad sum of rfh_avg (max {g3:.1%})")
+                if g3 > 0.005:
+                    note(f"WFP {self.name} rain: r3h_avg differs from the sum of the dekadal averages by up to {g3:.1%}; WFP's r3h_avg is used as the three-month normal")
             d = d[d["date"].dt.month.isin(ONDJFM)].copy()
             d["season"] = d["date"].map(lambda t: t.year if t.month >= 10 else t.year - 1)
             full = d.groupby(["PCODE", "season"]).size()
@@ -482,7 +493,10 @@ class Country:
             agg = "sum" if var == "rain" else "mean"
             d["month"] = d["date"].dt.month
             check((d.groupby(["PCODE", "season", "month"]).size() == 3).all(), f"WFP {self.name} {var}: three dekads in every month used")
-            mo = d[d["season"] >= FIRST_SEASON].groupby(["PCODE", "season", "month"]).agg(v=(val, agg), n=(avg, agg), px=("n_pixels", "first")).reset_index()
+            if var == "rain":  # month by month: the three-month total to the end of the month, against WFP's three-month normal
+                mo = d[(d["season"] >= FIRST_SEASON) & (d["date"].dt.day == 21)].groupby(["PCODE", "season", "month"]).agg(v=("r3h", "first"), n=("r3h_avg", "first"), px=("n_pixels", "first")).reset_index()
+            else:
+                mo = d[d["season"] >= FIRST_SEASON].groupby(["PCODE", "season", "month"]).agg(v=(val, agg), n=(avg, agg), px=("n_pixels", "first")).reset_index()
             mnat = mo.assign(wv=mo.v * mo.px, wn=mo.n * mo.px).groupby(["season", "month"]).agg(wv=("wv", "sum"), wn=("wn", "sum"), px=("px", "sum")).reset_index()
             mo = pd.concat([mo, mnat.assign(PCODE="_national", v=mnat.wv / mnat.px, n=mnat.wn / mnat.px)[["PCODE", "season", "month", "v", "n"]]], ignore_index=True)
             mo["area"] = mo["PCODE"].map(lambda p: names.get(p, "_national"))
@@ -514,13 +528,16 @@ class Country:
         self.wfp = pd.concat(out, ignore_index=True)
         self.wfp_meta = meta
         mo = pd.concat(monthly, ignore_index=True)
-        # the six monthly rainfall values add up to the seasonal total; the March NDVI value is the seasonal NDVI value
+        # the Oct-Dec and Jan-Mar three-month rainfall totals add up to the seasonal total; March NDVI is the seasonal NDVI value
         check((mo.groupby(["var", "area", "season"]).size() == 6).all(), f"WFP {self.name}: six monthly values for every area and season since {FIRST_SEASON}")
-        chk = mo[mo["var"] == "rain"].groupby(["area", "season"]).agg(v=("v", "sum"), n=("n", "sum")).reset_index().assign(var="rain")
-        chk = pd.concat([chk, mo[(mo["var"] == "ndvi") & (mo["month"] == 3)][["var", "area", "season", "v", "n"]]], ignore_index=True)
+        chk = mo[(mo["var"] == "rain") & (mo["month"].isin([12, 3]))].groupby(["area", "season"]).agg(v=("v", "sum"), n=("n", "sum"), k=("v", "size")).reset_index().assign(var="rain")
+        check((chk["k"] == 2).all(), f"WFP {self.name}: December and March three-month values present")
+        chk = pd.concat([chk.drop(columns="k"), mo[(mo["var"] == "ndvi") & (mo["month"] == 3)][["var", "area", "season", "v", "n"]]], ignore_index=True)
         chk = chk.merge(self.wfp[["var", "area", "season", "v", "n"]], on=["var", "area", "season"], suffixes=("_m", ""))
-        check(len(chk) == len(mo) / 6 and ((chk["v_m"] - chk["v"]).abs() < 1e-6).all() and ((chk["n_m"] - chk["n"]).abs() < 1e-6).all(),
-              f"WFP {self.name}: monthly rainfall adds up to the seasonal total and March NDVI equals the seasonal NDVI value, every area and season since {FIRST_SEASON}")
+        check(len(chk) == len(mo) / 6 and ((chk["v_m"] - chk["v"]).abs() < 0.05).all(),
+              f"WFP {self.name}: Oct-Dec plus Jan-Mar three-month rainfall equals the seasonal total and March NDVI equals the seasonal NDVI value, every area and season since {FIRST_SEASON}")
+        gn = ((chk["n_m"] - chk["n"]).abs() / chk["n"].clip(lower=1)).max()
+        check(gn < 0.05, f"WFP {self.name}: the two three-month normals add up to the seasonal normal within 5% (max {gn:.1%})")
         self.wfp_monthly = mo
 
     # ------------------------------------------------------------ SEAS5 rainfall forecast (Oct-Mar)
