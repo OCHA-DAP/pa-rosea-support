@@ -3,10 +3,11 @@
 One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
-- a summary: provinces ranked by how often each source has reported them as affected (dry seasons, low NDVI,
-  IPC Phase 3+ share, FEWS NET Crisis months), the SEAS5 rainfall forecast and FEWS NET projection for the
-  coming season, then the current situation in four lines. Where the country entry lists provinces of
-  interest (`focus`), the table shows those first with their rank among all provinces
+- a summary. Where the country entry lists provinces of interest (`focus`): a map of dry seasons in the last
+  six by province, the FEWS NET projection map, and one small chart per province of the driest three months
+  of each season since 2010/11; then, folded, the ranking table (dry seasons, low end-of-season NDVI, IPC
+  Phase 3+ share, FEWS NET Crisis months, the SEAS5 forecast and FEWS NET projection) and the current
+  situation in four lines. Without `focus`, the ranking table is shown open
 - for the provinces of interest, a "last six seasons" section: maps of rainfall over the six seasons against
   normal and of the number of dry seasons, every season since 1981/82 sorted driest to wettest with the last
   six marked, IPC Phase 3+ by analysis and the FEWS NET national phase by month
@@ -20,8 +21,10 @@ One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 - a province-by-province table of recent IPC analyses and the FEWS NET classification
 - IPC Phase 3+ shares by area for each analysis
 
-Thresholds used in the summary: a dry season is October to March rainfall more than 20% below normal; low
-end-of-season NDVI is March NDVI more than 5% below normal.
+Thresholds used in the summary: a dry season is one whose driest three-month stretch between October and March
+(Oct to Dec, Nov to Jan, Dec to Feb or Jan to Mar) was more than 20% below normal, so rain arriving in March does
+not hide a failed growing season; low end-of-season NDVI is March NDVI more than 5% below normal. Season totals
+(October to March) are still used where seasons are ranked against the record since 1981/82.
 
 ## Build
 
