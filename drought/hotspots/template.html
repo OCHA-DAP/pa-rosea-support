@@ -185,6 +185,19 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
   <nav class="nav" aria-label="Sections" id="nav"></nav>
 </section>
 
+<details class="sec" id="s-month" hidden open>
+  <summary><h2 id="h-month">Month by month</h2><span class="hint">three-month rainfall and monthly NDVI</span></summary>
+  <div class="body">
+  <p class="sub" id="month-sub"></p>
+  <div class="controls">
+    <div><span class="clabel">Show</span><span class="seg" id="mv"><button type="button" id="mv-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="mv-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
+    <div><span class="clabel">Seasons</span><span class="seg" id="mw"><button type="button" id="mw-rec" data-v="rec" aria-pressed="true"></button><button type="button" id="mw-all" data-v="all" aria-pressed="false"></button></span></div>
+  </div>
+  <div class="mgrid" id="mgrid"></div>
+  <div class="legend" id="mlegend"></div>
+  </div>
+</details>
+
 <details class="sec" id="d-rain" open>
   <summary><h2 id="h-rain">October to March seasons</h2><span class="hint">rainfall, NDVI, IPC and FEWS NET by season</span></summary>
   <div class="body">
@@ -208,19 +221,6 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
     <div class="panel"><h3 id="ipc-c-h">IPC</h3><p class="desc" id="ipc-c-d"></p><div class="scroll" id="ipcchart"></div></div>
     <div class="panel"><h3>FEWS NET</h3><p class="desc" id="fews-c-d"></p><div class="scroll" id="fewschart"></div><div class="legend" id="lg-fc"></div></div>
   </div>
-  </div>
-</details>
-
-<details class="sec" id="s-month" hidden>
-  <summary><h2 id="h-month">Month by month</h2><span class="hint">three-month rainfall and monthly NDVI</span></summary>
-  <div class="body">
-  <p class="sub" id="month-sub"></p>
-  <div class="controls">
-    <div><span class="clabel">Show</span><span class="seg" id="mv"><button type="button" id="mv-r" data-v="rain" aria-pressed="true">Rainfall</button><button type="button" id="mv-n" data-v="ndvi" aria-pressed="false">NDVI</button></span></div>
-    <div><span class="clabel">Seasons</span><span class="seg" id="mw"><button type="button" id="mw-rec" data-v="rec" aria-pressed="true"></button><button type="button" id="mw-all" data-v="all" aria-pressed="false"></button></span></div>
-  </div>
-  <div class="mgrid" id="mgrid"></div>
-  <div class="legend" id="mlegend"></div>
   </div>
 </details>
 
@@ -800,7 +800,7 @@ drawIpcBars();
      return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${devTxt(n[4]).replace("normal","the model's normal")} nationally, ${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts. Lowest: ${list(lows.map(r=>`${r[0]} (${devLab(r[4])})`))}.`})()}</dd>
    <dt>IPC</dt><dd>${ipcLine}</dd>
    <dt>FEWS NET</dt><dd>${z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`}</dd>`;
-  $("nav").innerHTML=`<span class="clabel">Detail</span><a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-six">Record since ${sLab(WM.rain.first)}</a><a href="#h-month">Month by month</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
+  $("nav").innerHTML=`<span class="clabel">Detail</span>${FOCUS.length?`<a href="#h-month">Month by month</a>`:""}<a href="#h-rain">Seasons</a>${FOCUS.length?`<a href="#h-six">Record since ${sLab(WM.rain.first)}</a>`:""}<a href="#h-where">Maps</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
   document.querySelectorAll("#nav a").forEach(x=>x.addEventListener("click",()=>{const t=document.querySelector(x.getAttribute("href"));const d=t&&t.closest("details");if(d)d.open=true}));
 })();
 
