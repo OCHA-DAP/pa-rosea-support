@@ -169,24 +169,25 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
     <div class="minis" id="kminis"></div>
     <div class="legend" id="kminis-lg"></div>
   </div>
-  <div class="maps" id="kmaps" hidden style="margin-top:20px">
+  <h3 style="margin-top:22px" id="kmaps-h"></h3>
+  <div class="maps" id="kmaps" hidden>
     <div class="panel map"><h3 id="m-rk-h"></h3><p class="desc" id="m-rk-d"></p><div id="map-rk"></div><div class="legend" id="lg-rk"></div></div>
     <div class="panel map"><h3 id="m-ipc2-h"></h3><p class="desc" id="m-ipc2-d"></p><div id="map-ipc2"></div><div class="legend" id="lg-ipc2"></div></div>
     <div class="panel map"><h3 id="m-fp-h"></h3><p class="desc" id="m-fp-d"></p><div id="map-fp"></div><div class="legend" id="lg-fp"></div></div>
   </div>
   <details class="rank" id="rank-box" open>
-    <summary id="hot-h">How the provinces rank</summary>
+    <summary id="hot-h">Ranking of all provinces</summary>
     <p class="small" id="hot-lead" style="margin:8px 0 8px"></p>
     <div class="scroll"><table class="mx hot" id="hot"></table></div>
     <p class="small" id="hot-note" style="margin:8px 0 0"></p>
-    <h3 style="margin-top:16px">Latest</h3>
+    <h3 style="margin-top:16px">Latest season, forecast and classifications</h3>
     <dl id="now"></dl>
   </details>
   <nav class="nav" aria-label="Sections" id="nav"></nav>
 </section>
 
 <details class="sec" id="s-month" hidden open>
-  <summary><h2 id="h-month">Month by month</h2><span class="hint">three-month rainfall and monthly NDVI, each province</span></summary>
+  <summary><h2 id="h-month">Within the season: rainfall and vegetation month by month</h2><span class="hint">three-month rainfall totals and monthly NDVI, by province</span></summary>
   <div class="body">
   <p class="sub" id="month-sub"></p>
   <div class="controls">
@@ -199,7 +200,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 </details>
 
 <details class="sec" id="d-mx" open>
-  <summary><h2 id="h-mx">Province detail</h2><span class="hint">recent IPC analyses and FEWS NET by province</span></summary>
+  <summary><h2 id="h-mx">IPC and FEWS NET by province</h2><span class="hint">recent IPC analyses and the current and projected FEWS NET phase</span></summary>
   <div class="body">
   <p class="sub">Share in Phase 3+ in the recent IPC analyses, and the current and projected FEWS NET phase, by province.</p>
   <div class="panel scroll"><table class="mx" id="mx"></table>
@@ -212,16 +213,16 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 </details>
 
 <details class="sec" id="d-ipc" open>
-  <summary><h2 id="h-ipc">IPC by area</h2><span class="hint">Phase 3+ share by municipality</span></summary>
+  <summary><h2 id="h-ipc">IPC by municipality</h2><span class="hint">share of people in Crisis or worse, each analysis</span></summary>
   <div class="body">
-  <p class="sub">Share of the population in Crisis (Phase 3) or worse by area: bar for the current period (Emergency in red), tick for the projection.</p>
+  <p class="sub">Share of the population in Crisis (Phase 3) or worse by municipality: bar for the current period (Emergency in red), tick for the projection.</p>
   <div class="controls"><label class="clabel" for="ipcr">Analysis</label><select id="ipcr"></select></div>
   <div class="panel"><div class="ipc" id="ipc"></div></div>
   </div>
 </details>
 
 <details class="sec" id="d-src" open>
-  <summary><h2 id="h-src">Sources</h2><span class="hint">data, definitions and known issues</span></summary>
+  <summary><h2 id="h-src">Sources and methods</h2><span class="hint">data, definitions and known issues</span></summary>
   <div class="body"><ul class="notes" id="src"></ul></div>
 </details>
 
@@ -405,11 +406,12 @@ function drawMinis(){
   {const z2=D.maps.fews.filter(z=>z[5]>=3), cp=[...new Set(z2.map(z=>z[1]))].sort();
   $("m-fp-h").textContent=`FEWS NET projection, ${covLab(ZN.ML2)}`;
   $("m-fp-d").textContent=`Projected phase by livelihood zone (${ZN.ML2.doc}, ${md(ZN.ML2.round)}).${cp.length?` Crisis expected in ${list(cp)}.`:""}`}
-  $("kminis-h").textContent=`Each season against normal since ${sLab(R0)}, with the forecast for ${sLab(S5.season)}`;
+  $("kminis-h").textContent=`Rainfall by season, ${sLab(R0)} to ${sLab(RLAST)}, with the ${sLab(S5.season)} forecast`;
+  $("kmaps-h").textContent=`Where rainfall fell short, and where food insecurity is classified and projected`;
   const nat=RECENT.map(s=>W[`rain|${NAT}|${s}`]), natBelow=nat.filter(r=>r[5]<1).length, natTen=nat.filter(r=>r[6]<=10).length;
   const recs=SHOW.filter(p=>RECENT.some(s=>W[`rain|${p}|${s}`][6]===1));
-  $("k-lead").textContent=`${FOCUS.length?list(FOCUS)+": ":""}October to March rainfall over the last ${N_RECENT} seasons against the record since ${sLab(RF)}. Nationally ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons was`:`${natBelow} of the last ${N_RECENT} seasons were`} below normal and ${natTen} of the 10 driest seasons on record fall in this period.${recs.length?` ${list(recs)} had ${recs.length===1?"its":"their"} driest season on record in these years.`:""}`;
-  seg("kv","rain",v=>{kv.v=v;drawMinis()});
+  $("k-lead").textContent=`${FOCUS.length?list(FOCUS)+": ":""}October to March rainfall in the last ${N_RECENT} seasons, with the food security classifications. Nationally ${natBelow===N_RECENT?`each of the last ${N_RECENT} seasons was`:`${natBelow} of the last ${N_RECENT} seasons were`} below normal and ${natTen} of the 10 driest seasons on record fall in this period.${recs.length?` ${list(recs)} had ${recs.length===1?"its":"their"} driest season on record in these years.`:""}`;
+  seg("kv","rain",v=>{kv.v=v;$("kminis-h").textContent=v==="rain"?`Rainfall by season, ${sLab(R0)} to ${sLab(RLAST)}, with the ${sLab(S5.season)} forecast`:`End-of-season (March) NDVI by season, ${sLab(R0)} to ${sLab(RLAST)}`;drawMinis()});
 }
 
 /* ---------- maps ---------- */
@@ -532,7 +534,7 @@ drawIpcBars();
   $("hot").querySelectorAll("[data-tip]").forEach(td=>hover(td,td.dataset.tip));
   const noteBase=`Rank: average position across the columns with data; the two projection columns are not ranked. Hover over a heading for its definition.`;
   if(FOCUS.length){
-    $("hot-h").textContent=`How the ${PROVS.length} provinces rank`;
+    $("hot-h").textContent=`Ranking of all ${PROVS.length} provinces`;
     const fr=rows.filter(r=>isF(r.p));
     $("hot-lead").textContent=`Rank among the ${PROVS.length} provinces, by rainfall and vegetation over the last ${N_RECENT} seasons and by what IPC and FEWS NET have reported: ${list(fr.map(r=>`${r.p} ${ord(r.rank)}`))}.`;
     $("hot-note").innerHTML=`${noteBase} <button type="button" class="linkbtn" id="hot-more">Show all ${PROVS.length} provinces</button>`;
@@ -544,16 +546,15 @@ drawIpcBars();
   }
   // latest
   const rl=W[`rain|${NAT}|${lastS}`], nl=W[`ndvi|${NAT}|${lastS}`];
-  const ipcLine=CUR_ROUNDS.length>1
-    ?`${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse.${peak.id!==last.id?` Highest of the ${ROUNDS.length} analyses: ${short(peak.nat.C.p3)} in ${peak.label}.`:` The highest of the ${ROUNDS.length} analyses.`}`
-    :`${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse, in ${list(last.provs)}.`;
+  const proj=last.nat.P?`, ${short(last.nat.P.p3)} projected for ${last.periods.P.frm} to ${last.periods.P.to}`:"";
+  const ipcLine=`${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse (${last.periods.C.frm} to ${last.periods.C.to})${proj}.${CUR_ROUNDS.length>1&&peak.id!==last.id?` Highest of the ${ROUNDS.length} analyses: ${short(peak.nat.C.p3)} in ${peak.label}.`:""} No IPC analysis of ${C.name} since ${last.label}.`;
   $("now").innerHTML=`
    <dt>Last season</dt><dd>${sLab(lastS)}: rainfall ${devTxt(rl[5])} nationally (${rankTxt(rl[6])} of ${WM.rain.n} seasons), end-of-season NDVI ${devTxt(nl[5])}. Lowest rainfall: ${list([...PROVS].sort((a,b)=>W[`rain|${a}|${lastS}`][5]-W[`rain|${b}|${lastS}`][5]).slice(0,5).map(p=>`${p} (${devLab(W[`rain|${p}|${lastS}`][5])})`))}.</dd>
    <dt>Forecast</dt><dd>${(()=>{const n=fc(NAT), lows=PROVS.map(p=>fc(p)).filter(Boolean).sort((a,b)=>a[4]-b[4]).slice(0,3);
      return `SEAS5 issued ${md(S5.issued)}: ${fcLab} rainfall ${devTxt(n[4]).replace("normal","the model's normal")} nationally, ${n[5]===1?"driest":ord(n[5])+" driest"} of ${S5.n} September forecasts. Lowest: ${list(lows.map(r=>`${r[0]} (${devLab(r[4])})`))}.`})()}</dd>
    <dt>IPC</dt><dd>${ipcLine}</dd>
    <dt>FEWS NET</dt><dd>${z2.length?`Crisis (Phase 3) expected ${covLab(ZN.ML2)} in ${list(crisisProvs)}.`:`No province expected to reach Crisis (Phase 3) ${covLab(ZN.ML2)}. Highest expected: ${PH[Math.max(...D.maps.fews.map(z=>z[5]))]}.`}</dd>`;
-  $("nav").innerHTML=`<span class="clabel">Detail</span><a href="#h-month">Month by month</a><a href="#h-mx">Province detail</a><a href="#h-ipc">IPC by area</a><a href="#h-src">Sources</a>`;
+  $("nav").innerHTML=`<span class="clabel">Sections</span><a href="#h-month">Within the season</a><a href="#h-mx">IPC and FEWS NET by province</a><a href="#h-ipc">IPC by municipality</a><a href="#h-src">Sources and methods</a>`;
   document.querySelectorAll("#nav a").forEach(x=>x.addEventListener("click",()=>{const t=document.querySelector(x.getAttribute("href"));const d=t&&t.closest("details");if(d)d.open=true}));
 })();
 

@@ -3,16 +3,18 @@
 One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
 `drought/zmb/zmb_hotspots.html` (Zambia). Each page is a single self-contained HTML file showing:
 
-- a summary: one small chart per province (provinces of interest where set, otherwise every province) of every
+- Summary: one chart per province (provinces of interest where set, otherwise every province) of every
   October to March season since 2010/11 against normal, with the SEAS5 forecast for the coming season and a
   rainfall/NDVI toggle; three maps (seasons below normal in the last six, the latest IPC projection by area,
-  the FEWS NET projection by livelihood zone); then, folded, the ranking table (average rainfall and NDVI
+  the FEWS NET projection by livelihood zone); the ranking of all provinces (average rainfall and NDVI
   deviation over the last six seasons, IPC Phase 3+ share, FEWS NET Crisis months, the SEAS5 forecast and
-  FEWS NET projection) and the current situation in four lines
-- month by month: WFP's rolling three-month rainfall total to the end of each month (Aug to Oct through Jan to
-  Mar) and the monthly mean NDVI, each against normal, for the last six seasons or every season since 2010/11
-- a province-by-province table of recent IPC analyses and the FEWS NET classification
-- IPC Phase 3+ shares by area for each analysis
+  FEWS NET projection); and the latest season, forecast and classifications in four lines
+- Within the season: WFP's rolling three-month rainfall total through the season (Oct to Dec, then each month
+  to the end of March) and the monthly mean NDVI, each against normal, for the last six seasons or every
+  season since 2010/11
+- IPC and FEWS NET by province: recent IPC analyses and the current and projected FEWS NET phase
+- IPC by municipality: share in Crisis or worse for each analysis
+- Sources and methods
 
 No fixed thresholds are used: the pages show each season's deviation from normal and average it over the last
 six seasons where a single figure per province is needed.
