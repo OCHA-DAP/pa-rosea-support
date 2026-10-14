@@ -7,13 +7,15 @@ One build for the country pages `drought/ago/ago_hotspots.html` (Angola) and
   October to March season since 2010/11 against normal, with the SEAS5 forecast for the coming season and a
   rainfall/NDVI toggle; three maps (seasons below normal in the last six, the latest IPC projection by area,
   the FEWS NET projection by livelihood zone); the ranking of all provinces (average rainfall and NDVI
-  deviation over the last six seasons, IPC Phase 3+ share, FEWS NET Crisis months, the SEAS5 forecast and
-  FEWS NET projection); and the latest season, forecast and classifications in four lines
+  deviation over the last six seasons, the projected IPC Phase 3+ share from the latest analysis covering the
+  province, FEWS NET Crisis months, the SEAS5 forecast and FEWS NET projection); and the latest season, forecast and classifications in four lines
 - Within the season: WFP's rolling three-month rainfall total through the season (Oct to Dec, then each month
   to the end of March) and the monthly mean NDVI, each against normal, for the last six seasons or every
   season since 2010/11
 - IPC and FEWS NET by province: recent IPC analyses and the current and projected FEWS NET phase
-- IPC by municipality: share in Crisis or worse for each analysis
+- IPC by municipality: projected share in Crisis or worse for each analysis
+
+All IPC figures on the pages are the projection period of each analysis, including the summary map.
 - Sources and methods
 
 No fixed thresholds are used: the pages show each season's deviation from normal and average it over the last

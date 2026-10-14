@@ -210,7 +210,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 <details class="sec" id="d-mx" open>
   <summary><h2 id="h-mx">IPC and FEWS NET by province</h2><span class="hint">recent IPC analyses and the current and projected FEWS NET phase</span></summary>
   <div class="body">
-  <p class="sub">Share in Phase 3+ in the recent IPC analyses, and the current and projected FEWS NET phase, by province.</p>
+  <p class="sub">Projected share in Phase 3+ from the recent IPC analyses, and the current and projected FEWS NET phase, by province.</p>
   <div class="panel scroll"><table class="mx" id="mx"></table>
     <div class="legend"><span class="grp">IPC share</span><span id="mxseq" style="display:contents"></span>
       <span class="grp" style="margin-left:6px">Phase</span><span id="mxph" style="display:contents"></span>
@@ -221,9 +221,9 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-si
 </details>
 
 <details class="sec" id="d-ipc" open>
-  <summary><h2 id="h-ipc">IPC by municipality</h2><span class="hint">share of people in Crisis or worse, each analysis</span></summary>
+  <summary><h2 id="h-ipc">IPC by municipality</h2><span class="hint">projected share in Crisis or worse, each analysis</span></summary>
   <div class="body">
-  <p class="sub">Share of the population in Crisis (Phase 3) or worse by municipality: bar for the current period (Emergency in red), tick for the projection.</p>
+  <p class="sub">Projected share of the population in Crisis (Phase 3) or worse by municipality, from each IPC analysis (Emergency in red).</p>
   <div class="controls"><label class="clabel" for="ipcr">Analysis</label><select id="ipcr"></select></div>
   <div class="panel"><div class="ipc" id="ipc"></div></div>
   </div>
@@ -284,6 +284,7 @@ $("meta").textContent=`Updated ${+D.built.slice(8,10)} ${MON[+D.built.slice(5,7)
 const fewsBy={};D.maps.fews.forEach(z=>(fewsBy[z[1]]=fewsBy[z[1]]||[]).push(z));
 const ROUNDS=D.ipc_rounds, RB={};ROUNDS.forEach(r=>RB[r.id]=r);
 const CUR_ROUNDS=ROUNDS.filter(r=>!r.update);
+const PER=r=>r.periods.P?"P":"C", perLab=r=>PER(r)==="P"?"projection":"current";   // IPC figures on the page use each analysis's projection
 const ipcProv={};D.ipc_prov.forEach(r=>{ipcProv[`${r.round}|${r.per}|${r.prov}`]=r});
 const ZN=D.fews.zones;
 const FM={};D.fews.monthly.forEach(r=>{(FM[r[1]]=FM[r[1]]||{})[r[0].slice(0,7)]=r});
@@ -410,7 +411,7 @@ function drawMinis(){
   $("m-rk-d").textContent=`How many of the ${N_RECENT} October to March seasons from ${sLab(RECENT[0])} to ${sLab(RLAST)} had less rain than normal. Hover for the seasons and the average shortfall.`;
   {const rd=CUR_ROUNDS[CUR_ROUNDS.length-1], pr=rd.periods.P||rd.periods.C, per=rd.periods.P?"P":"C", nat=rd.nat[per];
   $("m-ipc2-h").textContent=`IPC ${rd.label}, ${per==="P"?"projection":"current"}: ${short(nat.p3)} people in Crisis (Phase 3) or worse`;
-  $("m-ipc2-d").textContent=`${per==="P"?"Projected phase":"Phase"} by area analysed, ${pr.frm} to ${pr.to}, from the latest IPC analysis of ${C.name}${rd.periods.C&&per==="P"?` (current period ${rd.periods.C.frm} to ${rd.periods.C.to}: ${short(rd.nat.C.p3)})`:""}.`}
+  $("m-ipc2-d").textContent=`${per==="P"?"Projected phase":"Phase"} by area analysed, ${pr.frm} to ${pr.to}, from the latest IPC analysis of ${C.name}.`}
   {const z2=D.maps.fews.filter(z=>z[5]>=3), cp=[...new Set(z2.map(z=>z[1]))].sort();
   $("m-fp-h").textContent=`FEWS NET projection, ${covLab(ZN.ML2)}`;
   $("m-fp-d").textContent=`Projected phase by livelihood zone (${ZN.ML2.doc}, ${md(ZN.ML2.round)}).${cp.length?` Crisis expected in ${list(cp)}.`:""}`}
@@ -441,7 +442,7 @@ function overlay(svg){
 (function(){
   const IPC_COLS=CUR_ROUNDS.slice(-4);
   const maxPh=(p,ix)=>fewsBy[p]?Math.max(...fewsBy[p].map(z=>z[ix])):null;
-  const rows=PROVS.map(p=>({p,ipc:IPC_COLS.map(r=>ipcProv[`${r.id}|C|${p}`]),fc:maxPh(p,3),fm:maxPh(p,5)}))
+  const rows=PROVS.map(p=>({p,ipc:IPC_COLS.map(r=>ipcProv[`${r.id}|${PER(r)}|${p}`]),fc:maxPh(p,3),fm:maxPh(p,5)}))
     .sort((a,b)=>((isF(b.p)?1:0)-(isF(a.p)?1:0))||(isF(a.p)?FOCUS.indexOf(a.p)-FOCUS.indexOf(b.p):0)||((b.fm??0)-(a.fm??0))||a.p.localeCompare(b.p));
   const seqCell=(v,t)=>{const i=bin(v);return `<td style="background:var(--s${i});color:${i>=4?"var(--surface)":"var(--ink)"}" data-tip="${t}">${pct(v)}</td>`};
   const na=t=>`<td class="na" data-tip="${t}">–</td>`;
@@ -449,16 +450,16 @@ function overlay(svg){
     const zs=fewsBy[p].map(z=>`${z[2]}: ${z[ix]} ${PH[z[ix]]}`).join("<br>");
     return `<td style="background:var(--p${ph});color:${phInk(ph)}" data-tip="<b>${p} | ${label}</b><br>${zs}">${ph} ${PH[ph]}</td>`};
   let h=`<thead><tr><th class="pv"></th><th colspan="${IPC_COLS.length}">IPC Phase 3+</th><th class="gap"></th><th colspan="2">FEWS NET</th></tr>
-  <tr><th class="pv">Province</th>${IPC_COLS.map(r=>`<th>${r.label}</th>`).join("")}<th class="gap"></th><th>${md(ZN.CS.round)}<br>current</th><th>${md(ZN.ML2.from)} to<br>${md(ZN.ML2.to)}</th></tr></thead><tbody>`;
+  <tr><th class="pv">Province</th>${IPC_COLS.map(r=>`<th>${r.label}<br>${perLab(r)}</th>`).join("")}<th class="gap"></th><th>${md(ZN.CS.round)}<br>current</th><th>${md(ZN.ML2.from)} to<br>${md(ZN.ML2.to)}</th></tr></thead><tbody>`;
   rows.forEach(r=>{
     h+=`<tr><td class="pv">${r.p}${hzTags(r.p)}${capTag(r.p)}</td>`;
-    r.ipc.forEach((v,i)=>{const rd=IPC_COLS[i];h+=v?seqCell(v.share,`<b>${r.p} | IPC ${rd.label}</b><br>${fmt(v.p3)} people in Phase 3+ (${pct(v.share)} of those analysed)<br>${v.basis}`):na(`<b>${r.p}</b><br>Not analysed in ${rd.label}`)});
+    r.ipc.forEach((v,i)=>{const rd=IPC_COLS[i];h+=v?seqCell(v.share,`<b>${r.p} | IPC ${rd.label}, ${perLab(rd)}</b><br>${fmt(v.p3)} people in Phase 3+ (${pct(v.share)} of those analysed), ${rd.periods[PER(rd)].frm} to ${rd.periods[PER(rd)].to}<br>${v.basis}`):na(`<b>${r.p}</b><br>Not analysed in ${rd.label}`)});
     h+=`<td class="gap"></td>`+phCell(r.p,r.fc,3,md(ZN.CS.round)+" current")+phCell(r.p,r.fm,5,covLab(ZN.ML2))+`</tr>`;
   });
   $("mx").innerHTML=h+"</tbody>";
   $("mx").querySelectorAll("td[data-tip]").forEach(td=>hover(td,td.dataset.tip));
   $("mxseq").innerHTML=seqLegend();$("mxph").innerHTML=phLegend([1,2,3,4].filter(p=>D.maps.fews.some(z=>z[3]===p||z[5]===p)));
-  $("mx-note").textContent=`IPC: share of the population analysed that was in Phase 3+, for the ${IPC_COLS.length===1?"latest analysis":"latest "+IPC_COLS.length+" analyses"}. FEWS NET: highest phase among the province's livelihood zones.${FOCUS.length?" Provinces of interest are listed first.":""}`;
+  $("mx-note").textContent=`IPC: share of the population analysed projected to be in Phase 3+, for the ${IPC_COLS.length===1?"latest analysis":"latest "+IPC_COLS.length+" analyses"}. FEWS NET: highest phase among the province's livelihood zones.${FOCUS.length?" Provinces of interest are listed first.":""}`;
 })();
 
 /* ---------- IPC areas ---------- */
@@ -466,23 +467,23 @@ const ipcSel=$("ipcr");
 ipcSel.innerHTML=[...ROUNDS].reverse().map(r=>`<option value="${r.id}">${r.label}${r.update?" (projection update)":""}</option>`).join("");
 ipcSel.value=CUR_ROUNDS[CUR_ROUNDS.length-1].id;
 function drawIpcBars(){
-  const rd=RB[ipcSel.value], hasC=!!rd.periods.C, pk=hasC?"C":"P";
-  const main=D.ipc.filter(r=>r[0]===rd.id&&r[1]===pk&&r[5]>0), P={};D.ipc.filter(r=>r[0]===rd.id&&r[1]==="P").forEach(r=>P[r[2]]=r);
+  const rd=RB[ipcSel.value], pk=PER(rd), pr0=rd.periods[pk];
+  const main=D.ipc.filter(r=>r[0]===rd.id&&r[1]===pk&&r[5]>0);
   const byP={};main.forEach(r=>(byP[r[4]]=byP[r[4]]||[]).push(r));
   let h="";
   Object.keys(byP).sort().forEach(p=>{
     const pr=ipcProv[`${rd.id}|${pk}|${p}`];
-    const open=byP[p].some(r=>r[5]>=3||(hasC&&P[r[2]]&&P[r[2]][5]>=3));
+    const open=byP[p].some(r=>r[5]>=3);
     h+=`<details${open?" open":""}><summary><h4 style="display:inline">${p} | ${short(pr.p3)} in Phase 3+ (${pct(pr.share)} of those analysed)</h4>${hzTags(p)}</summary>${pr.basis.startsWith("Total of the municipality")?`<p class="small" style="margin:4px 0 8px">${pr.basis}.</p>`:""}<div style="display:grid;gap:4px;margin-top:8px">`;
-    byP[p].sort((a,b)=>b[8]-a[8]).forEach(r=>{const q=hasC?P[r[2]]:null;
-      const t=`<b>${r[2]}${r[3]?" ("+r[3]+")":""}, ${p}</b><br>${rd.periods[pk].frm} to ${rd.periods[pk].to}: Phase ${r[5]}, ${fmt(r[7])} in Phase 3+ (${pct(r[8])}), Phase 4 ${pct(r[10])}`+(q?`<br>${rd.periods.P.frm} to ${rd.periods.P.to}: Phase ${q[5]}, ${fmt(q[7])} in Phase 3+ (${pct(q[8])}), Phase 4 ${pct(q[10])}`:"");
+    byP[p].sort((a,b)=>b[8]-a[8]).forEach(r=>{
+      const t=`<b>${r[2]}${r[3]?" ("+r[3]+")":""}, ${p}</b><br>${pr0.frm} to ${pr0.to} (${perLab(rd)}): Phase ${r[5]}, ${fmt(r[7])} in Phase 3+ (${pct(r[8])}), Phase 4 ${pct(r[10])}`;
       h+=`<div class="brow" data-tip="${t.replace(/"/g,"&quot;")}"><div class="lab">${r[2]}${r[3]?` <small>${r[3]}</small>`:""}</div>
-        <div class="track"><div class="f3" style="width:${r[8]*100}%"></div><div class="f4" style="width:${r[10]*100}%"></div>${q?`<div class="proj" style="left:calc(${q[8]*100}% - 1px)"></div>`:""}</div>
-        <div class="bval"><span><b>${pct(r[8])}</b>${q?" → "+pct(q[8]):""}</span>${chip(r[5])}${q&&q[5]?chip(q[5]):""}</div></div>`});
+        <div class="track"><div class="f3" style="width:${r[8]*100}%"></div><div class="f4" style="width:${r[10]*100}%"></div></div>
+        <div class="bval"><span><b>${pct(r[8])}</b></span>${chip(r[5])}</div></div>`});
     h+=`</div></details>`;
   });
   h+=`<div class="axis"><div></div><div><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div><div></div></div>`;
-  $("ipc").innerHTML=(hasC?"":`<p class="small" style="margin:0">Projection update only: ${rd.periods.P.frm} to ${rd.periods.P.to}.</p>`)+h;
+  $("ipc").innerHTML=`<p class="small" style="margin:0 0 6px">${perLab(rd)==="projection"?"Projection":"Current period"}, ${pr0.frm} to ${pr0.to}.</p>`+h;
   $("ipc").querySelectorAll("[data-tip]").forEach(n=>hover(n,n.dataset.tip));
 }
 ipcSel.addEventListener("change",drawIpcBars);
@@ -495,7 +496,7 @@ drawIpcBars();
     ["Normal",`The average for the same period over many years: ${md(WM.rain.base[0]).slice(-4)} to ${md(WM.rain.base[1]).slice(-4)} for rainfall and ${md(WM.ndvi.base[0]).slice(-4)} to ${md(WM.ndvi.base[1]).slice(-4)} for vegetation. −20% means a fifth less than normal; 0% means normal.`],
     ["Rainfall","Satellite rainfall estimates adjusted with rain gauges (CHIRPS), totalled over the season or over three months, by province."],
     ["End-of-season NDVI","A satellite measure of how green the land is in March, when crops are maturing. It reflects pasture and bush as well as crops, and responds to late rain."],
-    ["IPC","The Integrated Food Security Phase Classification, a five-phase scale agreed by UN agencies, governments and NGOs. Phase 3 (Crisis): households have food gaps or can only meet food needs by using up assets. Phase 4 (Emergency): large food gaps, very high acute malnutrition or extreme loss of assets. Figures are people in Phase 3 or worse."],
+    ["IPC","The Integrated Food Security Phase Classification, a five-phase scale agreed by UN agencies, governments and NGOs. Phase 3 (Crisis): households have food gaps or can only meet food needs by using up assets. Phase 4 (Emergency): large food gaps, very high acute malnutrition or extreme loss of assets. Figures on this page are each analysis's projection of people in Phase 3 or worse, for the months after the analysis."],
     ["FEWS NET","The Famine Early Warning Systems Network, created by USAID, which classifies food security on the same scale by livelihood zone (areas where people make a living in similar ways) and projects it several months ahead."],
     ["Forecast",`The ECMWF seasonal model SEAS5, issued ${md(S5.issued)}. Its ${fcLab} rainfall is compared with what the same model forecast in Septembers ${S5.ref[0]} to ${S5.ref[1]}, so it shows whether the model expects a drier or wetter season than usual, not observed rainfall.`],
     ["Provinces",`${PROVS.length} provinces as in the official boundaries used by the data sources.${Object.keys(REN).length?` Since September 2024 ${list(Object.keys(REN).map(p=>`${p} covers ${list(REN[p])}`))}.`:""}`]];
@@ -507,7 +508,7 @@ drawIpcBars();
   const F=D.fews, odd=WM.odd_units, ren=Object.keys(REN);
   $("src").innerHTML=`
   <li><b>FEWS NET</b> Data Warehouse: reports from ${md(F.first)} to ${md(F.last)}. Zone map from the latest FEWS NET shapefiles, with phases from the ${md(ZN.CS.round)} to ${md(ZN.ML2.round)} reports.${F.odd_docs.length?` The Data Warehouse files some ${C.name} reports under ${list(F.odd_docs)}; the areas and IDs in them are ${C.name}'s, so they are used here.`:""}</li>
-  <li><b>IPC</b>: ${ROUNDS.length} acute food insecurity analyses, ${ROUNDS[0].label} to ${ROUNDS[ROUNDS.length-1].label}, from the IPC API, checked against HDX where HDX has the analysis. Province totals are as IPC published them.${D.ipc_moved.length?` IPC counts ${list(D.ipc_moved.map(m=>m[0]+" in "+m[1]))}; the official boundaries place ${D.ipc_moved.length===1?"it":"them"} in ${list(D.ipc_moved.map(m=>m[2]))}.`:""}</li>
+  <li><b>IPC</b>: ${ROUNDS.length} acute food insecurity analyses, ${ROUNDS[0].label} to ${ROUNDS[ROUNDS.length-1].label}, from the IPC API, checked against HDX where HDX has the analysis. Province totals are as IPC published them. All IPC figures shown are the projection period of each analysis.${D.ipc_moved.length?` IPC counts ${list(D.ipc_moved.map(m=>m[0]+" in "+m[1]))}; the official boundaries place ${D.ipc_moved.length===1?"it":"them"} in ${list(D.ipc_moved.map(m=>m[2]))}.`:""}</li>
   <li><b>Rainfall and NDVI</b>: WFP on HDX, by province, in ten-day periods. Rainfall is CHIRPS: the season total over the 18 ten-day periods from October to March, and month by month WFP's rolling three-month total to the end of each month. NDVI is MODIS, averaged over the month; the seasonal indicator is end-of-season NDVI, the March mean, when crops are at or near maturity. Both are compared with normal, the average for the same ten-day periods over ${baseTxt("rain")} (rainfall) and ${baseTxt("ndvi")} (NDVI), so 0% means normal and −20% means 20% below normal. No fixed thresholds are used; the summary averages these values over the last ${N_RECENT} seasons.${odd.length?` WFP splits ${list(odd)} differently from the official boundaries; together they match.`:""}</li>
   <li><b>Rainfall forecast</b>: ECMWF SEAS5 ensemble mean, issued ${md(S5.issued)}, months ${fcLab}, from the team raster store (${S5.res}° grid). Shown against the average of the forecasts this model issued every September from ${S5.ref[0]} to ${S5.ref[1]}, so the model is compared with itself, not with observed rainfall.</li>
   <li><b>Boundaries</b>: ${C.name} COD-AB on HDX (${PROVS.length} provinces).${ren.length?` Since September 2024 ${C.name} has 21 provinces: ${list(ren.map(p=>`${p} is now ${list(REN[p])}`))}. The sources used here still report the former provinces, so their figures cover the new provinces together.`:""}</li>
@@ -516,18 +517,18 @@ drawIpcBars();
 
 /* ---------- summary ---------- */
 (function(){
-  const lastS=RLAST, last=CUR_ROUNDS[CUR_ROUNDS.length-1], peak=CUR_ROUNDS.reduce((x,y)=>y.nat.C.p3>x.nat.C.p3?y:x);
+  const lastS=RLAST, last=CUR_ROUNDS[CUR_ROUNDS.length-1];
   const z2=D.maps.fews.filter(z=>z[5]>=3), crisisProvs=[...new Set(z2.map(z=>z[1]))].sort();
   // one row per province: how often each source has reported it as affected
   const rows=PROVS.map(p=>{
     const rain6=avgDev("rain",p,RECENT), ndvi6=avgDev("ndvi",p,RECENT), dry=1-rain6, low=1-ndvi6;   // deficit: higher = further below normal
-    const ipcs=CUR_ROUNDS.map(r=>ipcProv[`${r.id}|C|${p}`]).filter(Boolean);
-    const ipc=ipcs.length?mean(ipcs.map(v=>v.share)):null;
-    const p4=CUR_ROUNDS.filter(r=>D.ipc.some(x=>x[0]===r.id&&x[1]==="C"&&x[4]===p&&x[5]>=4)).length;
+    const covered=CUR_ROUNDS.filter(r=>ipcProv[`${r.id}|${PER(r)}|${p}`]), lastR=covered[covered.length-1];
+    const ipcv=lastR?ipcProv[`${lastR.id}|${PER(lastR)}|${p}`]:null, ipc=ipcv?ipcv.share:null;
+    const p4=lastR?D.ipc.filter(x=>x[0]===lastR.id&&x[1]===PER(lastR)&&x[4]===p&&x[5]>=4).length:0;
     const fm=Object.values(FM[p]||{}), fc=fm.filter(r=>r[2]>=3).length, fn=fm.length;
     const fews=fn>=12?fc/fn:null;
     const ph=fewsBy[p]?Math.max(...fewsBy[p].map(z=>z[5])):null;
-    return {p,dry,low,ipc,n:ipcs.length,p4,fc,fn,fews,ph};
+    return {p,dry,low,ipc,ipcv,lastR,p4,fc,fn,fews,ph};
   });
   const KEYS=["dry","low","ipc","fews"];
   KEYS.forEach(k=>{const vals=rows.filter(r=>r[k]!=null).map(r=>r[k]);rows.forEach(r=>r["r_"+k]=r[k]==null?null:1+vals.filter(v=>v>r[k]).length)});
@@ -536,15 +537,15 @@ drawIpcBars();
   rows.forEach((r,i)=>r.rank=i+1);
   const cell=(v,max,label,tipT)=>v==null?`<td class="na"${tipT?` data-tip="${tipT}"`:""}>–</td>`
     :`<td style="background:var(--s${Math.min(5,Math.round(5*v/max))});color:${v/max>0.7?"var(--surface)":"var(--ink)"}"${tipT?` data-tip="${tipT}"`:""}>${label}</td>`;
-  const nIPC=CUR_ROUNDS.length, hasFews=rows.some(r=>r.fews!=null);
+  const hasFews=rows.some(r=>r.fews!=null);
   const sub=t=>`<br><span style="font-weight:400">${t}</span>`;
   const th=(label,subt,tipT)=>`<th data-tip="${tipT}">${label}${sub(subt)}</th>`;
-  let h=`<thead><tr>${FOCUS.length?`<th data-tip="Position among the ${PROVS.length} provinces" style="white-space:nowrap">Rank${sub(`of ${PROVS.length}`)}</th>`:""}<th class="pv">Province</th>${th("Rainfall",`last ${N_RECENT} seasons, average`,`October to March rainfall against normal, averaged over ${sLab(RECENT[0])} to ${sLab(RLAST)}`)}${th("End-of-season NDVI",`last ${N_RECENT} seasons, average`,`March NDVI against normal, averaged over ${sLab(RECENT[0])} to ${sLab(RLAST)}`)}${th("IPC Phase 3+",`average share, ${nIPC} ${nIPC===1?"analysis":"analyses"}`,"Share of the population analysed that was in Phase 3+, averaged over the analyses that covered the province. Count in brackets if not all.")}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, above (+) or below (−) the average of the same September forecasts for ${S5.ref[0]} to ${S5.ref[1]}. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
+  let h=`<thead><tr>${FOCUS.length?`<th data-tip="Position among the ${PROVS.length} provinces" style="white-space:nowrap">Rank${sub(`of ${PROVS.length}`)}</th>`:""}<th class="pv">Province</th>${th("Rainfall",`last ${N_RECENT} seasons, average`,`October to March rainfall against normal, averaged over ${sLab(RECENT[0])} to ${sLab(RLAST)}`)}${th("End-of-season NDVI",`last ${N_RECENT} seasons, average`,`March NDVI against normal, averaged over ${sLab(RECENT[0])} to ${sLab(RLAST)}`)}${th("IPC Phase 3+",`projected share, latest analysis`,`Share of the population analysed that is projected to be in Phase 3 or worse, from the latest IPC analysis that covered the province (${CUR_ROUNDS[CUR_ROUNDS.length-1].label} unless dated otherwise)`)}${hasFews?th("FEWS NET","months at Crisis or worse","Report months in which any part of the province was at Crisis or worse"):""}${th("Rainfall forecast",fcLab,`SEAS5 forecast issued ${md(S5.issued)}, above (+) or below (−) the average of the same September forecasts for ${S5.ref[0]} to ${S5.ref[1]}. A projection; not part of the ranking.`)}${th("FEWS NET",covLab(ZN.ML2),"FEWS NET's projected phase. A projection; not part of the ranking.")}</tr></thead><tbody>`;
   rows.forEach(r=>{
     h+=`<tr${FOCUS.length&&!isF(r.p)?' class="more"':""}>${FOCUS.length?`<td class="rk">${r.rank}</td>`:""}<td class="pv">${r.p}${hzTags(r.p)}${capTag(r.p)}${nowTag(r.p)}</td>`;
     [["rain",1-r.dry],["ndvi",1-r.low]].forEach(([k,v])=>{const b=vbin(k,v);h+=`<td style="background:var(--d${b});color:${dInk(b)}" data-tip="<b>${r.p}</b><br>${VAR[k].label} ${devTxt(v)} on average over ${sLab(RECENT[0])} to ${sLab(RLAST)}<br>${RECENT.map(s=>`${sLab2(s)} ${devLab(W[`${k}|${r.p}|${s}`][5])}`).join(", ")}">${devLab(v)}</td>`});
     h+=r.ipc==null?`<td class="na" data-tip="<b>${r.p}</b><br>Not covered by any IPC analysis">–</td>`
-      :`<td style="background:var(--s${bin(r.ipc)});color:${bin(r.ipc)>=4?"var(--surface)":"var(--ink)"}" data-tip="<b>${r.p}</b><br>Average share in Phase 3+ over ${r.n} of ${nIPC} analyses${r.p4?`<br>Areas in Emergency (Phase 4) in ${r.p4} ${r.p4===1?"analysis":"analyses"}`:""}">${pct(r.ipc)}${r.n<nIPC?` <span style="opacity:.7;font-weight:400">(${r.n})</span>`:""}</td>`;
+      :`<td style="background:var(--s${bin(r.ipc)});color:${bin(r.ipc)>=4?"var(--surface)":"var(--ink)"}" data-tip="<b>${r.p} | IPC ${r.lastR.label}, ${perLab(r.lastR)}</b><br>${fmt(r.ipcv.p3)} people in Phase 3 or worse (${pct(r.ipc)} of those analysed), ${r.lastR.periods[PER(r.lastR)].frm} to ${r.lastR.periods[PER(r.lastR)].to}${r.p4?`<br>${r.p4} ${r.p4===1?"area":"areas"} in Emergency (Phase 4)`:""}<br>${r.ipcv.basis}">${pct(r.ipc)}${r.lastR.id!==CUR_ROUNDS[CUR_ROUNDS.length-1].id?` <span style="opacity:.7;font-weight:400">${r.lastR.label}</span>`:""}</td>`;
     if(hasFews)h+=r.fews==null?`<td class="na" data-tip="<b>${r.p}</b><br>${r.fn} report months with province data, too few to count">–</td>`
       :`<td style="background:var(--s${bin(r.fews)});color:${bin(r.fews)>=4?"var(--surface)":"var(--ink)"}" data-tip="<b>${r.p}</b><br>${r.fc} of ${r.fn} FEWS NET report months at Crisis or worse">${r.fc} of ${r.fn}</td>`;
     const f=fc(r.p), fb=f?vbin("rain",f[4]):null;
@@ -568,8 +569,8 @@ drawIpcBars();
   }
   // latest
   const rl=W[`rain|${NAT}|${lastS}`], nl=W[`ndvi|${NAT}|${lastS}`];
-  const proj=last.nat.P?`, ${short(last.nat.P.p3)} projected for ${last.periods.P.frm} to ${last.periods.P.to}`:"";
-  const ipcLine=`${last.label}: ${short(last.nat.C.p3)} people in Crisis (Phase 3) or worse (${last.periods.C.frm} to ${last.periods.C.to})${proj}.${CUR_ROUNDS.length>1&&peak.id!==last.id?` Highest of the ${ROUNDS.length} analyses: ${short(peak.nat.C.p3)} in ${peak.label}.`:""} No IPC analysis of ${C.name} since ${last.label}.`;
+  const lp=PER(last), peakP=CUR_ROUNDS.reduce((x,y)=>y.nat[PER(y)].p3>x.nat[PER(x)].p3?y:x);
+  const ipcLine=`${last.label}: ${short(last.nat[lp].p3)} people projected in Crisis (Phase 3) or worse for ${last.periods[lp].frm} to ${last.periods[lp].to}.${CUR_ROUNDS.length>1&&peakP.id!==last.id?` Highest projection of the ${CUR_ROUNDS.length} analyses: ${short(peakP.nat[PER(peakP)].p3)} in ${peakP.label}.`:""} No IPC analysis of ${C.name} since ${last.label}.`;
   $("now").innerHTML=`
    <dt>Last season</dt><dd>${sLab(lastS)}: rainfall ${devTxt(rl[5])} nationally (${rankTxt(rl[6])} of ${WM.rain.n} seasons), end-of-season NDVI ${devTxt(nl[5])}. Lowest rainfall: ${list([...PROVS].sort((a,b)=>W[`rain|${a}|${lastS}`][5]-W[`rain|${b}|${lastS}`][5]).slice(0,5).map(p=>`${p} (${devLab(W[`rain|${p}|${lastS}`][5])})`))}.</dd>
    <dt>Forecast</dt><dd>${(()=>{const n=fc(NAT), lows=PROVS.map(p=>fc(p)).filter(Boolean).sort((a,b)=>a[4]-b[4]).slice(0,3);
