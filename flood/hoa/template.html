@@ -13,17 +13,17 @@
 :root{
   --paper:#f5f7f8; --surface:#ffffff; --ink:#14212b; --ink-2:#46535e; --ink-3:#7b8792; --rule:#dbe1e5; --track:#e8ecef;
   --rain:#1f6ea6; --flood:#c2462a; --flood-soft:#f4d6cc; --now:#14212b; --band:#eaf1f6;
-  --cool:#1f6ea6; --warm:#d07a2d;
+  --cool:#5b57b8; --warm:#b5800f;
   --display:"Archivo","Helvetica Neue",Arial,sans-serif; --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --paper:#0e161d; --surface:#151f28; --ink:#e6ecf1; --ink-2:#b2bec8; --ink-3:#83909b; --rule:#283540; --track:#1f2a34;
   --rain:#66a9dc; --flood:#ec7656; --flood-soft:#4f2519; --now:#f1f5f8; --band:#17283a;
-  --cool:#66a9dc; --warm:#e39a55; color-scheme:dark}}
+  --cool:#a19dee; --warm:#ddb04d; color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#0e161d; --surface:#151f28; --ink:#e6ecf1; --ink-2:#b2bec8; --ink-3:#83909b; --rule:#283540; --track:#1f2a34;
   --rain:#66a9dc; --flood:#ec7656; --flood-soft:#4f2519; --now:#f1f5f8; --band:#17283a;
-  --cool:#66a9dc; --warm:#e39a55; color-scheme:dark}
+  --cool:#a19dee; --warm:#ddb04d; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -95,7 +95,7 @@ svg .halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-lin
   <div class="eyebrow">Ethiopia | Kenya | Somalia | October–December rains</div>
   <h1>Flood timing in October–December seasons with El Niño and a positive IOD</h1>
   <p class="deck">Start month of EM-DAT floods in seasons with both an El Niño and a positive Indian Ocean Dipole (IOD) compared with other seasons, seasonal rainfall against recorded floods since 1981, temperature against rainfall, and the 2026 season to 5 November.</p>
-  <div class="stamp"><span><b>As of</b> 9 Nov 2026</span><span><b>Seasons</b> 1981–2025 + 2026</span><span><b>Rain</b> CHIRPS v3 to 5 Nov 2026</span><span><b>Temperature</b> ERA5 to 31 Oct 2026</span><span><b>Floods</b> EM-DAT, ReliefWeb</span></div>
+  <div class="stamp"><span><b>Prepared</b> 11 Nov 2026</span><span><b>Seasons</b> 1981–2024 + 2026</span><span><b>Rain</b> CHIRPS v3 to 5 Nov 2026</span><span><b>Temperature</b> ERA5 to 31 Oct 2026</span><span><b>Floods</b> EM-DAT to May 2025, ReliefWeb to 9 Nov 2026</span></div>
 </div></header>
 
 <main><div class="wrap">
@@ -106,10 +106,10 @@ svg .halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-lin
 </section>
 
 <section aria-labelledby="s-types">
-  <h2 id="s-types">1 Season classification</h2>
-  <p class="lede">Between 1981 and 2025, six October–December (OND) seasons met both conditions, El Niño (Niño3.4 ≥ +0.5 °C) and a positive IOD (Dipole Mode Index, DMI, ≥ +0.4 °C): 1994, 1997, 2006, 2018, 2019 and 2023. No positive-IOD season occurred without El Niño. Provisional 2026 values exceed both thresholds (Figure 1).</p>
+  <h2 id="s-types">Seasons with El Niño and a positive IOD</h2>
+  <p class="lede">Between 1981 and 2024, six October–December (OND) seasons met both conditions, El Niño (Niño3.4 ≥ +0.5 °C) and a positive IOD (Dipole Mode Index, DMI, ≥ +0.4 °C): 1994, 1997, 2006, 2018, 2019 and 2023. No positive-IOD season occurred without El Niño. Provisional 2026 values exceed both thresholds (Figure 1).</p>
   <figure>
-    <figcaption><span class="fignum">Figure 1</span><span class="figtitle" id="t1"></span><span class="figsub">Niño3.4 and Dipole Mode Index (DMI), OND means in °C, 1981–2025, and provisional 2026 values</span></figcaption>
+    <figcaption><span class="fignum">Figure 1</span><span class="figtitle" id="t1"></span><span class="figsub">Niño3.4 and Dipole Mode Index (DMI), OND means in °C, 1981–2024, and provisional 2026 values</span></figcaption>
     <div class="legend">
       <span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="width:16px;height:16px;flex:none"><circle cx="8" cy="8" r="2.6" style="fill:var(--ink)"/><circle cx="8" cy="8" r="6" style="fill:none;stroke:var(--ink);stroke-width:1.3"/></svg>Season with both conditions</span>
       <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="4.2" style="fill:var(--surface);stroke:var(--ink-3);stroke-width:1.4"/></svg>Other season</span>
@@ -121,21 +121,21 @@ svg .halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-lin
 </section>
 
 <section aria-labelledby="s-month">
-  <h2 id="s-month">2 Month of first flood</h2>
+  <h2 id="s-month">Month of the first flood</h2>
   <p class="lede" id="month-lede"></p>
   <p class="lede" id="riv-lede"></p>
   <figure>
-    <figcaption><span class="fignum">Figure 2</span><span class="figtitle" id="t2"></span><span class="figsub">Country-seasons with an EM-DAT flood starting September–December, and the month the first flood started, by season type, 1981–2025. A country-season is one country in one season: 6 seasons × 3 countries = 18.</span></figcaption>
+    <figcaption><span class="fignum">Figure 2</span><span class="figtitle" id="t2"></span><span class="figsub">Country-seasons with an EM-DAT flood starting September–December, and the month the first flood started, by season type, 1981–2024. A country-season is one country in one season: 6 seasons × 3 countries = 18.</span></figcaption>
     <h3 class="rowhd">All flood types</h3>
     <div id="fig2a" class="fit"></div>
     <h3 class="rowhd">Riverine floods only</h3>
     <div id="fig2b" class="fit"></div>
-    <p class="fignote">Left: country-seasons with a flood, with the bar showing their share of all country-seasons in that row. Right: the number of country-seasons whose first flood started in each month, with the bar showing their share of the row's country-seasons with a flood. EM-DAT records the start month only. Riverine refers to the EM-DAT subtype Riverine flood; the 2019 events are classified as flash floods and the 2023 events as flash or general floods, so neither season contributes to the riverine rows.</p>
+    <p class="fignote">Left: country-seasons with a flood, with the bar showing their share of all country-seasons in that row. Right: the number of country-seasons whose first flood started in each month; bar length is that number, on one scale for all rows. EM-DAT records the start month only. Riverine refers to the EM-DAT subtype Riverine flood; the 2019 events are classified as flash floods and the 2023 events as flash or general floods, so neither season contributes to the riverine rows.</p>
   </figure>
 </section>
 
 <section aria-labelledby="s-timeline">
-  <h2 id="s-timeline">3 Rainfall onset and flood timing in seasons with both conditions</h2>
+  <h2 id="s-timeline">Rainfall onset and flood months in seasons with both conditions</h2>
   <p class="lede" id="lede3"></p>
   <figure>
     <figcaption><span class="fignum">Figure 3</span><span class="figtitle" id="t3"></span><span class="figsub">Area-average rainfall onset and the month EM-DAT floods started, 1 September to 31 December, in the six seasons with both conditions and 2026</span></figcaption>
@@ -143,7 +143,7 @@ svg .halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-lin
       <span><svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true" style="width:10px;height:14px;flex:none"><rect x="3.4" y="1" width="3.2" height="12" rx="1" style="fill:var(--rain)"/></svg>Rainfall onset, with its date</span>
       <span><svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true" style="width:16px;height:14px;flex:none"><rect x="0" y="0" width="16" height="14" style="fill:var(--rain);opacity:.13"/></svg>Onset range of the five seasons other than 2018</span>
       <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><path d="M2 3V8H20V3" style="fill:none;stroke:var(--flood);stroke-width:2"/></svg>Month an EM-DAT flood started (day not recorded)</span>
-      <span><svg width="12" height="10" viewBox="0 0 12 10" aria-hidden="true" style="width:12px;height:10px;flex:none"><path d="M2 2H10L6 8Z" style="fill:var(--now)"/></svg>2026 report of flooding, or of a river at or above a flood risk level</span>
+      <span><svg width="12" height="10" viewBox="0 0 12 10" aria-hidden="true" style="width:12px;height:10px;flex:none"><path d="M2 8H10L6 2Z" style="fill:var(--now)"/></svg>2026 report of flooding, or of a river at or above a flood risk level</span>
       <span><svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true" style="width:16px;height:14px;flex:none"><path d="M-2 10L8 0M2 16L16 2M10 16L18 8" style="stroke:var(--ink-3);stroke-width:1.5;opacity:.6"/></svg>No data yet</span>
     </div>
     <div id="fig3" class="fit"></div>
@@ -152,10 +152,10 @@ svg .halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-lin
 </section>
 
 <section aria-labelledby="s-wet">
-  <h2 id="s-wet">4 OND rainfall and recorded floods, 1981–2025</h2>
+  <h2 id="s-wet">October–December rainfall and recorded floods</h2>
   <p class="lede" id="wet-lede"></p>
   <figure>
-    <figcaption><span class="fignum">Figure 4</span><span class="figtitle" id="t4"></span><span class="figsub">OND rainfall as a percentage of the 1991–2020 mean, seasons 1981–2025 ranked from wettest (left) to driest (right)</span></figcaption>
+    <figcaption><span class="fignum">Figure 4</span><span class="figtitle" id="t4"></span><span class="figsub">OND rainfall as a percentage of the 1991–2020 mean, seasons 1981–2024 ranked from wettest (left) to driest (right)</span></figcaption>
     <div class="legend">
       <span><svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true" style="width:10px;height:14px;flex:none"><rect x="2" y="1" width="6" height="12" style="fill:var(--flood)"/></svg>EM-DAT flood starting Sep–Dec</span>
       <span><svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true" style="width:10px;height:14px;flex:none"><rect x="2" y="1" width="6" height="12" style="fill:var(--ink-3);opacity:.45"/></svg>No EM-DAT flood</span>
@@ -167,37 +167,43 @@ svg .halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-lin
 </section>
 
 <section aria-labelledby="s-temp">
-  <h2 id="s-temp">5 Temperature before and during the season</h2>
+  <h2 id="s-temp">Temperature, rainfall and floods</h2>
   <p class="lede" id="temp-lede"></p>
   <p class="lede" id="temp-lede2"></p>
   <p class="lede" id="temp-lede3"></p>
   <p class="lede" id="temp-lede26"></p>
   <figure>
-    <figcaption><span class="fignum">Figure 5</span><span class="figtitle" id="t5"></span><span class="figsub">Temperature is the departure from that month's 1981–2025 trend; rainfall is compared with the 1991–2020 mean; seasons 1981–2025</span></figcaption>
+    <figcaption><span class="fignum">Figure 5</span><span class="figtitle" id="t5"></span><span class="figsub">October temperature in the wettest and driest Octobers: departure from the <span class="span"></span> October trend, with October rainfall ranked as a percentage of the 1991–2020 October mean</span></figcaption>
     <div class="legend">
-      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><rect x="1" y="1" width="12" height="12" rx="1.5" style="fill:var(--cool)"/></svg>Cooler than the trend</span>
-      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><rect x="1" y="1" width="12" height="12" rx="1.5" style="fill:var(--warm)"/></svg>Warmer than the trend</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><rect x="1" y="1" width="12" height="12" rx="1.5" style="fill:var(--cool)"/></svg>October cooler than the trend</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><rect x="1" y="1" width="12" height="12" rx="1.5" style="fill:var(--warm)"/></svg>October warmer than the trend</span>
     </div>
-    <h3 class="rowhd">Same month: October temperature in the wettest and driest Octobers</h3>
     <div class="panels" id="figtemp-oct"></div>
-    <h3 class="rowhd">Before the season: OND rain and floods after a warm or a cool August–September</h3>
+    <p class="fignote">Each square is one October. Squares are grouped by colour, cooler first, and are not ordered by rainfall. El Niño seasons are the 15 with OND Niño3.4 ≥ +0.5 °C. Averages over the same OND rainfall areas as Figures 3 and 4.</p>
+  </figure>
+  <figure>
+    <figcaption><span class="fignum">Figure 6</span><span class="figtitle" id="t5b"></span><span class="figsub">Share of seasons with OND rainfall above the 1991–2020 mean, and with an EM-DAT flood starting September–December, after an August–September above its <span class="span"></span> trend (warm) or below it (cool)</span></figcaption>
+    <div class="legend">
+      <span><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true" style="width:22px;height:12px;flex:none"><rect x="0" y="1" width="22" height="10" style="fill:var(--warm)"/></svg>After a warm August–September</span>
+      <span><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true" style="width:22px;height:12px;flex:none"><rect x="0" y="1" width="22" height="10" style="fill:var(--cool)"/></svg>After a cool August–September</span>
+    </div>
     <div class="panels" id="figtemp-as"></div>
-    <p class="fignote">Top: each square is one October, from the Octobers ranked by rainfall as a percentage of the 1991–2020 October mean. Bottom: share of seasons with OND rainfall above the 1991–2020 mean, or with an EM-DAT flood starting September–December, after an August–September above its trend (warm) or below it (cool). El Niño seasons are the 15 with OND Niño3.4 ≥ +0.5 °C. Averages over the same OND rainfall areas as Figures 3 and 4.</p>
+    <p class="fignote">El Niño seasons are the 15 with OND Niño3.4 ≥ +0.5 °C. Averages over the same OND rainfall areas as Figures 3 and 4.</p>
   </figure>
 </section>
 
 <section aria-labelledby="s-2026">
-  <h2 id="s-2026">6 The 2026 season to 5 November</h2>
+  <h2 id="s-2026">The 2026 season to 5 November</h2>
   <p class="lede" id="lede26"></p>
   <p class="lede" id="lede26b"></p>
   <p class="lede" id="lede26c"></p>
   <figure>
-    <figcaption><span class="fignum">Figure 6</span><span class="figtitle" id="t6"></span><span class="figsub">Cumulative rainfall from 1 September (mm): 2026, the six seasons with both conditions and the 1991–2020 mean</span></figcaption>
+    <figcaption><span class="fignum">Figure 7</span><span class="figtitle" id="t6"></span><span class="figsub">Cumulative rainfall from 1 September (mm): 2026, the six seasons with both conditions and the 1991–2020 mean</span></figcaption>
     <div class="legend">
       <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--now);stroke-width:2.6"/></svg>2026, final data to 30 Sep</span>
       <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--now);stroke-width:2.6;stroke-dasharray:4 3"/></svg>2026, preliminary data from 1 Oct</span>
-      <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--rain);stroke-width:1.4;opacity:.7"/></svg>Seasons with both conditions (year at line end)</span>
-      <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--ink-3);stroke-width:1.8"/></svg>1991–2020 mean</span>
+      <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--rain);stroke-width:1.5;opacity:.9"/></svg>Seasons with both conditions (year at line end)</span>
+      <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="2" y1="5" x2="20" y2="5" style="stroke:var(--ink-3);stroke-width:5;opacity:.45;stroke-linecap:round"/></svg>1991–2020 mean</span>
     </div>
     <div class="panels" id="figcum"></div>
     <p class="fignote">The same vertical scale is used for the three countries. CHIRPS v3.0: final data to 30 September 2026; preliminary data from 1 October to 5 November 2026. Preliminary values use readily available station reports without the quality control of the final data, and are replaced when the final data are released.</p>
@@ -205,16 +211,16 @@ svg .halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-lin
 </section>
 
 <section aria-labelledby="s-method">
-  <h2 id="s-method">7 Data and methods</h2>
+  <h2 id="s-method">Data and methods</h2>
   <ul class="notes">
     <li><b>Season.</b> October–December (OND): the Deyr in Somalia, the short rains in Kenya and the October–December rains of southern and southeastern Ethiopia.</li>
     <li><b>Season classification.</b> Niño3.4 anomaly from NOAA CPC (ERSST v5, 1991–2020 base) and DMI from NOAA PSL (HadISST 1.1), both averaged over OND. Thresholds: El Niño, Niño3.4 ≥ +0.5 °C; La Niña, Niño3.4 ≤ −0.5 °C; positive IOD, DMI ≥ +0.4 °C. Thresholds are applied to unrounded values.</li>
     <li><b>2026 indices.</b> The HadISST DMI series ends in May 2026. ENSO state is taken from the NOAA CPC Oceanic Niño Index (August–October 2026). DMI is computed from NOAA OISST v2.1 daily anomalies (relative to 1971–2000) as the mean over 10°S–10°N, 50–70°E minus the mean over 10°S–0°, 90–110°E, to 7 November 2026.</li>
-    <li><b>Floods.</b> <a href="https://www.emdat.be/">EM-DAT</a> (CRED, UCLouvain) flood events in Ethiopia, Kenya and Somalia with a start month from September to December, 1981–2025. Each country-season is counted once, at its earliest start month. September is included to capture floods that begin shortly before the OND rains. Two Ethiopian September events are located mainly outside the OND rainfall areas used here: 1999 (Benishangul-Gumuz) and 2005 (Tigray, Amhara and Oromia). The EM-DAT extract contains no event starting after May 2025, so the most recent seasons may be incomplete.</li>
-    <li><b>Rainfall.</b> <a href="https://www.chc.ucsb.edu/data/chirps3">CHIRPS v3.0</a> (Funk et al. 2026) daily, averaged from 0.05° to 0.25° and area-weighted over cells where OND contributes at least 25% of annual rainfall (CHIRPS v3.0 monthly means, 1991–2020). CHIRPS v3.0 daily values are pentad totals divided among the days of the pentad: with ERA5 daily rainfall in the final data (the daily version that starts in 1981) and with IMERG in the preliminary data, so 2026 values from 1 October use a different daily split from earlier seasons, with the same pentad totals. CHC notes that onset dates can differ between the two splits. Onset is computed per cell by anomalous accumulation from 1 September (Liebmann et al. 2012; Dunning et al. 2016) and averaged over the same cells; cells without a detected onset are assigned the last day of the record. The normal-total date is the first day on which cumulative rainfall from 1 September exceeds the 1991–2020 mean OND total. The 2026 comparison with earlier seasons uses rainfall from 1 September to 5 November in each season, as a percentage of the 1991–2020 mean for the same period.</li>
-    <li><b>Temperature.</b> <a href="https://doi.org/10.24381/cds.f17050d7">ERA5</a> 2 m air temperature (Copernicus Climate Change Service): monthly means for 1981–2025, and for 2026 daily means to 31 October averaged by month. Values are interpolated to the centres of the CHIRPS cells and averaged over the same OND rainfall areas. Departures are from each month's linear trend over 1981–2025, which rises by 0.16–0.42 °C per decade, so that warming over the period does not by itself make recent seasons look warm. The August–September value is the mean of the two monthly departures; a warm August–September is one above the trend. El Niño seasons are the 15 with OND Niño3.4 ≥ +0.5 °C, with or without a positive IOD. October rainfall is a percentage of the 1991–2020 October mean, and the wettest and driest Octobers are ranked by it (15 of the 45 seasons, and 10 of the 30 seasons without El Niño). <span id="temp-pr"></span> Recent ERA5 months are preliminary (ERA5T) and are occasionally revised.</li>
+    <li><b>Floods.</b> <a href="https://www.emdat.be/">EM-DAT</a> (CRED, UCLouvain) flood events in Ethiopia, Kenya and Somalia with a start month from September to December, 1981–2024. Each country-season is counted once, at its earliest start month. September is included to capture floods that begin shortly before the OND rains. Two Ethiopian September events are located mainly outside the OND rainfall areas used here: 1999 (Benishangul-Gumuz) and 2005 (Tigray, Amhara and Oromia). EM-DAT lists no event in the three countries starting after May 2025, so the 2025 season is left out.</li>
+    <li><b>Rainfall.</b> <a href="https://www.chc.ucsb.edu/data/chirps3">CHIRPS v3.0</a> (Funk et al. 2026) daily, averaged from 0.05° to 0.25° and area-weighted over cells where OND contributes at least 25% of annual rainfall (CHIRPS v3.0 monthly means, 1991–2020). CHIRPS v3.0 daily values are pentad totals divided among the days of the pentad: with ERA5 daily rainfall in the final data (the daily version that starts in 1981) and with IMERG in the preliminary data, so 2026 values from 1 October use a different daily split from earlier seasons, with the same pentad totals. CHC notes that onset dates can differ between the two splits. Onset is computed per cell by anomalous accumulation from 1 September (Liebmann et al. 2012; Dunning et al. 2016) and averaged over the same cells; cells without a detected onset are assigned the last day of the record. The 2026 comparison with earlier seasons uses rainfall from 1 September to 5 November in each season, as a percentage of the 1991–2020 mean for the same period.</li>
+    <li><b>Temperature.</b> <a href="https://doi.org/10.24381/cds.f17050d7">ERA5</a> 2 m air temperature (Copernicus Climate Change Service): monthly means for 1981–2024, and for 2026 daily means to 31 October averaged by month. Values are interpolated to the centres of the CHIRPS cells and averaged over the same OND rainfall areas. Departures are from each month's linear trend over 1981–2024, which rises by <span id="trend-range"></span> °C per decade, so that warming over the period does not by itself make recent seasons look warm. The August–September value is the mean of the two monthly departures; a warm August–September is one above the trend. El Niño seasons are the 15 with OND Niño3.4 ≥ +0.5 °C, with or without a positive IOD. October rainfall is a percentage of the 1991–2020 October mean, and the wettest and driest Octobers are ranked by it (<span id="temp-thirds"></span>). <span id="temp-pr"></span> Recent ERA5 months are preliminary (ERA5T) and are occasionally revised.</li>
     <li><b>2026 reports.</b> Selected from the 53 <a href="https://reliefweb.int/">ReliefWeb</a> reports tagged flood with Ethiopia, Kenya or Somalia as primary country, 1 September to 9 November 2026; retained reports describe observed or expected flooding, river levels or an imminent-flood operation (FAO SWALIM river advisories, WHO, IRC, Radio Ergo, IFRC and FEWS NET). No report of OND 2026 flooding in Ethiopia was found. ReliefWeb lists no flood disaster event for the three countries this season.</li>
-    <li><b>Limitations.</b> Six seasons met both conditions; counts describe these seasons and the other 39 and are not probabilities. EM-DAT includes an event only if it meets at least one entry criterion (10 or more deaths, 100 or more people affected, a declared state of emergency or a call for international assistance), and its records may be less complete for earlier years.</li>
+    <li><b>Limitations.</b> Six seasons met both conditions; counts describe these seasons and the other <span id="n-other"></span> and are not probabilities. EM-DAT includes an event only if it meets at least one entry criterion (10 or more deaths, 100 or more people affected, a declared state of emergency or a call for international assistance), and its records may be less complete for earlier years.</li>
   </ul>
 </section>
 
@@ -240,6 +246,8 @@ const listAnd=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.leng
 const TI=['SOM','KEN','ETH'];
 const GRP={}; D.phase.forEach(p=>{GRP[p.year]=p.grp;});
 const both6=D.phase.filter(p=>p.grp==='both').map(p=>String(p.year));
+const NO=D.phase.length-both6.length, SPAN=`${D.seasons_span[0]}–${D.seasons_span[1]}`;
+document.querySelectorAll('.span').forEach(e=>{e.textContent=SPAN;});
 const hiNoFlood=iso=>D.seasons[iso].filter(r=>r[1]>=120&&!r[2]).map(r=>r[0]);
 const belowFlood=iso=>D.seasons[iso].filter(r=>r[1]<100&&r[2]).map(r=>r[0]);
 const deg=v=>Math.abs(v).toFixed(2);
@@ -251,10 +259,10 @@ const no18=iso=>Math.round(D.timeline[iso].find(r=>r.year===2018).no_onset_pct);
 const mm=v=>v.toFixed(1);
 const fl26=(x,w)=>x.no.length?`${x.f} with ${w}; no flood in ${listAnd(x.no)}`:`all with ${w}`;
 const ovl=(a,b)=>a[0]<b[2]&&b[0]<a[2]&&a[1]<b[3]&&b[1]<a[3];
-const placeLabels=(items,obst,bounds)=>{
+const placeLabels=(items,obst,bounds,pre=[])=>{
   const cand=[[9,4,'start'],[-9,4,'end'],[0,-10,'middle'],[0,17,'middle'],[9,-8,'start'],[-9,-8,'end'],[9,16,'start'],[-9,16,'end'],
     [20,-16,'start'],[-20,-16,'end'],[20,24,'start'],[-20,24,'end'],[0,-24,'middle'],[0,31,'middle'],[28,4,'start'],[-28,4,'end']];
-  const placed=[];
+  const placed=[...pre];
   return items.map(it=>{
     const bb=it.b||bounds, w=it.text.length*6.6+3; let best=null;
     cand.forEach(([dx,dy,a],ci)=>{
@@ -284,6 +292,9 @@ const wetTop=()=>{const k=TI.map(i=>top5(i).map(r=>r[0]).sort().join(','));
 /* 2026 cumulative rainfall at 5 November against the six seasons with both conditions */
 const cmp6=iso=>{const c=D.curves[iso],li=c['2026'].length-1,v=c['2026'][li];
   return {v,li,mean:c.normal[li],lo:both6.filter(k=>c[k][li]<v),hi:both6.filter(k=>c[k][li]>v)};};
+/* the season of the six closest to 2026 at 5 November */
+const near6=iso=>{const c=D.curves[iso],x=cmp6(iso),k=both6.reduce((p,q)=>Math.abs(c[q][x.li]-x.v)<Math.abs(c[p][x.li]-x.v)?q:p);
+  return `${k} in ${CN[iso]} (${Math.round(c[k][x.li])} mm, against ${Math.round(x.v)} mm in 2026)`;};
 const cmpParen=iso=>{const x=cmp6(iso);
   return x.lo.length===0?'all six had more':x.hi.length===0?'all six had less':x.hi.length<=x.lo.length?`${listAnd(x.hi)} had more`:`only ${listAnd(x.lo)} had less`;};
 /* draw a figure at the container's own width so that text keeps its size on phones */
@@ -297,20 +308,22 @@ const fit=(id,draw)=>{const el=document.getElementById(id);let lw=0;
   const oAny=o.reduce((t,k)=>t+g[k].any,0), oN=o.reduce((t,k)=>t+g[k].country_seasons,0);
   const sumM=m=>o.reduce((t,k)=>t+(g[k].by_month[m]||0),0);
   const lo=TI.map(i=>cmp6(i).lo.length);
-  const pair=(set,key)=>TI.map(i=>`${CN[i]} ${T[i][set].warm[key]} of ${T[i][set].warm.n} against ${T[i][set].cool[key]} of ${T[i][set].cool.n}`).join(' | ');
   const k18=fullDos(D.timeline.KEN.find(r=>r.year===2018).onset);
   const items=[
-    `<b>2026 so far.</b> Provisional indices meet both conditions (Oceanic Niño Index, August–October, ${sign(n.oni_aso)} °C; Dipole Mode Index (DMI), October, ${sign(n.dmi_oct)} °C). Rainfall from 1 September to 5 November was ${Math.round(s.SOM.to_date_pct)}% of the 1991–2020 mean in Somalia, ${Math.round(s.KEN.to_date_pct)}% in Kenya and ${Math.round(s.ETH.to_date_pct)}% in Ethiopia: more than in ${lo[0]}, ${lo[1]} and ${lo[2]} of the six earlier seasons with both conditions. Provisional onset was ${fullISO(s.SOM.onset_date)} in Somalia and ${fullISO(s.ETH.onset_date)} in Ethiopia, within the ${onR()[0]}–${onR()[1]} range of the earlier seasons other than 2018, and ${fullISO(s.KEN.onset_date)} in Kenya, where ${Math.round(s.KEN.no_onset_pct)}% of the area had no onset by 5 November.`,
-    `<b>2026 reports.</b> Somalia: flooding reported in Mogadishu on 17 September and from mid-October in Mudug, Hiran, Middle Shabelle, Lower Shabelle and Bay; the Shabelle exceeded the high flood risk level at Jowhar on 13 October and reached the moderate level at Belet Weyne on 26 October. Kenya: IFRC launched an imminent-flood DREF operation on 30 October, and a FEWS NET outlook of 5 November expects flooding in Dadaab between November and January. Ethiopia: no report of OND 2026 flooding was found.`,
-    `<b>Flood occurrence.</b> In the six seasons with El Niño and a positive IOD, ${b.any} of ${b.country_seasons} country-seasons (6 seasons × 3 countries) recorded an EM-DAT flood starting September–December, compared with ${oAny} of ${oN} in the other 39 seasons.`,
-    `<b>Flood timing.</b> In those six seasons, the first flood started in October in ${b.by_month['10']} of the ${b.any} country-seasons with a flood (September ${b.by_month['9']||0}, November ${b.by_month['11']||0}). In the other 39 seasons, it started in September in ${sumM('9')}, October in ${sumM('10')}, November in ${sumM('11')} and December in ${sumM('12')} of ${oAny}; in La Niña seasons, ${g.nina.by_month['11']} of ${g.nina.any} started in November.`,
+    `<b>2026 so far.</b> Provisional indices meet both conditions (Oceanic Niño Index, August–October, ${sign(n.oni_aso)} °C; Dipole Mode Index (DMI), October, ${sign(n.dmi_oct)} °C). Rainfall from 1 September to 5 November was ${Math.round(s.SOM.to_date_pct)}% of the 1991–2020 mean in Somalia, ${Math.round(s.KEN.to_date_pct)}% in Kenya and ${Math.round(s.ETH.to_date_pct)}% in Ethiopia: more than in ${lo[0]} of the six earlier seasons with both conditions in Somalia, ${lo[1]} in Kenya and ${lo[2]} in Ethiopia. Provisional onset was ${fullISO(s.SOM.onset_date)} in Somalia and ${fullISO(s.ETH.onset_date)} in Ethiopia, within the ${onR()[0]}–${onR()[1]} range of the earlier seasons other than 2018, and ${fullISO(s.KEN.onset_date)} in Kenya, where ${Math.round(s.KEN.no_onset_pct)}% of the area had no onset by 5 November.`,
+    `<b>2026 reports.</b> Somalia: flooding reported in Mogadishu on 17 September and from mid-October in Mudug, Hiran, Middle Shabelle, Lower Shabelle and Bay; the Shabelle at Jowhar was 12 cm above the high flood risk level on 13 October, and at Belet Weyne reached the moderate level on 26 October. Kenya: IFRC launched an imminent-flood DREF operation on 30 October, and a FEWS NET outlook of 5 November expects flooding in Dadaab between November and January. Ethiopia: no report of OND 2026 flooding was found.`,
+    `<b>Flood occurrence.</b> A country-season is one country in one season, so the six seasons with El Niño and a positive IOD give ${b.country_seasons} (6 × 3). Of these, ${b.any} recorded an EM-DAT flood starting September–December, compared with ${oAny} of ${oN} in the other ${NO} seasons.`,
+    `<b>Flood timing.</b> In those six seasons, the first flood started in October in ${b.by_month['10']} of the ${b.any} country-seasons with a flood (September ${b.by_month['9']||0}, November ${b.by_month['11']||0}). In the other ${NO} seasons, it started in September in ${sumM('9')}, October in ${sumM('10')}, November in ${sumM('11')} and December in ${sumM('12')} of ${oAny}: in El Niño seasons without a positive IOD, ${g.nino.by_month['10']} of ${g.nino.any} started in October, and in La Niña seasons, ${g.nina.by_month['11']} of ${g.nina.any} in November.`,
     `<b>Rainfall onset.</b> In five of the six seasons, area-average onset fell between ${onR()[0]} and ${onR()[1]} in all three countries. In 2018, no onset was detected over ${no18('SOM')}% of the Somali area and ${no18('ETH')}% of the Ethiopian area, Kenyan onset was on ${k18}, and EM-DAT records no flood.`,
     `<b>Wet seasons.</b> ${wetTop().replace('OND seasons','OND (October–December) seasons')} Seasons with at least 120% of the 1991–2020 mean and no recorded flood: Somalia ${listAnd(hiNoFlood('SOM'))} | Kenya ${listAnd(hiNoFlood('KEN'))} | Ethiopia ${listAnd(hiNoFlood('ETH'))}.`,
-    `<b>Temperature.</b> October was cooler than its 1981–2025 trend in ${listAnd(TI.map(i=>T[i].oct_cool[0]))} of the 15 wettest Octobers in Somalia, Kenya and Ethiopia, and in ${listAnd(TI.map(i=>T[i].oct_cool[1]))} of the 15 driest. OND rain above the mean after a warm against a cool August–September (above or below its trend): ${pair('all','wet')}; in seasons without El Niño, ${pair('nn','wet')}.`
+    `<b>Temperature.</b> October was cooler than its ${SPAN} trend in ${listAnd(TI.map(i=>T[i].oct_cool[0]))} of the ${T.SOM.oct_cool[2]} wettest Octobers in Somalia, Kenya and Ethiopia, and in ${listAnd(TI.map(i=>T[i].oct_cool[1]))} of the ${T.SOM.oct_cool[2]} driest.`
   ];
   document.getElementById('findings').innerHTML=items.map(x=>`<li>${x}</li>`).join('');
   document.getElementById('lede3').textContent=`In five of the six seasons with both conditions, area-average onset fell between ${onR()[0]} and ${onR()[1]} in all three countries. In 2018, no onset was detected over ${no18('SOM')}% of the Somali area and ${no18('ETH')}% of the Ethiopian area, onset in Kenya was on ${k18}, and EM-DAT records no flood for that season in any of the three countries (Figure 3).`;
   document.getElementById('ken-noon').textContent=`${Math.round(s.KEN.no_onset_pct)}%`;
+  document.getElementById('n-other').textContent=NO;
+  const tr=TI.flatMap(i=>T[i].trend);document.getElementById('trend-range').textContent=`${Math.min(...tr).toFixed(2)}–${Math.max(...tr).toFixed(2)}`;
+  document.getElementById('temp-thirds').textContent=`${T.SOM.oct_cool[2]} of the ${D.phase.length} seasons, and ${T.SOM.oct_cool_nn[2]} of the ${T.SOM.n_nn} seasons without El Niño`;
 })();
 
 /* ---------- Figure 1: index scatter ---------- */
@@ -324,7 +337,7 @@ const fit=(id,draw)=>{const el=document.getElementById(id);let lw=0;
     const x0=-2.2,x1=2.9,y0=-0.9,y1=1.3;
     const X=v=>L+(v-x0)/(x1-x0)*(W-L-R), Y=v=>T+(y1-v)/(y1-y0)*(H-T-B);
     const nm=v=>(v>0?'+':v<0?'−':'')+Math.abs(v);
-    let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter of October–December Niño3.4 against the Dipole Mode Index, 1981–2025. ${nb} seasons met both thresholds: ${listAnd(both6)}. No season had a positive IOD without El Niño. Provisional 2026 values, Oceanic Niño Index ${sign(D.now.oni_aso)} °C and October DMI ${sign(D.now.dmi_oct)} °C, exceed both thresholds.">`;
+    let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter of October–December Niño3.4 against the Dipole Mode Index, ${SPAN}. ${nb} seasons met both thresholds: ${listAnd(both6)}. No season had a positive IOD without El Niño. Provisional 2026 values, Oceanic Niño Index ${sign(D.now.oni_aso)} °C and October DMI ${sign(D.now.dmi_oct)} °C, exceed both thresholds.">`;
     s+=`<rect x="${X(0.5)}" y="${T}" width="${X(x1)-X(0.5)}" height="${Y(0.4)-T}" style="fill:var(--band)"/>`;
     for(let v=-2;v<=2;v+=1){s+=`<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${H-B}" style="stroke:var(--track);stroke-width:1"/><text class="ax" x="${X(v)}" y="${H-B+17}" text-anchor="middle">${nm(v)}</text>`;}
     [-0.5,0,0.5,1].forEach(v=>{s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--track);stroke-width:1"/><text class="ax" x="${L-7}" y="${Y(v)+4}" text-anchor="end">${(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1)}</text>`;});
@@ -337,10 +350,30 @@ const fit=(id,draw)=>{const el=document.getElementById(id);let lw=0;
     s+=`<text class="ax" x="${(L+W-R)/2}" y="${H-6}" text-anchor="middle">Niño3.4 anomaly, °C (Pacific)</text>`;
     s+=`<text class="ax" transform="translate(13 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle">DMI, °C (Indian Ocean)</text>`;
     const obst=[],items=[], top=[L,T,W-R,Y(0.4)-1];
+    /* seasons with both conditions whose dots sit close together: one row of labels above them, with leaders */
+    const bp=D.phase.filter(p=>p.grp==='both').map(p=>({id:p.year,x:X(p.nino),y:Y(p.dmi)})).sort((a,b)=>a.x-b.x);
+    const cl=[];bp.forEach(p=>{const g=cl.find(g=>g.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<26));if(g)g.push(p);else cl.push([p]);});
+    const pre=[], fan=new Set();
+    cl.filter(g=>g.length>1).forEach(g=>{
+      /* the label row goes where it covers no dot: try heights above the group and positions along it */
+      const dots=[...D.phase.map(p=>[X(p.nino)-8,Y(p.dmi)-8,X(p.nino)+8,Y(p.dmi)+8]),[X(D.now.oni_aso)-10,Y(D.now.dmi_oct)-10,X(D.now.oni_aso)+10,Y(D.now.dmi_oct)+10]];
+      const top0=Math.min(...g.map(p=>p.y)); let best=null;
+      [38,34].forEach(sp=>[30,44,58,72].forEach(dy=>{for(let x0=g[0].x-44;x0<=g[g.length-1].x+12;x0+=2){
+        const ly=top0-dy, rs=g.map((p,j)=>[x0+j*sp-16,ly-11,x0+j*sp+16,ly+4]);
+        let sc=Math.abs(x0-g[0].x-8)*0.01+(dy-30)*0.03+(38-sp)*0.05;
+        rs.forEach(r=>{if(r[0]<L||r[2]>W-R||r[1]<T)sc+=100;dots.forEach(d=>{if(ovl(r,d))sc+=10;});});
+        if(!best||sc<best.sc)best={sc,x0,ly,sp};}}));
+      const {x0,ly,sp}=best;
+      g.forEach((p,j)=>{const lx=x0+j*sp; fan.add(p.id);
+        s+=`<line x1="${lx.toFixed(1)}" y1="${(ly+4).toFixed(1)}" x2="${p.x.toFixed(1)}" y2="${(p.y-7.5).toFixed(1)}" style="stroke:var(--ink-3);stroke-width:.8"/>`;
+        s+=`<text class="lab" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" style="font-size:11px">${p.id}</text>`;
+        pre.push([lx-17,ly-12,lx+17,ly+5]);
+        for(let k=1;k<=5;k++){const qx=lx+(p.x-lx)*k/6, qy=ly+4+(p.y-7.5-ly-4)*k/6;pre.push([qx-3,qy-3,qx+3,qy+3]);}});
+    });
     D.phase.forEach(p=>{
       const cx=X(p.nino),cy=Y(p.dmi),b=p.grp==='both',t=`${p.year}: Niño3.4 ${sign(p.nino)}, DMI ${sign(p.dmi)}`;
       if(b){s+=`<circle cx="${cx}" cy="${cy}" r="3.2" style="fill:var(--ink)"><title>${t}</title></circle><circle cx="${cx}" cy="${cy}" r="7" style="fill:none;stroke:var(--ink);stroke-width:1.3"/>`;
-        obst.push({id:p.year,r:[cx-7,cy-7,cx+7,cy+7]});items.push({id:p.year,x:cx,y:cy,text:String(p.year),rad:7.5,b:top});}
+        obst.push({id:p.year,r:[cx-7,cy-7,cx+7,cy+7]});if(!fan.has(p.year))items.push({id:p.year,x:cx,y:cy,text:String(p.year),rad:7.5,b:top});}
       else{s+=`<circle cx="${cx}" cy="${cy}" r="4" style="fill:var(--surface);stroke:var(--ink-3);stroke-width:1.4"><title>${t}</title></circle>`;
         obst.push({id:p.year,r:[cx-4,cy-4,cx+4,cy+4]});
         if(near&&p.year===near.year)items.push({id:p.year,x:cx,y:cy,text:String(p.year),rad:5,cls:'ax'});}
@@ -348,7 +381,7 @@ const fit=(id,draw)=>{const el=document.getElementById(id);let lw=0;
     const nx=X(D.now.oni_aso),ny=Y(D.now.dmi_oct);
     s+=`<rect x="${nx-6}" y="${ny-6}" width="12" height="12" transform="rotate(45 ${nx} ${ny})" style="fill:var(--surface);stroke:var(--now);stroke-width:2.2"><title>2026 provisional: ONI Aug–Oct ${sign(D.now.oni_aso)}, DMI October ${sign(D.now.dmi_oct)}</title></rect>`;
     obst.push({id:'cur',r:[nx-8,ny-8,nx+8,ny+8]});items.unshift({id:'cur',x:nx,y:ny,text:'2026',rad:9,b:top});
-    s+=placeLabels(items,obst,[L,T,W-R,H-B]);
+    s+=placeLabels(items,obst,[L,T,W-R,H-B],pre);
     return s+'</svg>';
   });
 })();
@@ -369,7 +402,7 @@ const fit=(id,draw)=>{const el=document.getElementById(id);let lw=0;
   document.getElementById('t2').textContent=`In seasons with both conditions, ${b.any} of ${b.country_seasons} country-seasons had an EM-DAT flood, and in ${b.by_month['10']} of them the first flood started in October`;
   const chart=(W,key,anyKey,what)=>{
     const g=14, OW=Math.round(W*0.34), MW=(W-OW-4*g)/4, rh=50, top=42, bh=14;
-    const H=top+rows.length*rh+4;
+    const H=top+rows.length*rh+4, cmax=Math.max(1,...rows.flatMap(([k,gr])=>MS.map(([m])=>gr[key][m]||0)));
     const aria=rows.slice(0,2).map(([k,gr,lab])=>`${lab}: ${gr[anyKey]} of ${gr.country_seasons} country-seasons with ${what}; first ${what} in ${MS.map(([m,nm])=>`${nm} ${gr[key][m]||0}`).join(', ')}`).join('. ');
     let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${aria}.">`;
     s+=`<text class="ax" x="0" y="14">Had a flood</text><text class="ax" x="${OW+g}" y="14">First flood started in</text>`;
@@ -384,7 +417,7 @@ const fit=(id,draw)=>{const el=document.getElementById(id);let lw=0;
       MS.forEach(([m,nm],j)=>{const c=gr[key][m]||0, cx=OW+g+j*(MW+g), mw=Math.max(8,MW-22);
         s+=`<text x="${cx+16}" y="${by+11}" text-anchor="end" style="fill:${c?'var(--ink)':'var(--ink-3)'};font-family:var(--mono);font-size:12px">${c}</text>`;
         s+=`<rect x="${cx+21}" y="${by}" width="${mw}" height="${bh}" style="fill:var(--track)"/>`;
-        if(c)s+=`<rect x="${cx+21}" y="${by}" width="${(c/a*mw).toFixed(1)}" height="${bh}" style="fill:var(--flood);opacity:${op}"><title>${lab}: first ${what} in ${nm} in ${c} of ${a} country-seasons</title></rect>`;});
+        if(c)s+=`<rect x="${cx+21}" y="${by}" width="${(c/cmax*mw).toFixed(1)}" height="${bh}" style="fill:var(--flood);opacity:${op}"><title>${lab}: first ${what} in ${nm} in ${c} of ${a} country-seasons</title></rect>`;});
     });
     return s+'</svg>';
   };
@@ -392,9 +425,9 @@ const fit=(id,draw)=>{const el=document.getElementById(id);let lw=0;
   fit('fig2b',W=>chart(W,'riv_by_month','riv','a riverine flood'));
   const sumM=(k,m)=>OTHER[k][m]||0;
   document.getElementById('month-lede').textContent=
-    `In seasons with both conditions, ${G.both.any} of ${G.both.country_seasons} country-seasons recorded an EM-DAT flood, and in ${G.both.by_month['10']} of these the first flood started in October. In the other 39 seasons, ${OTHER.any} of ${OTHER.country_seasons} country-seasons recorded a flood; first floods started in November in ${sumM('by_month','11')}, October in ${sumM('by_month','10')}, September in ${sumM('by_month','9')} and December in ${sumM('by_month','12')}. In La Niña seasons, ${G.nina.by_month['11']} of ${G.nina.any} first floods started in November (Figure 2).`;
+    `In seasons with both conditions, ${G.both.any} of ${G.both.country_seasons} country-seasons recorded an EM-DAT flood, and in ${G.both.by_month['10']} of these the first flood started in October. In the other ${NO} seasons, ${OTHER.any} of ${OTHER.country_seasons} country-seasons recorded a flood; first floods started in November in ${sumM('by_month','11')}, October in ${sumM('by_month','10')}, September in ${sumM('by_month','9')} and December in ${sumM('by_month','12')}. In La Niña seasons, ${G.nina.by_month['11']} of ${G.nina.any} first floods started in November (Figure 2).`;
   document.getElementById('riv-lede').textContent=
-    `Riverine floods: in seasons with both conditions, ${G.both.riv} country-seasons recorded a riverine flood, ${G.both.riv_by_month['10']} of them starting in October. In the other 39 seasons, ${OTHER.riv} country-seasons recorded one (${D.riverine.length} events): ${G.nina.riv} in La Niña seasons, ${G.nino.riv} in El Niño seasons without a positive IOD and ${G.neutral.riv} in ENSO-neutral seasons. Of these ${OTHER.riv}, ${sumM('riv_by_month','11')} started in November, ${sumM('riv_by_month','10')} in October, ${sumM('riv_by_month','9')} in September and ${sumM('riv_by_month','12')} in December (Figure 2, riverine floods).`;
+    `Riverine floods: in seasons with both conditions, ${G.both.riv} country-seasons recorded a riverine flood, ${G.both.riv_by_month['10']} of them starting in October. In the other ${NO} seasons, ${OTHER.riv} country-seasons recorded one (${D.riverine.length} events): ${G.nina.riv} in La Niña seasons, ${G.nino.riv} in El Niño seasons without a positive IOD and ${G.neutral.riv} in ENSO-neutral seasons. Of these ${OTHER.riv}, ${sumM('riv_by_month','11')} started in November, ${sumM('riv_by_month','10')} in October, ${sumM('riv_by_month','9')} in September and ${sumM('riv_by_month','12')} in December (Figure 2, riverine floods).`;
 })();
 
 /* ---------- Figure 3: onset and flood months ---------- */
@@ -414,7 +447,7 @@ const REPORTS=[
   const [omin,omax]=onRd();
   document.getElementById('t3').textContent=`In five of the six seasons with both conditions, rainfall onset fell between ${onR()[0]} and ${onR()[1]} in all three countries`;
   fit('fig3',W=>{
-    const nar=W<600, L=50, TW=nar?88:108, PR=W-TW-6, rowH=26, hdH=30, top=40, isos=TI;
+    const L=50, PR=W-12, rowH=26, hdH=30, top=40, isos=TI;
     const X=d=>L+d/122*(PR-L), mb=[0,30,61,91,122];
     const H=top+isos.length*(hdH+7*rowH+8);
     const ariaRow=(iso,r)=>`${r.year} ${r.no_onset_pct>50?'no onset over '+Math.round(r.no_onset_pct)+'% of the area':'onset '+fmtDos(r.onset)}${r.year===2026?'':r.months.length?', flood starting '+r.months.map(m=>MON[m-1]).join(' and '):', no flood'}`;
@@ -424,7 +457,6 @@ const REPORTS=[
     s+=`<rect x="${bx0}" y="${top-6}" width="${bx1-bx0}" height="${H-top+6}" style="fill:var(--rain);opacity:.13"/>`;
     s+=`<text class="ax" x="${bx0}" y="12" style="fill:var(--rain)">onset range, 5 of 6 seasons</text>`;
     [['Sep',0],['Oct',1],['Nov',2],['Dec',3]].forEach(([m,i])=>{s+=`<text class="ax" x="${(X(mb[i])+X(mb[i+1]))/2}" y="31" text-anchor="middle">${m}</text>`;});
-    s+=`<text class="ax" x="${PR+8}" y="31">EM-DAT flood</text>`;
     let y=top;
     isos.forEach(iso=>{
       s+=`<text class="hd" x="0" y="${y+20}">${CN[iso]}${iso==='ETH'?' (OND rainfall areas)':''}</text>`;
@@ -445,13 +477,11 @@ const REPORTS=[
         } else {
           const ox=X(r.onset);
           s+=`<rect x="${(ox-1.6).toFixed(1)}" y="${cy-10}" width="3.2" height="13" rx="1" style="fill:var(--rain)"><title>${r.year} ${CN[iso]}: onset ${fmtDos(r.onset)}${is26?' (provisional'+(r.no_onset_pct>=1?'; no onset yet over '+Math.round(r.no_onset_pct)+'% of the area':'')+')':r.no_onset_pct>=1?' (area average; no onset over '+Math.round(r.no_onset_pct)+'% of the area)':''}</title></rect>`;
-          s+=`<text class="ax" x="${(ox+5).toFixed(1)}" y="${cy+2}" style="font-size:10.5px;fill:var(--ink-2)">${fmtDos(r.onset)}</text>`;
+          const lt=fmtDos(r.onset), lft=ox-5-lt.length*6.4>L;
+          s+=`<text class="ax halo" x="${(lft?ox-5:ox+5).toFixed(1)}" y="${cy+2}" text-anchor="${lft?'end':'start'}" style="font-size:10.5px;fill:var(--ink-2)">${lt}</text>`;
         }
         if(is26){
-          REPORTS.filter(e=>e.iso===iso&&!e.nomark).forEach(e=>{const x=X(e.dos);s+=`<path d="M${(x-4).toFixed(1)} ${y+1}H${(x+4).toFixed(1)}L${x.toFixed(1)} ${y+7}Z" style="fill:var(--now)"><title>${esc((e.range||fmtISO(e.d))+': '+e.txt+' ('+e.src+')')}</title></path>`;});
-        } else {
-          const t=r.months.length?r.months.map(m=>MON[m-1]).join(', '):'none';
-          s+=`<text x="${PR+8}" y="${cy+4}" style="fill:${r.months.length?'var(--flood)':'var(--ink-3)'};font-family:var(--mono);font-size:11.5px">${t}</text>`;
+          REPORTS.filter(e=>e.iso===iso&&!e.nomark).forEach(e=>{const x=X(e.dos);s+=`<path d="M${(x-4).toFixed(1)} ${y+rowH-2}H${(x+4).toFixed(1)}L${x.toFixed(1)} ${y+rowH-8}Z" style="fill:var(--now)"><title>${esc((e.range||fmtISO(e.d))+': '+e.txt+' ('+e.src+')')}</title></path>`;});
         }
         y+=rowH;
       });
@@ -476,18 +506,18 @@ const REPORTS=[
       const xb=i=>L+i*pitch+(pitch-bw)/2, yb=y+62+PH, Y=v=>yb-Math.min(v,cap)/cap*PH;
       let t=`<text class="hd" x="0" y="${y+18}">${CN[iso]}${iso==='ETH'?' (OND rainfall areas)':''}</text>`;
       [0,100,200,300].forEach(v=>{t+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:${v===100?'var(--ink-3)':'var(--track)'};stroke-width:${v===100?1.3:1}"/><text class="ax" x="${L-5}" y="${Y(v)+4}" text-anchor="end">${v}%</text>`;});
-      t+=`<line x1="${L}" x2="${W-R}" y1="${Y(120)}" y2="${Y(120)}" style="stroke:var(--ink-3);stroke-width:1;opacity:.6"/><text class="ax" x="${W-R}" y="${Y(120)-4}" text-anchor="end">120%</text>`;
+      t+=`<line x1="${L}" x2="${W-R}" y1="${Y(120)}" y2="${Y(120)}" style="stroke:var(--ink-3);stroke-width:1;stroke-dasharray:4 3"/><text class="ax halo" x="${W-R}" y="${Y(120)-4}" text-anchor="end">120%</text>`;
       rows.forEach((r,i)=>{const [yr,v,f]=r,x=xb(i),tp=Y(v);
         t+=`<rect x="${x.toFixed(1)}" y="${tp.toFixed(1)}" width="${bw.toFixed(1)}" height="${(yb-tp).toFixed(1)}" style="fill:${f?'var(--flood)':'var(--ink-3)'};opacity:${f?1:.45}"><title>${yr} ${CN[iso]}: ${Math.round(v)}% of mean; ${f?'EM-DAT flood':'no EM-DAT flood'}; ${GN[GRP[yr]]}</title></rect>`;
         if(v>cap){t+=`<path d="M${(x-1).toFixed(1)} ${Y(cap)+10}l${(bw+2).toFixed(1)} -4M${(x-1).toFixed(1)} ${Y(cap)+15}l${(bw+2).toFixed(1)} -4" style="stroke:var(--surface);stroke-width:2"/><text class="lab" x="${(x+bw+3).toFixed(1)}" y="${Y(cap)+10}" style="font-size:11px">${Math.round(v)}%</text>`;}
       });
       let lastX=-1e9;
       rows.forEach((r,i)=>{const [yr,v,f]=r, cx=xb(i)+bw/2, hn=!f&&v>=120, key=i<5||hn||GRP[yr]==='both';
-        if(pitch>=11||(key&&cx-lastX>=12)){lastX=cx;
-          t+=`<text class="ax" transform="translate(${(cx+3.6).toFixed(1)} ${yb+5}) rotate(-90)" text-anchor="end" style="font-size:10.5px;${hn?'fill:var(--ink);font-weight:600':''}">${yr}</text>`;}});
+        if(pitch>=9.5||(i<5&&pitch>=7.5)||(key&&cx-lastX>=12)){lastX=cx;
+          t+=`<text class="ax" transform="translate(${(cx+3.4).toFixed(1)} ${yb+5}) rotate(-90)" text-anchor="end" style="font-size:${pitch>=10.5?10.5:9.5}px;${hn?'fill:var(--ink);font-weight:600':''}">${yr}</text>`;}});
       const fx0=xb(0), fx1=xb(4)+bw, ay=y+44;
       t+=`<path d="M${fx0.toFixed(1)} ${ay+6}V${ay}H${fx1.toFixed(1)}V${ay+6}" style="fill:none;stroke:var(--ink-2);stroke-width:1"/><text class="lab" x="${fx0.toFixed(1)}" y="${ay-5}" style="font-size:12px">Five wettest: ${w5[ii]} with a flood</text>`;
-      const ic=rows.findIndex(r=>r[1]<100), bx0=xb(ic), bx1=xb(N-1)+bw, by=Y(150);
+      const ic=rows.findIndex(r=>r[1]<100), bx0=xb(ic), bx1=xb(N-1)+bw, by=Y(215);
       t+=`<path d="M${bx0.toFixed(1)} ${by+6}V${by}H${bx1.toFixed(1)}V${by+6}" style="fill:none;stroke:var(--ink-2);stroke-width:1"/><text class="lab" x="${bx1.toFixed(1)}" y="${by-5}" text-anchor="end" style="font-size:12px">Below the mean: ${bf[ii].length} with a flood</text>`;
       y=yb+48;
       return t;
@@ -502,14 +532,17 @@ const REPORTS=[
   const T=D.temp, I=TI, NSe=D.phase.length;
   const oc=I.map(i=>T[i].oct_cool), on=I.map(i=>T[i].oct_cool_nn);
   const vs=(set,key)=>I.map(i=>`${T[i][set].warm[key]} of ${T[i][set].warm.n} against ${T[i][set].cool[key]} of ${T[i][set].cool.n}`);
-  document.getElementById('t5').textContent=`October was cooler than its trend in ${listAnd(oc.map(x=>x[0]))} of the ${oc[0][2]} wettest Octobers in Somalia, Kenya and Ethiopia, and in ${listAnd(oc.map(x=>x[1]))} of the ${oc[0][2]} driest`;
+  const most=oc.every(x=>x[0]>x[2]/2), least=oc.every(x=>x[1]<x[2]/2);
+  document.getElementById('t5').textContent=most&&least?'October was cooler than its trend in most of the wettest Octobers and warmer in most of the driest'
+    :`October was cooler than its trend in ${listAnd(oc.map(x=>x[0]))} of the ${oc[0][2]} wettest Octobers in Somalia, Kenya and Ethiopia`;
+  document.getElementById('t5b').textContent='OND rain and floods after a warm or a cool August–September';
   document.getElementById('temp-lede').textContent=
-    `October was cooler than its 1981–2025 trend in ${oc[0][0]} of the ${oc[0][2]} wettest Octobers since 1981 in Somalia, ${oc[1][0]} in Kenya and ${oc[2][0]} in Ethiopia, and in ${listAnd(oc.map(x=>x[1]))} of the ${oc[0][2]} driest. In the ${T.SOM.n_nn} seasons without El Niño, it was cooler in ${listAnd(on.map(x=>x[0]))} of the ${on[0][2]} wettest Octobers and in ${listAnd(on.map(x=>x[1]))} of the ${on[0][2]} driest. Temperature and rainfall are compared in the same month here (Figure 5, top).`;
+    `October was cooler than its ${SPAN} trend in ${oc[0][0]} of the ${oc[0][2]} wettest Octobers since 1981 in Somalia, ${oc[1][0]} in Kenya and ${oc[2][0]} in Ethiopia, and in ${listAnd(oc.map(x=>x[1]))} of the ${oc[0][2]} driest. In the ${T.SOM.n_nn} seasons without El Niño, it was cooler in ${listAnd(on.map(x=>x[0]))} of the ${on[0][2]} wettest Octobers and in ${listAnd(on.map(x=>x[1]))} of the ${on[0][2]} driest. Temperature and rainfall are compared in the same month here (Figure 5).`;
   const r=vs('all','wet'), rn=vs('nn','wet'), f=vs('all','fl'), fn=vs('nn','fl'), S=T.SOM.all;
   document.getElementById('temp-lede2').textContent=
-    `Before the season, OND rainfall was above the 1991–2020 mean in ${S.warm.wet} of ${S.warm.n} seasons after a warm August–September (above its trend) against ${S.cool.wet} of ${S.cool.n} after a cool one in Somalia, ${r[1]} in Kenya and ${r[2]} in Ethiopia. In the seasons without El Niño, the counts were ${rn[0]} in Somalia, ${rn[1]} in Kenya and ${rn[2]} in Ethiopia (Figure 5, bottom).`;
+    `Before the season, OND rainfall was above the 1991–2020 mean in ${S.warm.wet} of ${S.warm.n} seasons after a warm August–September (above its trend) against ${S.cool.wet} of ${S.cool.n} after a cool one in Somalia, ${r[1]} in Kenya and ${r[2]} in Ethiopia. In the seasons without El Niño, the counts were ${rn[0]} in Somalia, ${rn[1]} in Kenya and ${rn[2]} in Ethiopia (Figure 6).`;
   document.getElementById('temp-lede3').textContent=
-    `An EM-DAT flood followed a warm August–September in ${S.warm.fl} of ${S.warm.n} seasons against ${S.cool.fl} of ${S.cool.n} after a cool one in Somalia, ${f[1]} in Kenya and ${f[2]} in Ethiopia; without El Niño, ${fn[0]}, ${fn[1]} and ${fn[2]}.`;
+    `An EM-DAT flood followed a warm August–September in ${S.warm.fl} of ${S.warm.n} seasons against ${S.cool.fl} of ${S.cool.n} after a cool one in Somalia, ${f[1]} in Kenya and ${f[2]} in Ethiopia; without El Niño, ${fn[0]}, ${fn[1]} and ${fn[2]} (Figure 6).`;
   document.getElementById('temp-lede26').textContent=
     `In 2026, August–September was ${belIn(I.map(i=>T[i].cur_as))}: warmer than ${listAnd(I.map(i=>T[i].cur_rank))} of the ${NSe} seasons since 1981.`+
     (T.SOM.cur_oct_pct!=null?` In October 2026, rainfall was ${Math.round(T.SOM.cur_oct_pct)}% of the October mean in Somalia, ${Math.round(T.KEN.cur_oct_pct)}% in Kenya and ${Math.round(T.ETH.cur_oct_pct)}% in Ethiopia, and temperature was ${belIn(I.map(i=>T[i].cur_oct))}.`:'');
@@ -548,10 +581,10 @@ const REPORTS=[
   const lo=TI.map(i=>cmp6(i).lo.length), N=D.seasons.SOM.length;
   const full=TI.filter(i=>s[i].full_normal).map(i=>`${fullISO(s[i].full_normal)} in ${CN[i]}`), notyet=TI.filter(i=>!s[i].full_normal).map(i=>CN[i]);
   document.getElementById('lede26').textContent=
-    `Rainfall from 1 September to 5 November was ${Math.round(s.SOM.to_date_pct)}% of the 1991–2020 mean in Somalia, ${Math.round(s.KEN.to_date_pct)}% in Kenya and ${Math.round(s.ETH.to_date_pct)}% in the Ethiopian OND rainfall areas, with preliminary data from 1 October (Figure 6). By 5 November, 2026 had more rain than ${lo[0]} of the six seasons with both conditions in Somalia (${cmpParen('SOM')}), ${lo[1]} in Kenya (${cmpParen('KEN')}) and ${lo[2]} in Ethiopia (${cmpParen('ETH')}).`+
-    (full.length?` Cumulative rainfall from 1 September passed the 1991–2020 mean October–December total on ${listAnd(full)}${notyet.length?`; in ${listAnd(notyet)} it had not reached it by 5 November`:''}.`:'');
+    `Rainfall from 1 September to 5 November was ${Math.round(s.SOM.to_date_pct)}% of the 1991–2020 mean in Somalia, ${Math.round(s.KEN.to_date_pct)}% in Kenya and ${Math.round(s.ETH.to_date_pct)}% in the Ethiopian OND rainfall areas, with preliminary data from 1 October (Figure 7). By 5 November, 2026 had more rain than ${lo[0]} of the six seasons with both conditions in Somalia (${cmpParen('SOM')}), ${lo[1]} in Kenya (${cmpParen('KEN')}) and ${lo[2]} in Ethiopia (${cmpParen('ETH')}). The closest of the six at that date was ${listAnd(TI.map(near6))}.`+
+    (full.length?` Cumulative rainfall from 1 September passed the 1991–2020 mean September–December total (the end of the mean line in Figure 7) on ${listAnd(full)}${notyet.length?`; in ${listAnd(notyet)} it had not reached it by 5 November`:''}.`:'');
   document.getElementById('lede26b').textContent=
-    `Among all ${N} earlier seasons, at least as much rain, as a percentage of the 1991–2020 mean for 1 September to 5 November, had fallen by 5 November in ${a.n} seasons in Somalia (${fl26(a,'an EM-DAT flood')}), ${c.n} in Kenya (${c.f} with an EM-DAT flood and ${c.n-c.f} without) and ${b.n} in Ethiopia (${fl26(b,'an EM-DAT flood')}).`;
+    `By 5 November, ${a.n} of the ${N} earlier seasons had at least as much rain as 2026, relative to the 1991–2020 mean for 1 September to 5 November, in Somalia (${fl26(a,'an EM-DAT flood')}), ${c.n} in Kenya (${c.f} with an EM-DAT flood and ${c.n-c.f} without) and ${b.n} in Ethiopia (${fl26(b,'an EM-DAT flood')}).`;
   document.getElementById('lede26c').textContent=
     `Provisional indices exceed both thresholds: the August–October Oceanic Niño Index was ${sign(n.oni_aso)} °C, and the DMI was ${sign(n.dmi_oct)} °C in October and ${sign(n.dmi_nov)} °C over 1–7 November. Area-average rainfall over 1–5 November was ${mm(s.SOM.month_mm)} mm in Somalia, ${mm(s.KEN.month_mm)} mm in Kenya and ${mm(s.ETH.month_mm)} mm in Ethiopia, against 1991–2020 means of ${mm(s.SOM.month_normal_mm)}, ${mm(s.KEN.month_normal_mm)} and ${mm(s.ETH.month_normal_mm)} mm for those days.`;
 })();
@@ -569,8 +602,8 @@ const REPORTS=[
     let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${CN[iso]}: cumulative rainfall since 1 September. By 5 November 2026, ${Math.round(x.v)} mm against a 1991–2020 mean of ${Math.round(x.mean)} mm for the same days (${Math.round(s26[iso].to_date_pct)}%); more than ${x.lo.length} of the six seasons with both conditions at the same date.">`;
     for(let v=0;v<=ymax;v+=step){s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--track);stroke-width:1"/><text class="ax" x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`;}
     [['Sep',0],['Oct',30],['Nov',61],['Dec',91]].forEach(m=>{s+=`<text class="ax" x="${X(m[1])+2}" y="${H-10}">${m[0]}</text><line x1="${X(m[1])}" x2="${X(m[1])}" y1="${H-B}" y2="${H-B+4}" style="stroke:var(--ink-3)"/>`;});
-    both6.forEach(k=>{s+=`<path d="${path(c[k],0,c[k].length-1)}" style="fill:none;stroke:var(--rain);stroke-width:1.3;opacity:.6"><title>${k}: ${Math.round(c[k][li])} mm by 5 Nov, ${Math.round(c[k][c[k].length-1])} mm by 31 Dec</title></path>`;});
-    s+=`<path d="${path(c.normal,0,c.normal.length-1)}" style="fill:none;stroke:var(--ink-3);stroke-width:1.8"/>`;
+    s+=`<path d="${path(c.normal,0,c.normal.length-1)}" style="fill:none;stroke:var(--ink-3);stroke-width:5;opacity:.45;stroke-linecap:round;stroke-linejoin:round"><title>1991–2020 mean: ${Math.round(c.normal[c.normal.length-1])} mm by 31 Dec</title></path>`;
+    both6.forEach(k=>{s+=`<path d="${path(c[k],0,c[k].length-1)}" style="fill:none;stroke:var(--rain);stroke-width:1.4;opacity:.88"><title>${k}: ${Math.round(c[k][li])} mm by 5 Nov, ${Math.round(c[k][c[k].length-1])} mm by 31 Dec</title></path>`;});
     const e=c.normal.length-1, labs=[...both6.map(k=>[k,Y(c[k][e])]),['mean',Y(c.normal[e])]].sort((p,q)=>p[1]-q[1]);
     for(let i=1;i<labs.length;i++)labs[i][1]=Math.max(labs[i][1],labs[i-1][1]+12);
     const over=labs[labs.length-1][1]-(H-B); if(over>0)labs.forEach(l=>{l[1]-=over;});

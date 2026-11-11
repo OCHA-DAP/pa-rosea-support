@@ -91,6 +91,13 @@ def rains_start(y, end=None):
 # ---- 2. season phase and EM-DAT floods starting September to December
 s = pd.read_csv(OUT / "drivers_seasons.csv")
 s = s[s.season == "OND"].drop_duplicates("year").set_index("year")
+# only seasons EM-DAT covers to the end of December: its last event in the three countries starts in May 2025,
+# so the 2025 season is left out
+d = pd.read_parquet(DATA / "impacts_emdat.parquet")
+st = d.dropna(subset=["Start Year", "Start Month"])
+EM_LAST = max(pd.Timestamp(int(a), int(b), 1) for a, b in zip(st["Start Year"], st["Start Month"]))
+s = s[[pd.Timestamp(y, 12, 1) < EM_LAST for y in s.index]]
+print(f"EM-DAT last event starts {EM_LAST:%Y-%m}; seasons {s.index.min()}-{s.index.max()}")
 
 
 def grp(y):
@@ -104,7 +111,6 @@ s["grp"] = [grp(y) for y in s.index]
 BOTH = s[s.grp == "both"].index.tolist()
 print("seasons with both:", BOTH, "| positive IOD:", s[s.iod == "positive"].index.tolist())
 
-d = pd.read_parquet(DATA / "impacts_emdat.parquet")
 f = d[(d["Disaster Type"] == "Flood") & d["Start Month"].isin([9, 10, 11, 12])
       & d["Start Year"].between(s.index.min(), s.index.max())].copy()
 f["grp"] = f["Start Year"].map(s.grp)
@@ -126,15 +132,16 @@ ev = f[["DisNo.", "ISO", "Disaster Subtype", "Start Year", "Start Month", "End Y
         "Total Affected", "Location", "grp"]].sort_values(["Start Year", "Start Month", "ISO"])
 ev.to_csv(OUT / "flood_timing_events.csv", index=False)
 
-# ---- 3. per season: rains start, date a normal Oct-Dec total has fallen, Oct-Dec rain % of normal
+# ---- 3. per season: rains start, date the mean Sep-Dec total has fallen (from 1 Sep), Oct-Dec rain % of normal
 RS = {y: rains_start(y) for y in s.index}
 NT = {iso: np.mean([daily[iso][f"{y}-10-01":f"{y}-12-31"].sum() for y in NORMAL]) for iso in ISOS}
+NSD = {iso: np.mean([daily[iso][f"{y}-09-01":f"{y}-12-31"].sum() for y in NORMAL]) for iso in ISOS}
 rec = []
 for iso in ISOS:
     dd, nt = daily[iso], NT[iso]
     for y in s.index:
         cum = dd[f"{y}-09-01":f"{y + 1}-01-31"].cumsum()
-        full = cum[cum >= nt]
+        full = cum[cum >= NSD[iso]]
         on, found, ok = RS[y]
         sel = SEL[iso] & ok
         od = np.average(on[sel], weights=WGT[sel])
@@ -162,7 +169,7 @@ for iso in ISOS:
         onset_date=str((pd.Timestamp(YEAR, 10, 1) + pd.Timedelta(days=round(od))).date()),
         no_onset_pct=round(float(np.average(~found[sel], weights=WGT[sel]) * 100), 1),
         to_date_pct=round(float(100 * per(YEAR) / nper), 1),
-        full_normal=str(c[c >= nt].index[0].date()) if (c >= nt).any() else None,
+        full_normal=str(c[c >= NSD[iso]].index[0].date()) if (c >= NSD[iso]).any() else None,
         month_mm=round(float(lm(YEAR)), 1), month_normal_mm=round(float(np.mean([lm(y) for y in NORMAL])), 1))
     # every past season: OND rain % of mean, any EM-DAT flood starting Sep-Dec, rain to date % of mean
     fl_years = set(first.loc[first.ISO == iso, "Start Year"])
@@ -323,7 +330,7 @@ nfl = first.groupby("Start Year").size()
 phase = [dict(year=int(y), nino=round(float(r.nino34), 2), dmi=round(float(r.dmi), 2), grp=r.grp,
               nflood=int(nfl.get(y, 0))) for y, r in s.iterrows()]
 
-page = dict(groups=groups, timeline=timeline, riverine=riverine, phase=phase, curves=curves, stats26=stats, now=now,
+page = dict(seasons_span=[int(s.index.min()), int(s.index.max())], emdat_last=f"{EM_LAST:%Y-%m}", groups=groups, timeline=timeline, riverine=riverine, phase=phase, curves=curves, stats26=stats, now=now,
             seasons=seasons, temp=tstats, temp_to=temp_to)
 (OUT / "flood_timing.json").write_text(json.dumps(page, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
 print("wrote", OUT / "flood_timing.json", "| riverine events in other seasons:", len(riverine))
