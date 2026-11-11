@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Short-Rains Flood Timing</title>
+<meta name="description" content="Start month of EM-DAT floods in Ethiopia, Kenya and Somalia in October to December seasons with El Niño and a positive Indian Ocean Dipole, seasonal rainfall against recorded floods since 1981, temperature against rainfall, and the 2026 season to 5 November.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: report column (68ch text) on a cool paper ground; figures run wider (to 1040px); one masthead band; figures numbered as in a technical note. */
+:root{
+  --paper:#f5f7f8; --surface:#ffffff; --ink:#14212b; --ink-2:#46535e; --ink-3:#7b8792; --rule:#dbe1e5; --track:#e8ecef;
+  --rain:#1f6ea6; --flood:#c2462a; --flood-soft:#f4d6cc; --now:#14212b; --band:#eaf1f6;
+  --m9:#c9dcea; --m10:#7eaed1; --m11:#3a7db1; --m12:#1a4c76; --nino:#c47418; --nina:#5458c4;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif; --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0e161d; --surface:#151f28; --ink:#e6ecf1; --ink-2:#b2bec8; --ink-3:#83909b; --rule:#283540; --track:#1f2a34;
+  --rain:#66a9dc; --flood:#ec7656; --flood-soft:#4f2519; --now:#f1f5f8; --band:#17283a;
+  --m9:#2a4861; --m10:#3d74a0; --m11:#6aa5d4; --m12:#b0d2ec; --nino:#c27b2a; --nina:#7478dc; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0e161d; --surface:#151f28; --ink:#e6ecf1; --ink-2:#b2bec8; --ink-3:#83909b; --rule:#283540; --track:#1f2a34;
+  --rain:#66a9dc; --flood:#ec7656; --flood-soft:#4f2519; --now:#f1f5f8; --band:#17283a;
+  --m9:#2a4861; --m10:#3d74a0; --m11:#6aa5d4; --m12:#b0d2ec; --nino:#c27b2a; --nina:#7478dc; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.masthead{border-bottom:1px solid var(--rule);background:var(--surface)}
+.masthead .wrap{padding-block:44px 34px;display:grid;gap:14px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--rain)}
+h1{font-family:var(--display);font-stretch:87%;font-weight:700;font-size:clamp(34px,5.2vw,54px);line-height:1.04;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.deck{font-size:19px;line-height:1.5;color:var(--ink-2);max-width:62ch;margin:0}
+.stamp{display:flex;flex-wrap:wrap;gap:8px 22px;font-family:var(--mono);font-size:12.5px;color:var(--ink-3);padding-top:6px}
+.stamp b{color:var(--ink-2);font-weight:500}
+main .wrap{display:grid;gap:56px;padding-block:44px 64px}
+section{display:grid;gap:18px;min-width:0}
+h2{font-family:var(--display);font-stretch:87%;font-weight:650;font-size:27px;line-height:1.15;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-stretch:95%;font-weight:600;font-size:18px;margin:0}
+p{margin:0;max-width:68ch}
+.lede{font-size:17px}
+figure{margin:0;background:var(--surface);border:1px solid var(--rule);padding:18px 18px 14px;display:grid;gap:12px;min-width:0}
+figcaption{display:grid;gap:4px}
+.fignum{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.figtitle{font-family:var(--display);font-stretch:95%;font-weight:600;font-size:17px}
+.fignote{font-size:13px;color:var(--ink-3);line-height:1.5;max-width:90ch}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--ink-2);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.panels.wide{grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:24px 32px}
+.panels>div{min-width:0;display:grid;gap:6px;align-content:start}
+.panels h3{font-size:15px}
+svg{display:block;width:100%;height:auto;font-family:var(--body)}
+svg text{fill:var(--ink-2);font-size:12px}
+svg .ax{fill:var(--ink-3);font-size:11.5px;font-family:var(--mono)}
+svg .lab{fill:var(--ink);font-size:12.5px;font-weight:500}
+svg .hd{fill:var(--ink);font-size:14px;font-weight:600;font-family:var(--display)}
+.notes a{color:var(--rain);text-decoration-thickness:1px;text-underline-offset:2px}
+.notes{display:grid;gap:12px;font-size:14.5px;color:var(--ink-2);max-width:78ch;padding:0;margin:0}
+.notes li{list-style:none;padding-left:16px;position:relative}
+.notes li::before{content:"";position:absolute;left:0;top:.72em;width:6px;height:1px;background:var(--ink-3)}
+.notes b{color:var(--ink);font-weight:600}
+footer{border-top:1px solid var(--rule)}
+footer .wrap{padding-block:22px 34px;display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;color:var(--ink-3);font-family:var(--mono)}
+:focus-visible{outline:2px solid var(--rain);outline-offset:2px}
+.home{display:inline-block;justify-self:start;margin:0 0 6px;padding:6px 12px;font:500 13px/1 var(--body);color:var(--rain);background:var(--paper);border:1px solid var(--rule);border-radius:4px;text-decoration:none}
+.home:hover{background:var(--track)}
+.summary{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--rain);padding:20px 22px 22px;gap:12px}
+.summary h2{font-size:22px}
+.summary ol{margin:0;padding-left:22px;display:grid;gap:12px;max-width:86ch}
+.summary li{padding-left:4px}
+.summary li::marker{font-family:var(--mono);font-size:13px;color:var(--ink-3)}
+.summary b{font-weight:600}
+.rowhd{font-family:var(--display);font-stretch:95%;font-weight:600;font-size:15.5px;margin:8px 0 0;padding-top:10px;border-top:1px solid var(--rule)}
+</style>
+</head>
+<body>
+
+<header class="masthead"><div class="wrap">
+  <a class="home" href="../">← ROSEA analyses</a>
+  <div class="eyebrow">Ethiopia | Kenya | Somalia | October–December rains</div>
+  <h1>Flood timing in October–December seasons with El Niño and a positive IOD</h1>
+  <p class="deck">Start month of EM-DAT floods in seasons with both an El Niño and a positive Indian Ocean Dipole (IOD) compared with other seasons, seasonal rainfall against recorded floods since 1981, temperature against rainfall, and the 2026 season to 5 November.</p>
+  <div class="stamp"><span><b>As of</b> 9 Nov 2026</span><span><b>Seasons</b> 1981–2025 + 2026</span><span><b>Rain</b> CHIRPS v3 to 5 Nov 2026</span><span><b>Temperature</b> ERA5 to 31 Oct 2026</span><span><b>Floods</b> EM-DAT, ReliefWeb</span></div>
+</div></header>
+
+<main><div class="wrap">
+
+<section class="summary" aria-labelledby="s-key">
+  <h2 id="s-key">Key findings</h2>
+  <ol id="findings"></ol>
+</section>
+
+<section aria-labelledby="s-types">
+  <h2 id="s-types">1 Season classification</h2>
+  <p class="lede">Between 1981 and 2025, six October–December (OND) seasons met both conditions (Niño3.4 ≥ +0.5 °C and DMI ≥ +0.4 °C): 1994, 1997, 2006, 2018, 2019 and 2023. No positive-IOD season occurred without El Niño. Provisional 2026 values exceed both thresholds (Figure 1).</p>
+  <figure>
+    <figcaption><span class="fignum">Figure 1</span><span class="figtitle">Niño3.4 and Dipole Mode Index (DMI), OND means, 1981–2025, and provisional 2026 values</span></figcaption>
+    <div class="legend">
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="5" style="fill:var(--flood)"/></svg>EM-DAT flood starting Sep–Dec in at least one country</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="4.5" style="fill:none;stroke:var(--ink-3);stroke-width:1.5"/></svg>No EM-DAT flood</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><rect x="2.5" y="2.5" width="9" height="9" transform="rotate(45 7 7)" style="fill:none;stroke:var(--now);stroke-width:2"/></svg>2026 (provisional)</span>
+    </div>
+    <div class="scroll"><div id="fig1" style="min-width:560px"></div></div>
+    <p class="fignote">Dashed lines mark the two thresholds. The OND 2026 mean is not yet available: the 2026 point uses the August–October Oceanic Niño Index and the October DMI from NOAA OISST daily anomalies, a different dataset and base period from HadISST, so it is not strictly comparable with earlier values.</p>
+  </figure>
+</section>
+
+<section aria-labelledby="s-month">
+  <h2 id="s-month">2 Month of first flood</h2>
+  <p class="lede" id="month-lede"></p>
+  <p class="lede" id="riv-lede"></p>
+  <figure>
+    <figcaption><span class="fignum">Figure 2</span><span class="figtitle">Month of first EM-DAT flood by season type (share of country-seasons)</span></figcaption>
+    <div class="legend" id="leg2"></div>
+    <div class="panels wide">
+      <div><h3>All flood types</h3><div class="scroll"><div id="fig2a" style="min-width:420px"></div></div></div>
+      <div><h3>Riverine floods only</h3><div class="scroll"><div id="fig2b" style="min-width:420px"></div></div></div>
+    </div>
+    <p class="fignote">A country-season is one country in one OND season (45 seasons; 135 country-seasons). EM-DAT records the start month only. Riverine refers to the EM-DAT subtype Riverine flood. The 2019 events are classified as flash floods and the 2023 events as flash or general floods, so neither season contributes to the riverine panel. The last row adds the three other season types together.</p>
+  </figure>
+</section>
+
+<section aria-labelledby="s-timeline">
+  <h2 id="s-timeline">3 Rainfall onset and flood timing in seasons with both conditions</h2>
+  <p class="lede" id="lede3"></p>
+  <figure>
+    <figcaption><span class="fignum">Figure 3</span><span class="figtitle">Rainfall onset, date the 1991–2020 mean OND total was reached, and EM-DAT flood start months, 1 September to 31 December</span></figcaption>
+    <div class="legend">
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="4.5" style="fill:var(--surface);stroke:var(--rain);stroke-width:2"/></svg>Onset</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="4.5" style="fill:var(--surface);stroke:var(--rain);stroke-width:2;stroke-dasharray:2.5 2"/></svg>Onset, with no onset detected over more than 20% of the area</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="5" style="fill:var(--rain)"/></svg>Cumulative rainfall since 1 Sep reaches the 1991–2020 OND mean</span>
+      <span><span class="sw" style="background:var(--flood-soft);outline:1px solid var(--flood)"></span>EM-DAT flood start month</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><rect x="3" y="3" width="8" height="8" transform="rotate(45 7 7)" style="fill:var(--flood)"/></svg>2026 report of flooding, or of a river at or above a flood risk level</span>
+    </div>
+    <div class="scroll"><div id="fig3" style="min-width:640px"></div></div>
+    <p class="fignote">Right column: OND rainfall as a percentage of the 1991–2020 mean. Cells without a detected onset are assigned the last day of the record (31 December; 5 November for 2026) before averaging. In Kenya, <span id="ken-noon"></span> of the area had no detected onset by 5 November 2026, so the 2026 average depends on the end date of the record.</p>
+  </figure>
+</section>
+
+<section aria-labelledby="s-wet">
+  <h2 id="s-wet">4 OND rainfall and recorded floods, 1981–2025</h2>
+  <p class="lede" id="wet-lede"></p>
+  <figure>
+    <figcaption><span class="fignum">Figure 4</span><span class="figtitle">OND rainfall (% of 1991–2020 mean) and EM-DAT floods by season, 1981–2025</span></figcaption>
+    <div class="legend">
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="5" style="fill:var(--flood)"/></svg>EM-DAT flood starting Sep–Dec</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="4.5" style="fill:var(--surface);stroke:var(--ink-3);stroke-width:1.5"/></svg>No EM-DAT flood</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="6" style="fill:none;stroke:var(--ink);stroke-width:1.2"/></svg>Season with both conditions</span>
+      <span><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true" style="width:22px;height:12px;flex:none"><line x1="6" y1="0" x2="6" y2="12" style="stroke:var(--ink-3);stroke-width:1.2"/><line x1="16" y1="0" x2="16" y2="12" style="stroke:var(--ink-3);stroke-width:1.2;stroke-dasharray:3 2"/></svg>100% and 120% of mean</span>
+    </div>
+    <div class="scroll"><div id="figwet" style="min-width:600px"></div></div>
+    <p class="fignote">One marker per season, placed by OND rainfall; markers with close values are stacked. Labels mark the six seasons with both conditions and the seasons with at least 120% of the mean and no recorded flood. The Juba and Shabelle rivers rise in the Ethiopian highlands, outside the Somali area averaged here.</p>
+  </figure>
+</section>
+
+<section aria-labelledby="s-temp">
+  <h2 id="s-temp">5 Temperature before and during the season</h2>
+  <p class="lede" id="temp-lede"></p>
+  <p class="lede" id="temp-lede2"></p>
+  <p class="lede" id="temp-lede26"></p>
+  <figure>
+    <figcaption><span class="fignum">Figure 5</span><span class="figtitle">2 m air temperature (departure from trend, °C) against rainfall (% of 1991–2020 mean), 1981–2025 and 2026</span></figcaption>
+    <div class="legend">
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="4.5" style="fill:var(--flood)"/></svg>EM-DAT flood starting Sep–Dec</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="4" style="fill:var(--surface);stroke:var(--ink-3);stroke-width:1.5"/></svg>No EM-DAT flood</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><circle cx="7" cy="7" r="6" style="fill:none;stroke:var(--ink);stroke-width:1.2"/></svg>El Niño season (year labelled: with a positive IOD)</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="width:14px;height:14px;flex:none"><rect x="2.5" y="2.5" width="9" height="9" transform="rotate(45 7 7)" style="fill:none;stroke:var(--now);stroke-width:2"/></svg>2026 (provisional)</span>
+    </div>
+    <h3 class="rowhd">Before the season: August–September temperature and OND rainfall</h3>
+    <div class="panels" id="figtemp-as"></div>
+    <h3 class="rowhd">Same month: October temperature and October rainfall</h3>
+    <div class="panels" id="figtemp-oct"></div>
+    <p class="fignote">Averages over the same OND rainfall areas as Figures 3 and 4. Temperature is the departure from that month's 1981–2025 linear trend (for 2026 the trend is extended by one year). Rainfall is a percentage of the 1991–2020 mean for the same period. 2026 August–September is drawn as a line because OND 2026 rainfall is not yet complete; October 2026 rainfall is preliminary.</p>
+  </figure>
+</section>
+
+<section aria-labelledby="s-2026">
+  <h2 id="s-2026">6 The 2026 season to 5 November</h2>
+  <p class="lede" id="lede26"></p>
+  <figure>
+    <figcaption><span class="fignum">Figure 6</span><span class="figtitle">Cumulative rainfall from 1 September (mm)</span></figcaption>
+    <div class="legend">
+      <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--now);stroke-width:2.6"/></svg>2026 (to 5 Nov)</span>
+      <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--rain);stroke-width:1.4;opacity:.7"/></svg>Seasons with both conditions</span>
+      <span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true" style="width:22px;height:10px;flex:none"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--ink-3);stroke-width:1.6;stroke-dasharray:4 3"/></svg>1991–2020 mean</span>
+    </div>
+    <div class="panels" id="figcum"></div>
+    <p class="fignote">CHIRPS v3.0: final data to 30 September 2026; preliminary data from 1 October to 5 November 2026. Preliminary values use readily available station reports without the quality control of the final data, and are replaced when the final data are released.</p>
+  </figure>
+</section>
+
+<section aria-labelledby="s-method">
+  <h2 id="s-method">7 Data and methods</h2>
+  <ul class="notes">
+    <li><b>Season.</b> October–December (OND): the Deyr in Somalia, the short rains in Kenya and the October–December rains of southern and southeastern Ethiopia.</li>
+    <li><b>Season classification.</b> Niño3.4 anomaly from NOAA CPC (ERSST v5, 1991–2020 base) and DMI from NOAA PSL (HadISST 1.1), both averaged over OND. Thresholds: El Niño, Niño3.4 ≥ +0.5 °C; La Niña, Niño3.4 ≤ −0.5 °C; positive IOD, DMI ≥ +0.4 °C.</li>
+    <li><b>2026 indices.</b> The HadISST DMI series ends in May 2026. ENSO state is taken from the NOAA CPC Oceanic Niño Index (August–October 2026). DMI is computed from NOAA OISST v2.1 daily anomalies (relative to 1971–2000) as the mean over 10°S–10°N, 50–70°E minus the mean over 10°S–0°, 90–110°E, to 7 November 2026.</li>
+    <li><b>Floods.</b> <a href="https://www.emdat.be/">EM-DAT</a> (CRED, UCLouvain) flood events in Ethiopia, Kenya and Somalia with a start month from September to December, 1981–2025. Each country-season is counted once, at its earliest start month. September is included to capture floods that begin shortly before the OND rains. Two Ethiopian September events are located mainly outside the OND rainfall areas used here: 1999 (Benishangul-Gumuz) and 2005 (Tigray, Amhara and Oromia). The EM-DAT extract contains no event starting after May 2025, so the most recent seasons may be incomplete.</li>
+    <li><b>Rainfall.</b> <a href="https://www.chc.ucsb.edu/data/chirps3">CHIRPS v3.0</a> (Funk et al. 2026) daily, averaged from 0.05° to 0.25° and area-weighted over cells where OND contributes at least 25% of annual rainfall (CHIRPS v3.0 monthly means, 1991–2020). CHIRPS v3.0 daily values are pentad totals divided among the days of the pentad: with ERA5 daily rainfall in the final data (the daily version that starts in 1981) and with IMERG in the preliminary data, so 2026 values from 1 October use a different daily split from earlier seasons, with the same pentad totals. CHC notes that onset dates can differ between the two splits. Onset is computed per cell by anomalous accumulation from 1 September (Liebmann et al. 2012; Dunning et al. 2016) and averaged over the same cells; cells without a detected onset are assigned the last day of the record. The normal-total date is the first day on which cumulative rainfall from 1 September exceeds the 1991–2020 mean OND total. The 2026 comparison with earlier seasons uses rainfall from 1 September to 5 November in each season, as a percentage of the 1991–2020 mean for the same period.</li>
+    <li><b>Temperature.</b> <a href="https://doi.org/10.24381/cds.f17050d7">ERA5</a> 2 m air temperature (Copernicus Climate Change Service): monthly means for 1981–2025, and for 2026 daily means to 31 October averaged by month. Values are interpolated to the centres of the CHIRPS cells and averaged over the same OND rainfall areas. Departures are from each month's linear trend over 1981–2025, which rises by 0.16–0.42 °C per decade, so that warming over the period does not by itself make recent seasons look warm. The August–September value is the mean of the two monthly departures; a warm August–September is one above the trend. El Niño seasons are the 15 with OND Niño3.4 ≥ +0.5 °C, with or without a positive IOD. October rainfall is a percentage of the 1991–2020 October mean, and the wettest and driest Octobers are ranked by it (15 of the 45 seasons, and 10 of the 30 seasons without El Niño). <span id="temp-pr"></span> Recent ERA5 months are preliminary (ERA5T) and are occasionally revised.</li>
+    <li><b>2026 reports.</b> Selected from the 53 <a href="https://reliefweb.int/">ReliefWeb</a> reports tagged flood with Ethiopia, Kenya or Somalia as primary country, 1 September to 9 November 2026; retained reports describe observed or expected flooding, river levels or an imminent-flood operation (FAO SWALIM river advisories, WHO, IRC, Radio Ergo, IFRC and FEWS NET). No report of OND 2026 flooding in Ethiopia was found. ReliefWeb lists no flood disaster event for the three countries this season.</li>
+    <li><b>Limitations.</b> Six seasons met both conditions; counts describe these seasons and the other 39 and are not probabilities. EM-DAT includes an event only if it meets at least one entry criterion (10 or more deaths, 100 or more people affected, a declared state of emergency or a call for international assistance), and its records may be less complete for earlier years.</li>
+  </ul>
+</section>
+
+</div></main>
+<footer><div class="wrap"><span>Prepared 11 November 2026</span><span>Contact: ocha-datascience@un.org</span></div></footer>
+
+<script>
+const D = {"groups":{"both":{"years":[1994,1997,2006,2018,2019,2023],"country_seasons":18,"any":13,"by_month":{"9":2,"10":10,"11":1},"riv":6,"riv_by_month":{"10":5,"11":1},"by_iso":{"ETH":4,"KEN":4,"SOM":5},"riv_by_iso":{"ETH":2,"KEN":1,"SOM":3}},"nino":{"years":[1982,1986,1987,1991,2002,2004,2009,2014,2015],"country_seasons":27,"any":9,"by_month":{"9":1,"10":6,"11":1,"12":1},"riv":5,"riv_by_month":{"9":1,"10":3,"12":1},"by_iso":{"ETH":1,"KEN":4,"SOM":4},"riv_by_iso":{"ETH":0,"KEN":3,"SOM":2}},"neutral":{"years":[1981,1985,1989,1990,1992,1993,1996,2001,2003,2012,2013,2024],"country_seasons":36,"any":4,"by_month":{"9":1,"11":1,"12":2},"riv":3,"riv_by_month":{"9":1,"11":1,"12":1},"by_iso":{"ETH":0,"KEN":2,"SOM":2},"riv_by_iso":{"ETH":0,"KEN":1,"SOM":2}},"nina":{"years":[1983,1984,1988,1995,1998,1999,2000,2005,2007,2008,2010,2011,2016,2017,2020,2021,2022,2025],"country_seasons":54,"any":13,"by_month":{"9":4,"10":1,"11":7,"12":1},"riv":10,"riv_by_month":{"9":2,"10":1,"11":6,"12":1},"by_iso":{"ETH":5,"KEN":3,"SOM":5},"riv_by_iso":{"ETH":3,"KEN":3,"SOM":4}}},"timeline":{"SOM":[{"year":1994,"onset":44,"full":67,"ond_pct":145,"no_onset_pct":3.6,"months":[11],"events":[{"id":"1994-0573-SOM","sub":"Riverine flood","m":11,"aff":null,"loc":"South"}]},{"year":1997,"onset":30,"full":46,"ond_pct":402,"no_onset_pct":0.0,"months":[10],"events":[{"id":"1997-0265-SOM","sub":"Riverine flood","m":10,"aff":1230000,"loc":"Gedo, Middle, Lower Juba regions"}]},{"year":2006,"onset":40,"full":59,"ond_pct":182,"no_onset_pct":2.3,"months":[10],"events":[{"id":"2006-0618-SOM","sub":"Riverine flood","m":10,"aff":299000,"loc":"Belet Weyne, Jalalaqsi districts (Hiraan province), Jowhar district (Shabelle Dhexe province)"},{"id":"2006-0624-SOM","sub":"Riverine flood","m":10,"aff":155500,"loc":"Gedo province"}]},{"year":2018,"onset":99,"full":null,"ond_pct":67,"no_onset_pct":64.0,"months":[],"events":[]},{"year":2019,"onset":30,"full":52,"ond_pct":220,"no_onset_pct":0.0,"months":[10],"events":[{"id":"2019-0500-SOM","sub":"Flash flood","m":10,"aff":500000,"loc":"Hirshabelle, Jubaland, South West, Banadir, Hiran, Gedo"}]},{"year":2023,"onset":34,"full":59,"ond_pct":244,"no_onset_pct":0.1,"months":[9,10],"events":[{"id":"2023-0741-SOM","sub":"Flood (General)","m":9,"aff":2480000,"loc":"Bay, Ged, Bakool, South West, Hirshabelle, Jubaland, Galmudug, Belet Weyne, Balcad, Awdal, Bari, Mudug, Nugaal, Togdheer, Woqooyi Galbeed"},{"id":"2023-0683-SOM","sub":"Flood (General)","m":10,"aff":278000,"loc":"Baidoa, Jowhar, and Luuq"}]},{"year":2026,"onset":32,"full":45,"no_onset_pct":3.1,"months":[],"events":[]}],"KEN":[{"year":1994,"onset":51,"full":86,"ond_pct":136,"no_onset_pct":1.8,"months":[],"events":[]},{"year":1997,"onset":44,"full":69,"ond_pct":285,"no_onset_pct":0.0,"months":[9],"events":[{"id":"1997-0255-KEN","sub":"Flood (General)","m":9,"aff":900000,"loc":"Kwale, Kilifi, Mombasa, Malindi, Tana River districts (Coast province), Garissa, Mandea, Wajir districts (Northeastern province), Moyale, Marsabit districts (Eastern province)"}]},{"year":2006,"onset":49,"full":79,"ond_pct":194,"no_onset_pct":0.0,"months":[10],"events":[{"id":"2006-0587-KEN","sub":"Riverine flood","m":10,"aff":30000,"loc":"Moyale, Isiolo districts (Eastern province), Mandera, Garissa, Wajir districts (North Eastern province), Turkana district (Rift Valley province), Kwale, Mombasa districts (Coast province)"},{"id":"2006-0624-KEN","sub":"Riverine flood","m":10,"aff":723000,"loc":"Garissa, Ijara, Wajir, Mandera districts (North Eastern province), Kilifi, Tana River, Kwale districts (Coast province), Moyale, Isiolo districts (Eastern province), Busia district (Western province), Turkana district (Rift Valley province), Kisumu district (Nyanza province)"}]},{"year":2018,"onset":79,"full":null,"ond_pct":84,"no_onset_pct":2.9,"months":[],"events":[]},{"year":2019,"onset":33,"full":67,"ond_pct":224,"no_onset_pct":0.0,"months":[10],"events":[{"id":"2019-0500-KEN","sub":"Flash flood","m":10,"aff":233339,"loc":"Mombasa, Kwale, Kilifi, Tana River, Taita–Taveta, Garissa, Wajir, Mandera, Marsabit, Isiolo, Meru, Kitui, Machakos, Makueni, Kirinyaga, Murang'a, Turkana, West Pokot, Samburu, Trans-Nzoia, Elgeyo-Marakwet, Nandi, Narok, Kajiado, Kakamega, Bungoma, Siaya, Kisumu, Homa Bay counties"}]},{"year":2023,"onset":47,"full":67,"ond_pct":206,"no_onset_pct":0.0,"months":[10],"events":[{"id":"2023-0721-KEN","sub":"Flood (General)","m":10,"aff":695497,"loc":"Tana River, Garissa, Wajir, Mandera, Marsabit, Isiolo, Meru, Samburu"}]},{"year":2026,"onset":54,"full":null,"no_onset_pct":24.9,"months":[],"events":[]}],"ETH":[{"year":1994,"onset":43,"full":68,"ond_pct":122,"no_onset_pct":12.7,"months":[],"events":[]},{"year":1997,"onset":29,"full":48,"ond_pct":310,"no_onset_pct":0.0,"months":[10],"events":[{"id":"1997-0270-ETH","sub":"Riverine flood","m":10,"aff":65000,"loc":"Afder and Liben districts (Somali region), Gode, Haregele, Dollo regions"}]},{"year":2006,"onset":30,"full":56,"ond_pct":170,"no_onset_pct":0.0,"months":[10],"events":[{"id":"2006-0578-ETH","sub":"Riverine flood","m":10,"aff":361600,"loc":"Gode, Kelafo, Mustahil, East Imi, Ferfer, Denan towns (Shabelle district, Somali province), Kebri Dehar town (Korahe district, Somali province)"}]},{"year":2018,"onset":98,"full":null,"ond_pct":67,"no_onset_pct":65.5,"months":[],"events":[]},{"year":2019,"onset":27,"full":44,"ond_pct":220,"no_onset_pct":0.0,"months":[10],"events":[{"id":"2019-0500-ETH","sub":"Flash flood","m":10,"aff":200000,"loc":"Somali region"}]},{"year":2023,"onset":31,"full":54,"ond_pct":235,"no_onset_pct":0.0,"months":[10],"events":[{"id":"2023-0728-ETH","sub":"Flash flood","m":10,"aff":1500000,"loc":"Somali Region, Afar, Oromia, SNNP, Gambela"}]},{"year":2026,"onset":27,"full":42,"no_onset_pct":0.0,"months":[],"events":[]}]},"riverine":[{"year":1995,"grp":"nina","iso":"SOM","m":11,"aff":8500,"loc":"Mogadishu","nino":-0.98,"dmi":-0.19},{"year":2000,"grp":"nina","iso":"SOM","m":11,"aff":150000,"loc":"Juba Hoose, Juba Dhexe provinces","nino":-0.8,"dmi":-0.23},{"year":2001,"grp":"neutral","iso":"SOM","m":11,"aff":6500,"loc":"Jilib district (Juba Dhexe province)","nino":-0.31,"dmi":-0.25},{"year":2002,"grp":"nino","iso":"KEN","m":10,"aff":20000,"loc":"Madogo area (Tana River district, Coast province), Kinango area (Kwale district, Coast province)","nino":1.36,"dmi":0.11},{"year":2002,"grp":"nino","iso":"KEN","m":12,"aff":3000,"loc":"Marigat area (Baringo district, Rift Valley province)","nino":1.36,"dmi":0.11},{"year":2004,"grp":"nino","iso":"SOM","m":9,"aff":1500,"loc":"Sanaag province","nino":0.71,"dmi":-0.1},{"year":2005,"grp":"nina","iso":"ETH","m":9,"aff":null,"loc":"Tigray, Oromia, Amhara provinces","nino":-0.52,"dmi":-0.34},{"year":2007,"grp":"nina","iso":"SOM","m":9,"aff":8000,"loc":"Jowhar district (Shabelle Dhexe province)","nino":-1.5,"dmi":-0.06},{"year":2007,"grp":"nina","iso":"KEN","m":12,"aff":2000,"loc":"Taita Taveta district (Coast province)","nino":-1.5,"dmi":-0.06},{"year":2008,"grp":"nina","iso":"KEN","m":10,"aff":6310,"loc":"Katilu area (Turkana district, Rift Valley province)","nino":-0.56,"dmi":-0.05},{"year":2008,"grp":"nina","iso":"ETH","m":11,"aff":23831,"loc":"West Imi town (Afder district, Somali province), Dolo town (Doolo district, Somali province), Kebri Beyah town (Fafan district, Somali province), Halaba area (Selti district, SNNPR province), Kachabira area (KT district, SNNPR province), Mustahil, Kelafo, East Imi towns (Shabelle district, Somali province), Ginir town (Bale district, Oromia province), Shashogo area (Hadiya district, SNNPR province), Gelana area (South Wollo district, Amhara province)","nino":-0.56,"dmi":-0.05},{"year":2008,"grp":"nina","iso":"KEN","m":11,"aff":30770,"loc":"Busia district (Western province), Mandera, Garissa, Wajir districts (North Western province), Marakwet, Trans Nzoia districts (Rift Valley province), Tana River district (Coast province), Migori, Nyando districts (Nyanza province)","nino":-0.56,"dmi":-0.05},{"year":2009,"grp":"nino","iso":"KEN","m":10,"aff":44850,"loc":"Mandera district (North Eastern province), Malindi, Tana River districts (Coast province), Nyanza, Western provinces","nino":1.36,"dmi":0.03},{"year":2009,"grp":"nino","iso":"KEN","m":12,"aff":91350,"loc":"Nairobi district (Nairobi province), Turkana, Laikipia, Kajiado, Koibatek, Baringo, Narok, West Pokot, Kericho, Keiyo, Marakwet, Samburu, Nakuru districts (Rift Valley province), Kilifi, Tana River, Taita Taveta districts (Coast province), Nyando district (Nyanza province), Kiambu district (Central province), Isiolo, Makueni districts (Eastern province), Homa Bay district (Nyanza province)","nino":1.36,"dmi":0.03},{"year":2011,"grp":"nina","iso":"ETH","m":11,"aff":40200,"loc":"Mustahil, Kelafo villages (Shabelle district, Somali province)","nino":-1.1,"dmi":0.19},{"year":2011,"grp":"nina","iso":"KEN","m":11,"aff":5000,"loc":"Dadaab village (Garissa district, North Eastern province)","nino":-1.1,"dmi":0.19},{"year":2011,"grp":"nina","iso":"KEN","m":11,"aff":91692,"loc":"Busia, Kakamega districts (Western province), Siaya, Kisumu, Rachuonyo, Central Kisii districts (Nyanza province), Tana River district (Coast province), Baringo, Keiyo, West Pokot, Samburu, Marakwet districts (Rift Valley province), Moyale, Marsabit, Isiolo districts (Eastern province), Wajir district (North Eastern province), Muranga district (Central province)","nino":-1.1,"dmi":0.19},{"year":2011,"grp":"nina","iso":"SOM","m":11,"aff":2800,"loc":"Mogadishu city (Banadir district, Banadir province)","nino":-1.1,"dmi":0.19},{"year":2012,"grp":"neutral","iso":"SOM","m":9,"aff":20000,"loc":"Belet Weyne district (Hiraan province)","nino":0.06,"dmi":0.09},{"year":2012,"grp":"neutral","iso":"SOM","m":11,"aff":12200,"loc":"Hiraan province","nino":0.06,"dmi":0.09},{"year":2013,"grp":"neutral","iso":"KEN","m":12,"aff":null,"loc":"Taita Taveta district (Coast province), Makueni district (Eastern province), Kajiado, Laikipia, Narok districts (Rift Valley province)","nino":-0.17,"dmi":0.06},{"year":2014,"grp":"nino","iso":"SOM","m":10,"aff":90000,"loc":"Jilib district (Juba Dhexe province), Jamaame district (Juba Hoose province), Xudur (Bakool province), Belet Weyne district (Hiraan province), Doolow district (Gedo province), Bay, Shabelle Dhexe provinces","nino":0.63,"dmi":0.07},{"year":2015,"grp":"nino","iso":"KEN","m":12,"aff":240799,"loc":"Mt Elgon, Busia, Bungoma districts (Western province), Kirinyaga district (Central province), Kisumu district (Nyanza province), Tana River district (Coast province), Marsabit, Isiolo, Machakos districts (Eastern province), Mandera, Wajir districts (North Eastern province), Narok, Nandi North, Nandi South, Trans Nzoia districts (Rift Valley province)","nino":2.58,"dmi":0.37}],"phase":[{"year":1981,"nino":-0.3,"dmi":-0.32,"grp":"neutral","nflood":0},{"year":1982,"nino":2.04,"dmi":0.25,"grp":"nino","nflood":1},{"year":1983,"nino":-1.16,"dmi":-0.24,"grp":"nina","nflood":0},{"year":1984,"nino":-1.07,"dmi":-0.45,"grp":"nina","nflood":0},{"year":1985,"nino":-0.42,"dmi":-0.28,"grp":"neutral","nflood":0},{"year":1986,"nino":0.98,"dmi":-0.19,"grp":"nino","nflood":0},{"year":1987,"nino":1.08,"dmi":0.12,"grp":"nino","nflood":0},{"year":1988,"nino":-1.97,"dmi":-0.18,"grp":"nina","nflood":1},{"year":1989,"nino":-0.33,"dmi":-0.31,"grp":"neutral","nflood":0},{"year":1990,"nino":0.22,"dmi":-0.15,"grp":"neutral","nflood":0},{"year":1991,"nino":1.25,"dmi":0.03,"grp":"nino","nflood":0},{"year":1992,"nino":-0.24,"dmi":-0.45,"grp":"neutral","nflood":0},{"year":1993,"nino":0.07,"dmi":-0.17,"grp":"neutral","nflood":0},{"year":1994,"nino":1.04,"dmi":0.42,"grp":"both","nflood":1},{"year":1995,"nino":-0.98,"dmi":-0.19,"grp":"nina","nflood":1},{"year":1996,"nino":-0.5,"dmi":-0.77,"grp":"neutral","nflood":0},{"year":1997,"nino":2.35,"dmi":1.01,"grp":"both","nflood":3},{"year":1998,"nino":-1.54,"dmi":-0.58,"grp":"nina","nflood":0},{"year":1999,"nino":-1.52,"dmi":-0.15,"grp":"nina","nflood":1},{"year":2000,"nino":-0.8,"dmi":-0.23,"grp":"nina","nflood":1},{"year":2001,"nino":-0.31,"dmi":-0.25,"grp":"neutral","nflood":1},{"year":2002,"nino":1.36,"dmi":0.11,"grp":"nino","nflood":1},{"year":2003,"nino":0.39,"dmi":-0.07,"grp":"neutral","nflood":0},{"year":2004,"nino":0.71,"dmi":-0.1,"grp":"nino","nflood":1},{"year":2005,"nino":-0.52,"dmi":-0.34,"grp":"nina","nflood":1},{"year":2006,"nino":0.94,"dmi":0.42,"grp":"both","nflood":3},{"year":2007,"nino":-1.5,"dmi":-0.06,"grp":"nina","nflood":2},{"year":2008,"nino":-0.56,"dmi":-0.05,"grp":"nina","nflood":3},{"year":2009,"nino":1.36,"dmi":0.03,"grp":"nino","nflood":2},{"year":2010,"nino":-1.64,"dmi":-0.38,"grp":"nina","nflood":0},{"year":2011,"nino":-1.1,"dmi":0.19,"grp":"nina","nflood":3},{"year":2012,"nino":0.06,"dmi":0.09,"grp":"neutral","nflood":1},{"year":2013,"nino":-0.17,"dmi":0.06,"grp":"neutral","nflood":1},{"year":2014,"nino":0.63,"dmi":0.07,"grp":"nino","nflood":1},{"year":2015,"nino":2.58,"dmi":0.37,"grp":"nino","nflood":3},{"year":2016,"nino":-0.67,"dmi":-0.35,"grp":"nina","nflood":0},{"year":2017,"nino":-0.84,"dmi":0.14,"grp":"nina","nflood":0},{"year":2018,"nino":0.9,"dmi":0.5,"grp":"both","nflood":0},{"year":2019,"nino":0.51,"dmi":0.68,"grp":"both","nflood":3},{"year":2020,"nino":-1.28,"dmi":0.04,"grp":"nina","nflood":0},{"year":2021,"nino":-0.98,"dmi":-0.05,"grp":"nina","nflood":0},{"year":2022,"nino":-0.91,"dmi":-0.35,"grp":"nina","nflood":0},{"year":2023,"nino":1.92,"dmi":0.86,"grp":"both","nflood":3},{"year":2024,"nino":-0.37,"dmi":-0.3,"grp":"neutral","nflood":1},{"year":2025,"nino":-0.62,"dmi":-0.24,"grp":"nina","nflood":0}],"curves":{"ETH":{"normal":[0.7,1.4,2.1,2.6,3.4,4.2,4.9,5.6,6.1,6.8,7.8,8.8,9.8,10.6,11.4,12.2,13.0,14.0,14.9,16.1,17.2,18.2,19.3,20.3,21.6,22.6,24.0,25.5,27.6,30.3,32.0,33.8,36.1,39.1,42.3,45.3,48.2,51.3,54.9,58.9,62.3,65.7,69.3,73.3,76.6,79.2,82.6,86.2,90.8,94.5,98.6,102.0,105.6,109.1,112.4,115.6,119.5,122.8,125.6,128.3,130.7,132.8,134.8,136.9,139.0,141.7,144.4,146.8,149.7,152.2,154.5,156.4,158.2,160.1,161.6,163.5,164.9,166.0,167.3,168.4,170.0,172.2,174.1,176.5,178.3,179.8,181.1,181.9,183.1,184.2,185.5,186.3,187.0,187.6,188.3,189.2,190.2,191.0,191.7,192.1,192.7,193.7,194.2,194.7,195.2,195.5,195.7,196.0,196.3,196.6,196.9,197.3,197.6,198.0,198.4,198.8,199.2,199.7,200.1,200.4,200.7,201.0],"1994":[0.3,0.6,0.7,1.5,2.1,2.9,3.3,3.5,3.8,4.6,5.0,5.6,5.9,6.0,7.2,7.9,8.0,8.1,8.7,9.5,9.6,10.0,11.1,12.0,14.5,18.6,22.0,27.5,31.6,35.0,35.9,36.2,37.0,38.7,40.4,43.0,45.6,46.9,51.1,60.4,63.5,66.0,68.8,79.2,85.0,89.3,96.2,98.6,101.5,104.1,106.1,107.6,108.5,109.4,110.0,111.8,115.1,121.7,127.0,132.1,138.2,142.1,150.4,157.3,159.0,160.3,161.6,164.2,180.2,196.8,204.4,206.6,207.5,209.7,211.6,213.2,214.0,215.0,215.9,216.9,221.2,227.1,228.6,230.0,230.9,231.6,232.0,232.4,232.7,232.8,232.9,233.2,233.6,233.8,234.6,238.1,239.0,239.6,240.2,240.4,240.5,240.6,240.7,240.9,241.1,241.3,241.4,241.5,241.6,241.7,241.9,242.0,242.3,242.4,242.5,242.6,242.7,242.9,243.0,243.1,243.2,243.4],"1997":[0.2,0.3,0.4,0.6,1.9,2.3,2.5,3.1,3.5,4.7,4.9,5.4,7.0,7.3,7.4,7.6,7.8,8.6,9.4,10.7,11.6,14.7,18.5,20.9,21.9,23.2,23.8,24.3,26.7,31.3,32.0,32.3,33.3,35.8,37.6,46.6,63.2,68.6,78.1,86.2,88.1,88.4,92.5,103.0,113.8,123.7,137.4,156.6,172.6,182.0,202.4,216.7,224.3,234.3,244.2,259.4,279.6,300.9,310.8,316.9,321.1,321.7,322.4,323.1,323.8,324.5,326.3,328.0,329.0,333.0,339.5,353.8,365.6,386.8,402.8,418.8,430.3,437.6,449.1,454.6,464.5,475.1,479.9,489.7,496.7,504.9,509.5,511.3,512.9,514.8,516.7,517.2,519.0,523.4,529.9,534.2,539.1,540.6,543.6,544.5,544.7,545.0,545.6,546.4,546.6,546.9,547.1,547.5,548.0,549.1,550.3,550.6,550.8,551.6,552.7,554.7,556.4,558.1,559.3,559.8,559.9,560.2],"2006":[0.7,1.6,2.0,2.1,2.8,4.3,4.7,5.2,5.5,5.6,5.8,6.0,6.4,7.4,8.2,8.4,8.7,9.0,12.0,17.6,23.4,23.9,24.0,24.1,24.2,24.4,24.4,24.5,26.8,35.4,39.5,40.0,43.2,50.2,52.6,56.5,58.1,59.0,59.8,60.4,60.9,61.5,63.0,65.0,66.4,71.3,82.6,89.6,94.2,99.2,105.6,113.6,122.0,135.7,154.1,162.7,170.8,180.0,188.9,194.9,196.2,196.8,197.4,198.2,198.5,198.7,199.2,203.6,211.7,217.9,224.7,227.2,230.9,233.1,236.5,241.2,242.3,243.4,246.6,248.8,251.3,257.7,262.9,270.1,272.4,274.8,275.5,276.0,276.8,278.8,286.4,291.3,292.7,297.1,303.1,307.6,312.4,314.5,315.2,315.6,315.7,315.8,316.1,317.0,317.3,317.4,317.5,317.6,317.9,318.1,318.1,318.6,318.7,319.0,319.4,319.5,320.0,320.7,321.8,323.0,324.7,325.3],"2018":[0.1,0.2,0.5,0.9,1.7,2.3,3.4,3.4,3.5,4.3,5.0,5.1,5.2,6.1,7.3,8.0,8.4,8.8,9.7,10.2,10.5,10.9,11.2,12.5,13.7,14.3,14.8,19.0,28.2,33.8,36.1,37.2,37.9,39.0,40.1,41.2,42.2,43.2,44.5,46.6,46.9,47.1,48.2,51.3,57.3,63.1,69.3,73.6,75.7,75.9,76.1,77.1,78.8,80.6,85.5,96.5,104.4,106.6,107.9,109.0,110.0,110.1,110.1,110.1,110.5,111.1,112.0,112.8,113.6,114.7,117.2,119.2,119.9,120.4,120.8,121.9,125.4,129.4,130.6,131.3,131.4,131.5,131.5,131.5,132.0,133.4,134.1,134.9,136.9,137.5,137.5,137.6,138.1,138.3,138.5,138.6,138.8,138.9,139.3,140.3,141.2,142.6,143.3,144.4,145.0,145.1,145.2,145.4,145.5,145.6,145.8,145.9,146.2,146.3,146.3,146.4,146.4,146.4,146.5,147.7,148.5,148.7],"2019":[1.8,3.6,4.3,4.5,4.7,5.1,6.0,6.5,6.5,7.4,8.8,9.4,9.6,9.9,10.7,12.1,12.3,12.4,12.6,13.5,13.7,14.0,14.4,15.8,19.4,22.4,24.9,25.5,25.8,26.8,30.8,36.5,42.4,49.3,73.0,91.0,98.0,103.6,114.5,126.1,138.8,151.8,162.1,170.1,177.5,181.8,186.1,199.5,220.0,225.7,229.4,231.6,233.6,235.4,237.2,239.1,243.2,246.0,248.5,250.1,251.2,251.9,252.4,253.4,256.6,260.9,277.9,288.8,294.7,298.9,304.1,304.8,305.4,305.8,306.0,306.0,306.2,306.3,306.6,308.9,313.4,325.2,341.6,351.4,358.8,362.0,368.9,370.4,371.3,371.8,372.5,372.5,372.6,372.9,373.2,373.3,373.9,377.0,379.8,382.6,383.7,386.7,389.8,393.2,396.6,397.4,398.0,398.2,398.2,398.3,398.7,399.4,400.2,400.5,400.7,400.8,401.0,401.0,401.3,401.5,401.7,402.1],"2023":[1.1,1.7,1.9,2.2,2.6,3.2,5.5,6.6,7.0,7.5,8.5,9.3,10.0,11.4,12.7,14.6,15.1,15.5,16.8,19.2,20.2,20.8,24.2,26.7,26.9,27.5,30.0,31.3,32.6,39.8,40.7,41.0,41.6,47.5,51.1,53.3,54.6,55.5,56.0,56.8,58.2,61.2,70.1,76.6,85.4,92.9,98.6,103.4,118.4,132.6,145.8,148.1,150.1,159.5,171.8,177.8,188.4,201.6,211.0,213.7,215.1,230.7,256.3,276.7,289.6,313.1,323.9,329.7,333.7,334.3,336.8,340.7,344.2,351.2,357.0,363.0,374.7,388.2,412.9,425.8,425.9,426.3,427.3,428.1,428.8,429.3,430.4,430.6,430.7,430.8,430.9,431.0,431.1,431.3,431.4,431.5,431.6,431.8,432.0,432.1,432.3,432.3,432.4,432.8,433.8,434.8,434.9,435.0,435.1,435.2,435.3,435.5,435.5,435.7,435.9,436.2,436.5,436.5,436.9,437.6,439.1,441.0],"2026":[1.7,1.8,1.9,2.0,2.3,2.5,3.6,4.1,4.2,4.8,4.9,6.0,7.4,8.3,9.1,10.3,10.8,10.9,11.6,11.9,15.7,21.6,23.9,25.1,25.5,25.7,25.9,28.0,32.7,36.8,38.1,38.8,39.6,42.0,48.8,63.7,68.7,88.2,106.7,122.9,133.7,167.8,183.6,190.7,197.5,202.1,208.2,210.0,210.7,210.8,210.8,211.4,215.8,230.9,235.6,242.3,244.1,248.7,251.2,251.3,251.4,251.7,251.9,252.2,252.4,252.7]},"KEN":{"normal":[0.5,1.0,1.6,2.1,2.6,3.1,3.6,4.1,4.5,5.0,5.5,6.0,6.5,7.0,7.4,7.9,8.5,9.1,9.6,10.1,10.8,11.4,12.1,12.6,13.1,14.0,14.7,15.6,16.6,17.4,18.4,19.4,20.4,21.5,22.8,24.1,25.4,26.4,27.9,30.1,32.0,34.1,36.7,38.8,40.4,42.3,44.2,46.6,49.1,51.5,54.0,56.4,58.8,60.8,63.2,65.6,68.3,71.1,73.8,76.2,79.1,82.8,87.0,91.1,95.2,99.8,104.4,108.5,111.8,115.6,119.9,123.7,126.8,130.5,134.6,138.6,143.0,146.9,151.3,155.1,159.6,164.3,167.9,172.2,176.7,181.5,184.9,187.9,191.6,195.3,198.7,201.8,204.8,207.4,209.8,212.8,216.3,219.0,221.9,225.2,228.1,230.8,233.1,235.7,238.4,240.3,242.1,244.0,246.6,248.2,249.7,251.6,253.2,255.1,256.6,258.2,260.1,262.0,264.0,265.4,266.8,268.2],"1994":[0.1,0.4,0.8,1.2,1.8,2.2,2.6,2.9,3.4,3.6,4.0,5.0,5.1,5.4,5.6,6.0,6.2,6.7,7.1,7.7,8.9,9.8,10.3,11.0,11.2,12.8,13.7,14.8,16.7,17.9,19.1,20.4,21.5,21.9,22.0,22.3,23.2,23.6,24.9,27.7,29.7,33.1,38.7,41.3,42.9,44.0,45.2,47.2,52.0,56.1,62.8,68.8,74.7,77.2,77.8,78.4,79.8,81.7,83.7,85.7,91.3,98.2,106.7,117.6,128.0,135.3,140.2,145.2,150.1,155.9,164.8,174.5,181.2,194.0,207.7,216.0,220.3,223.3,224.7,225.2,227.6,233.2,236.2,238.7,241.2,244.1,251.5,259.9,265.8,269.7,272.9,276.4,279.4,282.0,287.9,305.2,311.6,315.7,322.3,328.5,332.3,333.7,334.8,337.1,340.7,343.3,346.0,347.5,348.3,348.6,349.0,350.3,351.5,353.4,354.0,355.9,357.8,358.5,359.0,359.2,359.3,359.5],"1997":[0.3,0.5,0.7,0.9,1.1,1.4,1.8,1.9,2.1,2.3,2.7,3.0,3.3,3.7,4.0,4.2,4.5,4.7,5.3,5.5,5.6,6.8,7.4,7.6,7.7,7.9,7.9,8.4,10.5,11.3,11.5,11.7,12.2,13.5,15.2,20.1,24.8,27.7,31.0,42.2,53.2,55.8,62.7,69.8,71.7,72.1,76.1,88.1,100.6,114.2,128.9,135.2,139.7,142.1,145.0,149.1,154.1,162.5,172.6,183.7,195.2,201.5,207.1,213.3,224.0,230.6,235.6,242.2,248.3,252.6,255.1,257.6,264.6,274.5,286.0,301.8,330.6,345.6,369.2,381.1,416.8,443.2,448.0,453.9,460.9,472.4,479.5,488.8,500.3,520.0,528.7,535.6,544.4,552.6,567.7,583.6,604.8,615.2,622.7,624.8,625.3,626.1,629.0,635.1,643.1,646.5,650.7,654.4,664.2,670.8,676.1,677.5,682.0,687.8,692.9,700.7,710.0,715.1,719.9,722.5,724.2,725.4],"2006":[0.8,1.0,1.3,1.9,2.2,2.4,3.0,3.3,3.6,4.0,4.2,4.4,4.7,5.5,5.9,6.5,7.0,7.8,8.9,10.2,10.9,11.4,12.2,12.6,13.0,13.5,14.0,15.9,21.2,23.3,23.8,24.2,24.6,25.7,27.6,28.2,29.1,29.8,30.1,31.1,31.9,33.0,34.5,34.7,36.4,40.2,43.0,44.3,46.2,51.2,67.2,79.5,90.3,95.7,100.9,104.0,109.8,113.3,115.2,117.1,124.8,129.9,132.4,135.3,138.3,143.7,153.6,162.7,168.3,173.6,179.8,187.7,194.0,199.7,208.5,220.4,231.5,241.7,248.6,256.3,263.6,276.1,294.4,312.4,316.7,321.0,325.1,328.3,332.6,341.3,353.6,362.1,363.8,365.1,368.7,374.9,383.0,388.5,390.9,392.2,394.0,395.6,400.0,409.5,415.3,418.2,420.3,424.3,431.5,438.7,441.3,445.1,448.0,452.4,456.6,462.2,469.5,478.7,487.5,496.2,506.9,510.2],"2018":[0.5,0.8,1.1,2.2,3.0,3.5,3.8,4.0,4.4,4.9,5.3,5.6,6.3,6.8,7.0,7.2,7.3,7.5,7.8,8.6,9.5,10.0,10.2,10.8,11.4,13.2,14.8,16.5,17.1,17.4,17.6,17.8,18.2,18.9,19.8,21.1,21.5,22.5,23.3,24.3,24.7,25.7,26.5,27.9,28.8,29.6,30.8,32.9,35.0,35.4,35.7,36.4,37.4,39.7,44.9,56.3,64.7,68.7,69.9,71.0,74.2,76.2,78.4,80.7,81.6,81.9,82.1,82.4,83.0,84.8,86.5,89.3,90.4,92.1,93.5,94.6,95.9,98.6,101.3,105.2,110.3,112.2,113.2,114.2,115.6,119.3,120.6,121.1,123.2,125.5,126.0,127.7,131.7,133.3,136.1,137.4,141.1,144.8,148.5,153.4,163.9,175.4,185.3,200.7,208.8,213.0,214.0,214.9,215.4,216.9,217.5,218.2,219.0,219.9,220.4,220.7,221.1,221.7,222.4,224.4,226.0,226.9],"2019":[1.6,3.3,4.2,4.6,5.1,5.4,5.8,6.0,7.0,9.0,9.6,10.1,10.7,11.1,11.5,11.8,12.1,12.3,12.5,12.9,13.1,13.3,14.0,14.4,15.5,19.2,20.7,20.9,21.2,22.4,29.0,31.9,36.1,42.3,52.1,61.3,62.5,66.1,80.6,93.8,104.1,116.7,124.3,128.0,128.9,132.5,144.9,154.7,165.1,171.2,173.2,178.1,186.0,191.2,197.9,203.9,208.8,214.6,225.8,234.4,239.0,242.4,243.1,244.8,245.7,246.4,248.6,252.9,257.3,260.6,264.6,272.8,284.1,292.7,301.8,303.3,303.9,304.7,308.8,318.4,325.2,336.0,349.4,370.2,393.3,415.5,422.1,424.8,428.0,431.3,439.3,445.6,449.2,454.3,459.3,465.4,473.2,478.1,485.8,499.7,510.1,513.6,518.6,523.3,530.4,534.0,537.0,540.5,542.2,542.4,544.0,554.6,560.6,564.6,567.6,570.1,574.2,575.9,580.0,582.1,583.6,584.7],"2023":[0.2,0.5,0.8,1.2,1.8,2.8,4.0,4.5,5.1,6.3,7.5,8.2,8.8,9.5,9.8,10.1,10.3,10.9,12.2,12.7,13.4,14.3,14.9,15.9,16.6,17.2,17.9,18.5,19.7,20.3,20.9,21.2,22.7,27.0,27.9,29.4,30.1,30.3,31.1,31.9,33.2,34.7,35.7,36.8,41.5,47.6,51.5,57.4,65.8,70.7,76.9,79.1,79.5,81.5,87.2,94.4,100.0,111.2,118.6,125.1,131.9,141.4,169.6,203.5,216.4,226.9,239.8,253.1,268.9,273.2,282.7,291.5,303.8,315.4,325.6,331.8,340.3,350.2,362.9,378.1,391.6,410.2,421.7,432.0,447.3,455.6,461.7,465.7,469.1,470.7,471.8,473.5,475.2,478.4,479.9,483.5,484.2,484.7,486.2,487.2,490.1,492.6,494.2,497.7,503.1,509.7,510.9,511.8,512.2,512.4,512.5,512.8,516.3,518.4,519.7,520.8,522.9,523.8,526.7,530.1,535.9,538.0],"2026":[0.3,0.4,0.6,0.9,1.0,1.3,1.6,1.9,2.5,3.2,4.5,5.1,5.7,6.1,7.1,7.6,8.4,10.1,10.4,15.3,18.8,19.5,20.7,20.9,21.4,21.7,24.4,26.0,26.9,27.1,27.8,28.9,29.2,29.6,31.4,33.6,34.7,36.1,38.0,41.7,42.6,43.7,44.0,44.6,45.3,46.3,47.5,48.5,49.4,50.0,50.5,51.1,51.6,52.8,53.7,59.3,63.4,66.8,71.9,75.6,80.2,81.2,82.0,83.8,84.5,86.0]},"SOM":{"normal":[0.2,0.5,0.7,1.0,1.2,1.4,1.7,1.9,2.1,2.3,2.6,3.0,3.3,3.6,3.9,4.2,4.4,4.7,5.1,5.7,6.3,6.8,7.4,7.9,8.3,8.9,9.6,10.4,11.5,12.6,13.5,14.7,16.1,17.5,19.6,21.5,23.7,25.8,28.1,30.6,32.4,34.4,37.0,39.7,42.3,44.4,47.0,49.6,52.6,55.5,58.1,60.6,63.0,65.5,68.3,71.0,73.7,76.1,78.5,80.6,82.6,84.6,86.4,88.3,90.4,92.8,94.6,96.4,98.2,100.3,102.4,104.7,106.5,108.4,109.8,111.1,112.7,114.1,115.8,117.5,119.3,120.9,122.2,123.7,125.0,126.3,127.3,127.9,128.9,130.0,131.0,132.1,133.3,134.3,135.3,136.4,137.5,138.3,138.9,139.6,140.2,140.7,141.2,141.7,142.0,142.2,142.5,142.9,143.1,143.4,143.6,143.8,144.0,144.3,144.6,144.8,145.1,145.3,145.4,145.6,145.7,145.8],"1994":[0.0,0.0,0.3,0.5,0.6,0.8,0.8,0.9,1.1,1.2,1.4,1.7,1.7,1.8,2.0,2.3,2.4,2.6,3.1,3.6,3.9,4.5,5.3,7.3,8.5,9.0,9.9,11.2,12.9,14.2,15.2,16.4,17.6,18.1,18.3,18.7,19.3,19.5,23.2,27.8,33.4,36.9,42.4,45.9,48.7,52.4,57.7,61.4,66.0,68.4,70.1,73.0,75.2,77.4,79.2,80.2,81.2,83.2,84.3,85.5,88.2,96.3,104.1,110.9,118.5,123.5,127.5,134.5,146.7,157.5,162.6,169.6,173.7,179.5,182.8,183.9,184.7,185.1,186.0,192.2,196.6,197.4,197.9,198.2,198.3,198.3,198.4,198.5,198.6,198.6,198.7,198.8,199.3,199.6,200.5,203.3,203.8,204.3,204.5,204.6,204.7,204.8,204.9,205.0,205.1,205.2,205.5,205.5,205.6,205.7,205.8,206.1,206.5,206.5,206.6,206.6,206.8,206.9,206.9,207.1,207.3,207.4],"1997":[0.1,0.1,0.2,0.5,0.8,0.9,1.0,1.0,1.2,1.4,1.6,1.8,2.0,2.1,2.1,2.2,2.3,2.7,3.7,4.4,5.2,6.9,8.2,8.7,9.0,9.5,9.8,10.5,12.9,14.1,15.0,15.8,17.1,21.0,25.3,33.6,39.9,43.8,50.0,58.9,61.5,65.2,74.7,96.4,119.1,132.8,145.6,162.9,172.7,184.1,195.3,202.1,208.4,213.9,220.2,236.1,253.1,263.6,272.4,281.9,293.0,295.5,299.1,304.9,312.2,315.2,319.9,324.8,327.5,332.0,339.4,352.0,362.3,374.3,383.3,390.1,396.9,403.8,412.7,419.7,429.0,434.0,437.1,446.3,451.5,460.0,463.4,467.8,475.0,480.0,480.9,486.0,496.1,506.5,516.7,523.5,526.0,526.7,526.7,526.8,527.2,529.5,531.7,533.8,534.4,534.9,535.4,536.1,537.4,538.9,539.7,539.9,541.9,544.0,544.5,544.9,548.3,548.8,549.0,549.0,549.3,549.8],"2006":[0.4,1.5,2.1,2.8,3.3,3.8,3.9,3.9,4.0,4.3,4.4,4.5,4.6,5.0,5.1,5.5,6.1,6.9,8.6,10.9,12.5,12.9,13.6,13.9,14.5,14.6,14.7,15.6,17.5,22.0,23.3,23.8,24.7,26.3,28.0,29.3,30.0,30.6,30.9,31.6,32.3,33.3,34.3,36.1,37.7,39.1,41.4,43.0,46.6,56.0,65.3,72.3,76.3,84.3,94.7,102.6,109.5,117.6,128.1,133.6,135.5,135.8,136.1,136.4,136.7,137.7,139.0,143.1,146.8,151.5,155.4,160.8,164.2,167.5,170.2,173.8,177.6,183.1,190.1,195.2,199.2,203.6,208.8,211.6,211.9,212.2,212.2,212.5,215.5,222.8,230.8,232.6,233.7,235.6,241.3,246.0,248.5,249.1,249.9,251.8,252.1,252.3,254.1,255.5,256.2,257.1,258.2,259.2,260.3,260.9,261.2,261.3,261.5,261.9,262.1,262.3,262.9,263.2,263.4,263.6,263.7,264.1],"2018":[0.0,0.0,0.1,0.3,0.4,0.6,0.7,0.7,0.9,1.5,2.1,2.2,2.4,2.9,3.2,3.5,3.7,3.9,4.0,4.1,4.3,4.3,4.4,4.8,5.1,5.3,5.6,7.1,11.0,12.5,13.6,16.2,16.8,17.6,18.3,18.9,19.3,19.6,20.3,21.1,21.4,21.7,22.6,23.9,27.6,30.8,33.2,34.0,34.4,34.7,34.8,35.2,35.9,37.6,40.7,45.7,50.1,51.2,51.7,52.3,52.9,53.0,53.1,53.2,53.2,53.4,53.5,53.6,53.7,54.0,54.8,56.4,58.2,59.2,59.9,61.3,63.1,64.5,65.4,66.2,66.3,66.3,66.3,66.6,68.3,69.0,69.3,70.2,72.3,72.5,73.2,76.4,81.0,81.9,82.6,83.6,87.5,88.5,88.9,89.4,90.4,91.0,95.5,97.2,97.4,97.5,97.5,97.6,97.7,98.1,98.9,99.1,99.4,99.6,99.7,99.9,100.0,100.2,100.4,101.1,101.2,101.3],"2019":[0.5,1.1,1.3,1.5,1.7,1.7,1.8,1.9,2.8,3.2,3.9,4.6,4.8,5.0,7.5,8.3,8.4,8.5,8.6,8.9,9.1,9.5,9.7,9.9,10.4,11.9,14.0,14.4,14.9,16.1,17.2,19.1,20.2,24.7,29.8,35.8,39.5,44.3,55.2,61.6,66.2,70.2,75.3,81.6,84.9,88.9,99.6,108.2,117.6,122.4,125.8,129.3,136.6,140.0,142.0,143.6,145.6,147.1,148.7,150.9,152.1,153.4,153.8,158.4,164.6,171.9,177.9,182.5,185.0,186.8,191.3,194.6,195.6,198.0,199.1,199.6,199.7,199.9,203.8,214.0,218.8,226.9,233.1,238.2,247.6,256.7,265.5,268.0,268.6,269.2,269.8,270.3,270.5,270.7,271.1,272.0,282.2,290.6,295.3,297.3,298.5,300.5,301.9,304.7,305.6,306.2,306.6,306.6,306.7,307.1,307.4,307.8,308.1,308.4,308.5,308.6,308.6,308.6,308.7,309.0,309.5,309.8],"2023":[0.2,0.3,0.4,0.5,0.6,0.9,1.4,1.6,1.6,1.7,1.9,2.1,2.2,2.5,2.7,2.9,2.9,3.1,3.3,3.9,4.0,5.2,8.6,9.8,10.1,10.2,10.6,11.6,13.8,15.8,16.1,16.2,17.4,25.7,30.6,33.6,34.3,34.5,34.8,35.6,36.8,38.9,44.4,47.5,49.3,50.6,51.4,59.3,67.9,80.3,89.0,90.3,90.8,94.3,98.4,104.4,111.7,119.8,133.0,139.5,147.0,165.7,187.5,202.4,212.0,221.8,228.7,233.8,237.5,238.0,242.3,249.1,254.0,260.9,266.6,273.1,282.7,292.4,303.8,314.8,316.8,319.8,322.7,326.5,330.7,331.3,332.7,334.0,334.4,335.1,335.4,335.7,336.0,336.1,336.2,336.5,336.5,336.5,336.7,336.7,336.9,337.1,337.2,337.3,337.4,337.6,337.8,337.9,337.9,338.0,338.1,338.3,338.6,339.0,339.1,339.2,339.3,339.3,340.1,340.5,340.6,340.6],"2026":[0.3,0.4,0.5,0.5,0.7,0.9,1.1,1.3,1.5,1.7,2.0,2.3,2.4,2.7,3.6,4.1,4.5,4.7,4.9,6.7,9.8,11.7,12.2,12.4,12.4,12.6,14.0,14.9,15.6,17.1,17.8,20.5,28.2,35.8,41.7,44.3,47.4,54.7,64.6,75.1,90.6,105.8,116.6,125.0,128.9,138.6,141.1,143.1,144.7,144.7,145.1,148.8,154.4,159.7,161.0,165.3,167.3,169.8,173.1,173.3,173.4,173.4,173.5,173.5,173.6,173.6]}},"stats26":{"ETH":{"onset_date":"2026-09-28","no_onset_pct":0.0,"to_date_pct":178.3,"full_normal":"2026-10-13","month_mm":1.2,"month_normal_mm":11.1},"KEN":{"onset_date":"2026-10-25","no_onset_pct":24.9,"to_date_pct":86.2,"full_normal":null,"month_mm":5.8,"month_normal_mm":20.7},"SOM":{"onset_date":"2026-10-03","no_onset_pct":3.1,"to_date_pct":187.1,"full_normal":"2026-10-16","month_mm":0.2,"month_normal_mm":10.2}},"now":{"oni_aso":2.46,"dmi_oct":1.11,"dmi_nov":0.86,"dmi_nov_to":"2026-11-07"},"seasons":{"ETH":[[1981,76.5,0,92.3],[1982,158.0,0,167.6],[1983,58.8,0,72.4],[1984,49.8,0,61.8],[1985,45.5,0,46.8],[1986,48.8,0,49.9],[1987,76.2,0,95.1],[1988,65.2,1,100.6],[1989,96.6,0,89.6],[1990,56.3,0,66.5],[1991,47.8,0,49.4],[1992,64.4,0,64.6],[1993,54.5,0,70.6],[1994,122.1,0,113.1],[1995,67.9,0,88.3],[1996,46.5,0,50.3],[1997,309.9,1,228.9],[1998,40.9,0,48.6],[1999,58.2,1,68.8],[2000,114.3,0,121.5],[2001,76.8,0,95.6],[2002,110.0,0,119.4],[2003,79.8,0,42.0],[2004,112.6,0,102.8],[2005,43.2,1,59.2],[2006,169.8,1,140.2],[2007,71.2,0,83.0],[2008,113.8,1,136.7],[2009,87.1,0,97.3],[2010,35.6,0,52.1],[2011,156.4,1,128.9],[2012,102.6,0,123.4],[2013,130.5,0,117.2],[2014,112.8,0,113.8],[2015,142.6,1,132.2],[2016,47.7,0,42.5],[2017,112.3,0,142.5],[2018,67.3,0,78.4],[2019,219.9,1,184.1],[2020,81.3,0,104.7],[2021,39.8,0,57.2],[2022,66.2,0,77.4],[2023,235.1,1,220.9],[2024,87.1,0,88.8],[2025,54.7,0,65.8]],"KEN":[[1981,74.8,0,75.0],[1982,147.5,1,175.9],[1983,60.6,0,64.2],[1984,111.4,0,104.8],[1985,59.1,0,52.7],[1986,97.9,0,62.7],[1987,44.1,0,40.7],[1988,88.8,0,77.2],[1989,111.8,0,78.5],[1990,100.0,0,86.6],[1991,72.8,0,57.0],[1992,108.1,0,86.1],[1993,70.0,0,70.6],[1994,136.2,0,135.6],[1995,77.8,0,100.0],[1996,60.9,0,44.6],[1997,284.7,1,231.0],[1998,42.1,0,48.2],[1999,84.5,0,48.4],[2000,83.8,0,60.4],[2001,78.1,0,103.2],[2002,117.1,1,115.1],[2003,77.6,0,84.7],[2004,90.4,0,96.3],[2005,37.9,0,53.3],[2006,194.1,1,144.0],[2007,71.7,1,84.3],[2008,70.6,1,90.9],[2009,101.0,1,127.0],[2010,52.0,0,64.2],[2011,155.4,1,182.8],[2012,100.3,0,116.0],[2013,75.6,1,61.7],[2014,85.7,0,96.8],[2015,127.9,1,103.8],[2016,57.8,0,41.6],[2017,83.6,0,129.0],[2018,83.6,0,82.0],[2019,224.2,1,246.9],[2020,94.4,0,94.6],[2021,88.5,0,60.7],[2022,69.6,0,74.2],[2023,206.4,1,227.4],[2024,97.3,1,51.6],[2025,61.5,0,71.9]],"SOM":[[1981,73.4,0,70.0],[1982,169.5,0,212.9],[1983,32.3,0,47.3],[1984,55.5,0,45.4],[1985,43.2,0,45.2],[1986,33.0,0,27.3],[1987,77.9,0,99.8],[1988,53.9,0,69.7],[1989,121.8,0,100.1],[1990,80.0,0,73.5],[1991,39.0,0,31.7],[1992,74.5,0,60.0],[1993,68.1,0,81.0],[1994,145.0,1,133.1],[1995,71.6,1,93.3],[1996,28.4,0,25.7],[1997,402.1,1,339.7],[1998,35.2,0,35.9],[1999,81.1,0,63.2],[2000,95.6,1,109.8],[2001,61.7,1,75.6],[2002,112.1,0,132.5],[2003,73.3,0,34.2],[2004,142.3,1,127.3],[2005,41.7,0,55.8],[2006,181.7,1,148.3],[2007,70.0,1,92.7],[2008,76.7,1,114.9],[2009,91.4,1,131.6],[2010,19.0,0,29.1],[2011,128.1,1,124.5],[2012,133.1,1,164.0],[2013,122.0,0,106.6],[2014,87.5,1,86.9],[2015,132.6,1,126.4],[2016,38.0,0,26.8],[2017,94.1,0,113.9],[2018,66.7,0,57.5],[2019,220.5,1,185.2],[2020,66.8,0,93.0],[2021,44.8,0,45.9],[2022,62.7,0,72.3],[2023,243.8,1,239.0],[2024,61.3,0,49.2],[2025,29.7,0,46.4]]},"temp":{"ETH":{"pts":[[1981,-0.03,76.5,0.21,87.6,0,0],[1982,0.32,158.0,-0.94,166.4,0,1],[1983,0.25,58.8,0.19,54.6,0,0],[1984,-0.26,49.8,0.21,35.8,0,0],[1985,-0.51,45.5,-0.09,42.8,0,0],[1986,-0.35,48.8,0.36,42.9,0,1],[1987,0.74,76.2,0.89,89.5,0,1],[1988,0.22,65.2,0.3,84.9,1,0],[1989,-0.13,96.6,-0.47,84.0,0,0],[1990,0.46,56.3,0.27,59.6,0,0],[1991,0.19,47.8,0.83,45.3,0,1],[1992,-0.57,64.4,0.3,55.5,0,0],[1993,-0.43,54.5,0.56,72.1,0,0],[1994,-0.17,122.1,-0.46,102.9,0,1],[1995,0.01,67.9,-0.08,85.8,0,0],[1996,-0.22,46.5,-0.11,42.8,0,0],[1997,0.64,309.9,-1.23,288.9,1,1],[1998,-0.29,40.9,0.88,46.4,0,0],[1999,-0.09,58.2,0.41,71.9,1,0],[2000,-0.36,114.3,-1.13,148.3,0,0],[2001,-0.16,76.8,0.15,95.2,0,0],[2002,-0.17,110.0,-1.08,108.9,0,1],[2003,-0.15,79.8,0.92,37.2,0,0],[2004,0.23,112.6,-0.49,85.2,0,1],[2005,0.19,43.2,0.0,43.9,1,0],[2006,0.05,169.8,-0.35,160.2,1,1],[2007,0.15,71.2,-0.02,62.4,0,0],[2008,0.3,113.8,-0.47,136.8,1,0],[2009,0.31,87.1,-0.06,95.2,0,1],[2010,0.01,35.6,1.07,45.6,0,0],[2011,0.07,156.4,-1.02,112.5,1,0],[2012,0.21,102.6,-0.65,120.4,0,0],[2013,-0.14,130.5,-0.65,96.1,0,0],[2014,0.06,112.8,-0.59,133.7,0,1],[2015,0.38,142.6,-0.45,148.6,1,1],[2016,-0.46,47.7,0.84,40.1,0,0],[2017,0.11,112.3,0.59,121.9,0,0],[2018,-0.23,67.3,-0.2,76.0,0,1],[2019,0.32,219.9,-1.44,223.7,1,1],[2020,-0.41,81.3,0.48,96.5,0,0],[2021,0.13,39.8,1.36,43.9,0,0],[2022,-0.34,66.2,0.22,81.5,0,0],[2023,0.46,235.1,-0.42,174.7,1,1],[2024,-0.08,87.1,1.02,93.2,0,0],[2025,-0.23,54.7,0.33,63.3,0,0]],"oct_cool":[13,3,15],"oct_cool_nn":[5,2,10],"all":{"warm":{"n":23,"wet":12,"fl":9},"cool":{"n":22,"wet":4,"fl":1}},"nn":{"warm":{"n":12,"wet":4,"fl":4},"cool":{"n":18,"wet":2,"fl":1}},"n_nn":30,"pr_rain":0.04,"pr_flood":0.3,"r_dmi":0.58,"cur_as":0.12,"cur_rank":28,"cur_oct":-0.75,"cur_oct_pct":213.9,"trend":[0.4,0.32,0.36,0.42,0.37,0.21,0.22]},"KEN":{"pts":[[1981,0.28,74.8,0.45,82.2,0,0],[1982,0.26,147.5,-0.9,218.9,1,1],[1983,0.27,60.6,0.33,47.9,0,0],[1984,-0.03,111.4,-0.17,90.3,0,0],[1985,-0.23,59.1,-0.16,53.6,0,0],[1986,-0.11,97.9,0.38,60.4,0,1],[1987,0.46,44.1,1.16,34.7,0,1],[1988,0.09,88.8,0.35,57.3,0,0],[1989,-0.25,111.8,-0.15,88.9,0,0],[1990,-0.04,100.0,-0.09,92.4,0,0],[1991,-0.45,72.8,0.06,61.5,0,1],[1992,-0.49,108.1,-0.16,60.7,0,0],[1993,-0.42,70.0,-0.15,74.4,0,0],[1994,0.09,136.2,0.13,118.8,0,1],[1995,0.0,77.8,-0.04,122.6,0,0],[1996,-0.24,60.9,0.07,32.8,0,0],[1997,0.56,284.7,-0.95,298.0,1,1],[1998,-0.42,42.1,-0.23,36.6,0,0],[1999,-0.05,84.5,-0.21,44.2,0,0],[2000,-0.27,83.8,-0.11,59.0,0,0],[2001,0.01,78.1,0.28,47.2,0,0],[2002,-0.1,117.1,-0.16,111.8,1,1],[2003,-0.28,77.6,0.21,71.3,0,0],[2004,0.18,90.4,-0.17,84.9,0,1],[2005,0.11,37.9,0.3,44.8,0,0],[2006,0.28,194.1,-0.23,164.4,1,1],[2007,0.25,71.7,-0.23,74.1,1,0],[2008,0.48,70.6,0.33,85.7,1,0],[2009,0.35,101.0,-0.42,151.0,1,1],[2010,-0.1,52.0,0.36,51.8,0,0],[2011,0.2,155.4,-0.96,216.6,1,0],[2012,0.02,100.3,-0.28,108.0,0,0],[2013,-0.15,75.6,0.29,42.5,1,0],[2014,0.01,85.7,0.29,82.5,0,1],[2015,0.32,127.9,0.6,97.7,1,1],[2016,-0.52,57.8,0.18,28.3,0,0],[2017,0.3,83.6,0.27,101.2,0,0],[2018,-0.13,83.6,-0.14,92.0,0,1],[2019,0.45,224.2,-1.22,351.0,1,1],[2020,-0.19,94.4,0.28,84.7,0,0],[2021,0.24,88.5,0.57,54.6,0,0],[2022,-0.67,69.6,-0.28,56.1,0,0],[2023,0.31,206.4,0.01,180.8,1,1],[2024,-0.04,97.3,0.53,45.6,1,0],[2025,-0.32,61.5,0.01,81.3,0,0]],"oct_cool":[11,4,15],"oct_cool_nn":[6,2,10],"all":{"warm":{"n":23,"wet":10,"fl":10},"cool":{"n":22,"wet":4,"fl":3}},"nn":{"warm":{"n":12,"wet":2,"fl":3},"cool":{"n":18,"wet":3,"fl":2}},"n_nn":30,"pr_rain":0.14,"pr_flood":0.29,"r_dmi":0.58,"cur_as":0.12,"cur_rank":29,"cur_oct":0.26,"cur_oct_pct":86.0,"trend":[0.33,0.33,0.33,0.33,0.32,0.27,0.35]},"SOM":{"pts":[[1981,0.03,73.4,0.34,62.1,0,0],[1982,0.34,169.5,-0.41,189.9,0,1],[1983,0.67,32.3,0.52,33.1,0,0],[1984,-0.41,55.5,0.1,34.8,0,0],[1985,-0.26,43.2,-0.19,36.8,0,0],[1986,-0.38,33.0,0.18,21.3,0,1],[1987,0.54,77.9,0.65,99.0,0,1],[1988,0.36,53.9,0.24,53.7,0,0],[1989,-0.03,121.8,-0.16,99.0,0,0],[1990,0.43,80.0,0.3,67.3,0,0],[1991,-0.02,39.0,0.22,32.4,0,1],[1992,-0.4,74.5,-0.02,51.8,0,0],[1993,-0.23,68.1,0.18,87.4,0,0],[1994,-0.29,145.0,-0.32,105.7,1,1],[1995,-0.01,71.6,0.08,95.0,1,0],[1996,-0.48,28.4,-0.2,22.9,0,0],[1997,0.3,402.1,-1.21,398.5,1,1],[1998,-0.04,35.2,0.46,35.5,0,0],[1999,-0.18,81.1,0.04,67.1,0,0],[2000,-0.13,95.6,-0.27,131.1,1,0],[2001,-0.12,61.7,0.27,72.5,1,0],[2002,-0.24,112.1,-0.43,114.7,0,1],[2003,-0.08,73.3,0.44,28.7,0,0],[2004,-0.13,142.3,-0.39,123.3,1,1],[2005,-0.13,41.7,-0.17,49.5,0,0],[2006,0.04,181.7,-0.34,162.2,1,1],[2007,0.32,70.0,0.0,70.0,1,0],[2008,-0.21,76.7,-0.01,107.1,1,0],[2009,0.18,91.4,-0.21,138.7,1,1],[2010,-0.14,19.0,0.54,25.4,0,0],[2011,0.33,128.1,-0.67,137.9,1,0],[2012,0.36,133.1,-0.8,185.4,1,0],[2013,-0.05,122.0,-0.64,111.6,0,0],[2014,0.04,87.5,-0.27,91.9,1,1],[2015,0.23,132.6,-0.04,141.4,1,1],[2016,-0.53,38.0,0.24,26.6,0,0],[2017,0.28,94.1,0.48,53.8,0,0],[2018,-0.38,66.7,-0.24,57.7,0,1],[2019,0.37,220.5,-0.75,194.3,1,1],[2020,-0.05,66.8,0.56,79.9,0,0],[2021,-0.03,44.8,0.52,41.7,0,0],[2022,-0.47,62.7,-0.19,69.6,0,0],[2023,0.58,243.8,0.14,187.4,1,1],[2024,0.2,61.3,1.11,43.2,0,0],[2025,-0.16,29.7,0.33,43.0,0,0]],"oct_cool":[14,4,15],"oct_cool_nn":[6,2,10],"all":{"warm":{"n":18,"wet":8,"fl":10},"cool":{"n":27,"wet":5,"fl":6}},"nn":{"warm":{"n":9,"wet":2,"fl":3},"cool":{"n":21,"wet":2,"fl":4}},"n_nn":30,"pr_rain":0.04,"pr_flood":-0.03,"r_dmi":0.57,"cur_as":0.13,"cur_rank":30,"cur_oct":-0.56,"cur_oct_pct":223.3,"trend":[0.29,0.22,0.24,0.29,0.27,0.16,0.16]}},"temp_to":"2026-10-31"};
+const NS='http://www.w3.org/2000/svg';
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CN={SOM:'Somalia',KEN:'Kenya',ETH:'Ethiopia'};
+const GN={both:'El Niño + positive IOD',nino:'El Niño only',neutral:'ENSO neutral',nina:'La Niña'};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDos=d=>{const t=new Date(Date.UTC(2001,8,1+d));return t.getUTCDate()+' '+MON[t.getUTCMonth()];};
+const fmtISO=s=>{const t=new Date(s+'T00:00:00Z');return t.getUTCDate()+' '+MON[t.getUTCMonth()];};
+const sign=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2);
+const nf=n=>n==null?'n/a':n.toLocaleString('en-US');
+const listAnd=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+const hiNoFlood=iso=>D.seasons[iso].filter(r=>r[1]>=120&&!r[2]).map(r=>r[0]);
+const belowFlood=iso=>D.seasons[iso].filter(r=>r[1]<100&&r[2]).length;
+const TI=['SOM','KEN','ETH'];
+const deg=v=>Math.abs(v).toFixed(2);
+const rf=v=>(v<0?'−':'')+Math.abs(v).toFixed(2);
+const bel=v=>`${deg(v)} °C ${v<0?'below':'above'} the trend`;
+const belIn=vals=>listAnd(vals.map((v,k)=>{const d=v<0?'below':'above', p=k?(vals[k-1]<0?'below':'above'):null;return `${deg(v)} °C${k===0?` ${d} the trend`:d===p?'':` ${d} it`} in ${CN[TI[k]]}`;}));
+const FULLM=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const onR=()=>{const v=[];['SOM','KEN','ETH'].forEach(i=>D.timeline[i].filter(r=>r.year!==2018&&r.year<2026).forEach(r=>v.push(r.onset)));
+  const f=d=>{const t=new Date(Date.UTC(2001,8,1+d));return t.getUTCDate()+' '+FULLM[t.getUTCMonth()];};
+  return [f(Math.min(...v)),f(Math.max(...v))];};
+const no18=iso=>Math.round(D.timeline[iso].find(r=>r.year===2018).no_onset_pct);
+const mm=v=>v.toFixed(1);
+const fl26=(x,w)=>x.no.length?`${x.f} with ${w}; no flood in ${listAnd(x.no)}`:`all with ${w}`;
+const ovl=(a,b)=>a[0]<b[2]&&b[0]<a[2]&&a[1]<b[3]&&b[1]<a[3];
+const placeLabels=(items,obst,bounds)=>{
+  const cand=[[9,4,'start'],[-9,4,'end'],[0,-10,'middle'],[0,17,'middle'],[9,-8,'start'],[-9,-8,'end'],[9,16,'start'],[-9,16,'end'],
+    [20,-16,'start'],[-20,-16,'end'],[20,24,'start'],[-20,24,'end'],[0,-24,'middle'],[0,31,'middle'],[28,4,'start'],[-28,4,'end']];
+  const placed=[];
+  return items.map(it=>{
+    const w=it.text.length*6.6+3; let best=null;
+    cand.forEach(([dx,dy,a],ci)=>{
+      const x0=a==='start'?it.x+dx:a==='end'?it.x+dx-w:it.x+dx-w/2, r=[x0,it.y+dy-11,x0+w,it.y+dy+3];
+      let sc=ci*0.05;
+      if(r[0]<bounds[0]||r[2]>bounds[2]||r[1]<bounds[1]||r[3]>bounds[3])sc+=100;
+      obst.forEach(b=>{if(b.id!==it.id&&ovl(r,b.r))sc+=3;});
+      placed.forEach(b=>{if(ovl(r,b))sc+=30;});
+      if(!best||sc<best.sc)best={sc,r,dx,dy,a};
+    });
+    placed.push(best.r);
+    const far=Math.abs(best.dx)>12||Math.abs(best.dy)>18;
+    let svg='';
+    if(far){const lx=best.a==='start'?best.r[0]:best.a==='end'?best.r[2]:(best.r[0]+best.r[2])/2, ly=best.dy<0?best.r[3]:best.r[1];
+      const ang=Math.atan2(ly-it.y,lx-it.x);
+      svg+=`<line x1="${(it.x+Math.cos(ang)*(it.rad||7)).toFixed(1)}" y1="${(it.y+Math.sin(ang)*(it.rad||7)).toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly.toFixed(1)}" style="stroke:var(--ink-3);stroke-width:.8"/>`;}
+    svg+=`<text class="lab" x="${(it.x+best.dx).toFixed(1)}" y="${(it.y+best.dy).toFixed(1)}" text-anchor="${best.a}" style="font-size:11px">${it.text}</text>`;
+    return svg;
+  }).join('');
+};
+const top5=iso=>[...D.seasons[iso]].sort((a,b)=>b[1]-a[1]).slice(0,5);
+const toDate=iso=>{const p=D.stats26[iso].to_date_pct, r=D.seasons[iso].filter(x=>x[3]>=p);return {n:r.length,f:r.filter(x=>x[2]).length,no:r.filter(x=>!x[2]).map(x=>x[0])};};
+const wetTop=()=>{const I=['SOM','KEN','ETH'], k=I.map(i=>top5(i).map(r=>r[0]).sort().join(','));
+  return k.every(x=>x===k[0])&&I.every(i=>top5(i).every(r=>r[2]))
+    ?`The five wettest OND seasons since 1981 were the same in all three countries (${listAnd(top5('SOM').map(r=>r[0]).sort((a,b)=>a-b))}), and each recorded an EM-DAT flood.`
+    :`Of the five wettest OND seasons since 1981, ${listAnd(I.map((i,j)=>`${top5(i).filter(r=>r[2]).length}${j?'':' recorded a flood'} in ${CN[i]}`))}.`;};
+
+/* ---------- key findings ---------- */
+(function(){
+  const g=D.groups, b=g.both, o=['nino','neutral','nina'], n=D.now, s=D.stats26;
+  const oAny=o.reduce((t,k)=>t+g[k].any,0), oN=o.reduce((t,k)=>t+g[k].country_seasons,0);
+  const sumM=m=>o.reduce((t,k)=>t+(g[k].by_month[m]||0),0);
+  const FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const fl=d=>{const x=new Date(d+'T00:00:00Z');return x.getUTCDate()+' '+FULL[x.getUTCMonth()];};
+  const items=[
+    `<b>Flood occurrence.</b> In the six seasons with El Niño and a positive IOD, ${b.any} of ${b.country_seasons} country-seasons recorded an EM-DAT flood starting September–December, compared with ${oAny} of ${oN} in the other 39 seasons.`,
+    `<b>Flood timing.</b> In those six seasons, the first flood started in October in ${b.by_month['10']} of ${b.any} country-seasons (September ${b.by_month['9']||0}, November ${b.by_month['11']||0}). In other seasons, first floods were spread from September to December and were most frequent in November (${sumM('11')} of ${oAny}).`,
+    `<b>Rainfall onset.</b> In five of the six seasons, area-average onset fell between ${onR()[0]} and ${onR()[1]} in all three countries. In 2018, no onset was detected over ${no18('SOM')}% of the Somali area and ${no18('ETH')}% of the Ethiopian area, and EM-DAT records no flood.`,
+    `<b>Wet seasons.</b> ${wetTop()} Seasons with at least 120% of the 1991–2020 mean and no recorded flood: Somalia ${listAnd(hiNoFlood('SOM'))}; Kenya ${listAnd(hiNoFlood('KEN'))}; Ethiopia ${listAnd(hiNoFlood('ETH'))}.`,
+    `<b>Temperature.</b> October temperature was below the trend in ${listAnd(TI.map(i=>D.temp[i].oct_cool[0]))} of the 15 wettest Octobers in Somalia, Kenya and Ethiopia, and in ${listAnd(TI.map(i=>D.temp[i].oct_cool[1]))} of the 15 driest; temperature and rainfall are measured in the same month. Before the season, in seasons without El Niño, OND rain above the 1991–2020 mean followed a warm August–September in ${listAnd(TI.map(i=>`${D.temp[i].nn.warm.wet} of ${D.temp[i].nn.warm.n}`))} seasons and a cool one in ${listAnd(TI.map(i=>`${D.temp[i].nn.cool.wet} of ${D.temp[i].nn.cool.n}`))}.`,
+    `<b>2026 conditions.</b> Provisional indices meet both conditions (Oceanic Niño Index, August–October, ${sign(n.oni_aso)} °C; DMI, October, ${sign(n.dmi_oct)} °C), and rainfall from 1 September to 5 November was ${Math.round(s.SOM.to_date_pct)}% of the 1991–2020 mean in Somalia, ${Math.round(s.KEN.to_date_pct)}% in Kenya and ${Math.round(s.ETH.to_date_pct)}% in Ethiopia. Provisional onset was ${fl(s.SOM.onset_date)} in Somalia and ${fl(s.ETH.onset_date)} in Ethiopia, within the ${onR()[0]}–${onR()[1]} range of the five earlier seasons, and ${fl(s.KEN.onset_date)} in Kenya, where ${Math.round(s.KEN.no_onset_pct)}% of the area had no onset by 5 November.`,
+    `<b>2026 reports.</b> Somalia: flooding reported in Mogadishu on 17 September and from mid-October in Mudug, Hiran, Middle Shabelle, Lower Shabelle and Bay; the Shabelle exceeded the high flood risk level at Jowhar on 13 October and reached the moderate level at Belet Weyne on 26 October. Kenya: IFRC launched an imminent-flood DREF operation on 30 October, and FEWS NET expects flooding in Dadaab between November and January. Ethiopia: no report of OND 2026 flooding was found.`
+  ];
+  document.getElementById('findings').innerHTML=items.map(x=>`<li>${x}</li>`).join('');
+  document.getElementById('lede3').textContent=`In five of the six seasons with both conditions, area-average onset fell between ${onR()[0]} and ${onR()[1]} in all three countries. In 2018, no onset was detected over ${no18('SOM')}% of the Somali area and ${no18('ETH')}% of the Ethiopian area, and EM-DAT records no flood for that season (Figure 3).`;
+  document.getElementById('ken-noon').textContent=`${Math.round(s.KEN.no_onset_pct)}%`;
+})();
+
+/* ---------- Figure 1: scatter ---------- */
+(function(){
+  const W=760,H=400,L=58,R=24,T=18,B=46;
+  const x0=-2.2,x1=2.9,y0=-0.9,y1=1.3;
+  const X=v=>L+(v-x0)/(x1-x0)*(W-L-R), Y=v=>T+(y1-v)/(y1-y0)*(H-T-B);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter of October to December Niño3.4 against the Dipole Mode Index for 1981 to 2025, with the six seasons with both conditions labelled and 2026 shown as provisional."><title>Niño3.4 against DMI, October–December, 1981–2025, with 2026 provisional</title>`;
+  s+=`<rect x="${X(0.5)}" y="${Y(y1)}" width="${X(x1)-X(0.5)}" height="${Y(0.4)-Y(y1)}" style="fill:var(--band)"/>`;
+  for(let v=-2;v<=2.5;v+=1){s+=`<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${H-B}" style="stroke:var(--track);stroke-width:1"/><text class="ax" x="${X(v)}" y="${H-B+18}" text-anchor="middle">${v>0?'+':''}${v}</text>`;}
+  for(let v=-0.5;v<=1.21;v+=0.5){s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--track);stroke-width:1"/><text class="ax" x="${L-8}" y="${Y(v)+4}" text-anchor="end">${v>0?'+':''}${v.toFixed(1)}</text>`;}
+  s+=`<line x1="${X(0.5)}" x2="${X(0.5)}" y1="${T}" y2="${H-B}" style="stroke:var(--ink-3);stroke-width:1;stroke-dasharray:4 3"/>`;
+  s+=`<line x1="${L}" x2="${W-R}" y1="${Y(0.4)}" y2="${Y(0.4)}" style="stroke:var(--ink-3);stroke-width:1;stroke-dasharray:4 3"/>`;
+  s+=`<text class="ax" x="${X(0.5)+6}" y="${T+12}">El Niño ≥ +0.5</text><text class="ax" x="${L+6}" y="${Y(0.4)-6}">positive IOD ≥ +0.4</text>`;
+  s+=`<text class="ax" x="${(L+W-R)/2}" y="${H-6}" text-anchor="middle">Niño3.4 anomaly (°C)</text>`;
+  s+=`<text class="ax" transform="translate(14 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle">DMI (°C)</text>`;
+  const off={1994:[8,15,'start'],1997:[10,16,'start'],2006:[-8,16,'end'],2018:[8,-7,'start'],2019:[-9,-6,'end'],2023:[-9,-6,'end']};
+  D.phase.forEach(p=>{
+    const cx=X(p.nino),cy=Y(p.dmi), fl=p.nflood>0;
+    const t=`${p.year}: Niño3.4 ${sign(p.nino)}, DMI ${sign(p.dmi)}; EM-DAT floods in ${p.nflood} of 3 countries`;
+    s+= fl?`<circle cx="${cx}" cy="${cy}" r="${p.grp==='both'?6:4.6}" style="fill:var(--flood);stroke:var(--surface);stroke-width:1.5"><title>${t}</title></circle>`
+          :`<circle cx="${cx}" cy="${cy}" r="${p.grp==='both'?5.5:4.2}" style="fill:var(--surface);stroke:var(--ink-3);stroke-width:1.5"><title>${t}</title></circle>`;
+    if(p.grp==='both'){const o=off[p.year]||[8,4,'start'];s+=`<text class="lab" x="${cx+o[0]}" y="${cy+o[1]}" text-anchor="${o[2]}">${p.year}</text>`;}
+  });
+  const nx=X(D.now.oni_aso),ny=Y(D.now.dmi_oct);
+  s+=`<rect x="${nx-6}" y="${ny-6}" width="12" height="12" transform="rotate(45 ${nx} ${ny})" style="fill:none;stroke:var(--now);stroke-width:2.2"><title>2026 provisional: ONI Aug–Oct ${sign(D.now.oni_aso)}, DMI October ${sign(D.now.dmi_oct)}</title></rect>`;
+  s+=`<text class="lab" x="${nx-12}" y="${ny-12}" text-anchor="end">2026</text>`;
+  s+='</svg>';
+  document.getElementById('fig1').innerHTML=s;
+})();
+
+/* ---------- Figure 2: stacked bars ---------- */
+(function(){
+  const o3=['nino','neutral','nina'], G=D.groups;
+  const comb=k=>{const r={};o3.forEach(x=>Object.entries(G[x][k]).forEach(([m,c])=>{r[m]=(r[m]||0)+c;}));return r;};
+  const sum=k=>o3.reduce((t,x)=>t+G[x][k],0);
+  const OTHER={years:o3.flatMap(x=>G[x].years),country_seasons:sum('country_seasons'),any:sum('any'),riv:sum('riv'),by_month:comb('by_month'),riv_by_month:comb('riv_by_month')};
+  const rows=[['both',G.both,GN.both],['nino',G.nino,GN.nino],['neutral',G.neutral,GN.neutral],['nina',G.nina,GN.nina],['other',OTHER,'Other seasons combined']];
+  const segs=[['9','Sep','--m9'],['10','Oct','--m10'],['11','Nov','--m11'],['12','Dec','--m12']];
+  document.getElementById('leg2').innerHTML=segs.map(s=>`<span><span class="sw" style="background:var(${s[2]})"></span>${s[1]}</span>`).join('')+`<span><span class="sw" style="background:var(--track);outline:1px solid var(--rule)"></span>No flood</span>`;
+  function panel(key,anyKey){
+    const W=500,rowH=46,T=8,gap=12,H=T+rows.length*rowH+gap+24,LW=160,BW=262,bx=LW;
+    let s=`<svg viewBox="0 0 ${W} ${H}" style="max-width:${W}px" role="img" aria-label="Stacked bars of first flood month by season type, with the three season types other than El Niño with a positive IOD combined in the last row"><title>First flood month by season type</title>`;
+    rows.forEach(([k,g,lab],i)=>{
+      const n=g.country_seasons, bm=g[key], y=T+i*rowH+(k==='other'?gap:0);
+      if(k==='other')s+=`<line x1="0" x2="${W}" y1="${y-2}" y2="${y-2}" style="stroke:var(--rule);stroke-width:1"/>`;
+      s+=`<text class="lab" x="0" y="${y+15}">${lab}</text><text class="ax" x="0" y="${y+31}">${g.years.length} seasons</text>`;
+      let cx=bx;
+      segs.forEach(sg=>{const c=bm[sg[0]]||0; if(!c)return; const w=c/n*BW;
+        s+=`<rect x="${cx}" y="${y+6}" width="${Math.max(w-1.5,0.5)}" height="22" style="fill:var(${sg[2]})"><title>${lab}: ${c} first floods in ${sg[1]}</title></rect>`;
+        if(w>16)s+=`<text x="${cx+w/2-0.75}" y="${y+21}" text-anchor="middle" style="fill:${Number(sg[0])>=11?'var(--surface)':'var(--ink)'};font-size:11.5px;font-family:var(--mono)">${c}</text>`;
+        cx+=w;});
+      s+=`<rect x="${cx}" y="${y+6}" width="${bx+BW-cx}" height="22" style="fill:var(--track)"/>`;
+      s+=`<text x="${bx+BW+10}" y="${y+21}" style="fill:var(--ink);font-family:var(--mono);font-size:12px">${g[anyKey]} of ${n}</text>`;
+    });
+    [0,50,100].forEach(p=>{const x=bx+p/100*BW;s+=`<text class="ax" x="${x}" y="${H-6}" text-anchor="middle">${p}%</text>`;});
+    s+='</svg>';return s;
+  }
+  document.getElementById('fig2a').innerHTML=panel('by_month','any');
+  document.getElementById('fig2b').innerHTML=panel('riv_by_month','riv');
+  const sumM=(k,m)=>OTHER[k][m]||0;
+  document.getElementById('month-lede').textContent=
+    `In seasons with both conditions, ${G.both.any} of ${G.both.country_seasons} country-seasons recorded an EM-DAT flood, and in ${G.both.by_month['10']} of these the first flood started in October. In the other 39 seasons, ${OTHER.any} of ${OTHER.country_seasons} country-seasons recorded a flood; first floods started in November in ${sumM('by_month','11')}, October in ${sumM('by_month','10')}, September in ${sumM('by_month','9')} and December in ${sumM('by_month','12')}. In La Niña seasons, ${G.nina.by_month['11']} of ${G.nina.any} first floods started in November (Figure 2).`;
+  document.getElementById('riv-lede').textContent=
+    `Riverine floods: in seasons with both conditions, ${G.both.riv} country-seasons recorded a riverine flood, ${G.both.riv_by_month['10']} of them starting in October. In the other 39 seasons, ${OTHER.riv} country-seasons recorded one (${D.riverine.length} events): ${G.nina.riv} in La Niña seasons, ${G.nino.riv} in El Niño seasons without a positive IOD and ${G.neutral.riv} in ENSO-neutral seasons. Of these ${OTHER.riv}, ${sumM('riv_by_month','11')} started in November, ${sumM('riv_by_month','10')} in October, ${sumM('riv_by_month','9')} in September and ${sumM('riv_by_month','12')} in December (Figure 2, riverine panel).`;
+})();
+
+/* ---------- Figure 3: timeline ---------- */
+const REPORTS=[
+ {iso:'SOM',d:'2026-09-17',dos:16,txt:'Flooding in parts of Mogadishu after heavy rain; a health centre affected.',src:'IRC, 17 Sep',url:'https://reliefweb.int/report/somalia/el-nino-rains-flood-mogadishu-disrupting-health-clinic-operations-irc'},
+ {iso:'SOM',d:'2026-10-11',dos:40,range:'11–15 Oct',txt:'Widespread flooding in Galkacyo district, Mudug: about 90,000 people affected.',src:'WHO, 4 Nov',url:'https://reliefweb.int/report/somalia/who-and-somalias-puntland-state-ministry-health-step-emergency-health-response-floods-affect-90-000-people-galkacyo'},
+ {iso:'SOM',d:'2026-10-12',dos:41,txt:'Juba at Dollow peaked at 4.46 m, 4 cm below the moderate flood risk level.',src:'FAO SWALIM Juba advisory no. 2, 13 Oct',url:'https://reliefweb.int/report/somalia/juba-river-climate-update-and-riverine-flood-risk-advisory-digniin-deyr-2026-flood-advisory-no-2-13-october-2026',nomark:true},
+ {iso:'SOM',d:'2026-10-13',dos:42,txt:'Shabelle at Jowhar at 5.37 m, 12 cm above the high flood risk level.',src:'FAO SWALIM Shabelle advisory no. 2, 13 Oct',url:'https://reliefweb.int/report/somalia/shabelle-river-climate-update-and-riverine-flood-risk-advisory-digniin-deyr-2026-flood-advisory-no-2-13-october-2026'},
+ {iso:'SOM',d:'2026-10-24',dos:53,txt:'Satellite radar shows possible flooding over about 55 km² in Jowhar district, consistent with open river breakages.',src:'FAO SWALIM Shabelle advisory no. 4, 26 Oct',url:'https://reliefweb.int/report/somalia/shabelle-river-climate-update-and-riverine-flood-risk-advisory-digniin-deyr-2026-flood-advisory-no-4-26-october-2026'},
+ {iso:'SOM',d:'2026-10-26',dos:55,txt:'Shabelle at Belet Weyne reached the moderate flood risk level (6.56 m). Juba at Dollow 1.62 m below moderate.',src:'FAO SWALIM advisories no. 4, 26 Oct',url:'https://reliefweb.int/report/somalia/juba-river-climate-update-and-riverine-flood-risk-advisory-digniin-deyr-2026-flood-advisory-no-4-26-october-2026'},
+ {iso:'SOM',d:'2026-10-22',dos:51,range:'22–28 Oct',txt:'Callers in Hiran, Middle Shabelle and Bay report flooding; roads cut near Belet Weyne.',src:'Radio Ergo feedback report, 29 Oct',url:'https://reliefweb.int/report/somalia/radio-ergo-weekly-feedback-report-issued-29-oct-2026'},
+ {iso:'SOM',d:'2026-10-29',dos:58,range:'29 Oct–4 Nov',txt:'Callers report the river flooded at Gobanle, Lower Shabelle, and flooding in Baidoa and near Burhakaba.',src:'Radio Ergo feedback report, 6 Nov',url:'https://reliefweb.int/report/somalia/radio-ergo-weekly-feedback-report-issued-6-nov-2026'},
+ {iso:'KEN',d:'2026-10-30',dos:59,txt:'IFRC launched an Imminent DREF operation for floods, based on forecasts of heavy rain.',src:'IFRC, 30 Oct',url:'https://reliefweb.int/report/kenya/kenya-flood-2026-imminent-dref-operation-mdrke074',nomark:true},
+ {iso:'KEN',d:'2026-11-05',dos:65,txt:'FEWS NET expects flooding in Dadaab between November and January, and flood-related disruption in Garissa, Mandera, Tana River and Wajir.',src:'FEWS NET Kenya outlook update, 5 Nov',url:'https://reliefweb.int/report/kenya/kenya-food-security-outlook-update-october-2026-may-2027-enhanced-rains-drive-recovery-flood-impacts-temporarily-sustain-crisis-east',nomark:true}
+];
+(function(){
+  const W=780,L=64,PR=690,RC=742,rowH=24,hdH=34,top=30;
+  const X=d=>L+d/121*(PR-L);
+  const isos=['SOM','KEN','ETH'];
+  const H=top+isos.length*(hdH+7*rowH)+10;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline for Somalia, Kenya and Ethiopia of rainfall onset, the date the mean OND total was reached and EM-DAT flood start months in 1994, 1997, 2006, 2018, 2019, 2023 and 2026."><title>Season timeline: six seasons with both conditions and 2026</title>`;
+  const mb=[0,30,61,91,122];
+  [['Sep',0],['Oct',30],['Nov',61],['Dec',91]].forEach((m,i)=>{s+=`<text class="ax" x="${(X(mb[i])+X(mb[i+1]))/2}" y="16" text-anchor="middle">${m[0]}</text>`;});
+  s+=`<text class="ax" x="${RC}" y="16" text-anchor="end">% of OND mean</text>`;
+  let y=top;
+  isos.forEach(iso=>{
+    s+=`<text class="hd" x="0" y="${y+22}">${CN[iso]}${iso==='ETH'?' (OND rainfall areas)':''}</text>`;
+    y+=hdH;
+    const blockTop=y;
+    D.timeline[iso].forEach(r=>{
+      const cy=y+rowH/2;
+      if(r.year===2026){
+        s+=`<rect x="${L-60}" y="${y}" width="${RC-L+64}" height="${rowH}" style="fill:var(--band)"/>`;
+        s+=`<rect x="${X(65)}" y="${y+3}" width="${X(122)-X(65)}" height="${rowH-6}" style="fill:var(--track);opacity:.8"><title>After 5 Nov 2026: no data yet</title></rect>`;
+      }
+      r.months.forEach(m=>{const a=mb[m-9],b=mb[m-8];
+        const evs=r.events.filter(e=>e.m===m).map(e=>`${e.id} ${e.sub}, ${nf(e.aff)} affected: ${e.loc}`).join('\n');
+        s+=`<rect x="${X(a)+1}" y="${y+4}" width="${X(b)-X(a)-2}" height="${rowH-8}" rx="2" style="fill:var(--flood-soft);stroke:var(--flood);stroke-width:.8"><title>${esc(r.year+' '+CN[iso]+': EM-DAT flood starting '+MON[m-1]+'\n'+evs)}</title></rect>`;});
+      s+=`<text class="${r.year===2026?'lab':'ax'}" x="${L-10}" y="${cy+4}" text-anchor="end" ${r.year===2026?'style="font-family:var(--mono);font-weight:600"':''}>${r.year}</text>`;
+      if(r.full!=null){s+=`<line x1="${X(r.onset)}" x2="${X(r.full)}" y1="${cy}" y2="${cy}" style="stroke:var(--rain);stroke-width:2"/>`;}
+      else if(r.year===2026){s+=`<line x1="${X(r.onset)}" x2="${X(65)}" y1="${cy}" y2="${cy}" style="stroke:var(--rain);stroke-width:2;stroke-dasharray:3 3"/>`;}
+      s+=`<circle cx="${X(r.onset)}" cy="${cy}" r="4.6" style="fill:var(--surface);stroke:var(--rain);stroke-width:2${r.no_onset_pct>20?';stroke-dasharray:2.5 2':''}"><title>${r.year} ${CN[iso]}: onset ${fmtDos(r.onset)}${r.year===2026?' (provisional; no onset yet over '+r.no_onset_pct+'% of the area)':r.no_onset_pct>=1?' (area average; no onset over '+Math.round(r.no_onset_pct)+'% of the area, assigned 31 Dec)':''}</title></circle>`;
+      if(r.full!=null)s+=`<circle cx="${X(r.full)}" cy="${cy}" r="5" style="fill:var(--rain)"><title>${r.year} ${CN[iso]}: cumulative rainfall since 1 Sep reached the 1991–2020 OND mean on ${fmtDos(r.full)}</title></circle>`;
+      if(r.year===2026){
+        REPORTS.filter(e=>e.iso===iso&&!e.nomark).forEach(e=>{const x=X(e.dos),dy=cy-7;s+=`<rect x="${x-3.5}" y="${dy-3.5}" width="7" height="7" transform="rotate(45 ${x} ${dy})" style="fill:var(--flood);stroke:var(--surface);stroke-width:1"><title>${esc((e.range||fmtISO(e.d))+': '+e.txt+' ('+e.src+')')}</title></rect>`;});
+        s+=`<text class="ax" x="${RC}" y="${cy+4}" text-anchor="end">to date</text>`;
+        if(r.full==null)s+=`<text class="ax" x="${X(65)+8}" y="${cy+4}">not reached by 5 Nov</text>`;
+      } else {
+        s+=`<text x="${RC}" y="${cy+4}" text-anchor="end" style="fill:var(--ink);font-family:var(--mono);font-size:12px">${r.ond_pct}</text>`;
+        if(r.months.length===0){const x0=X(r.full!=null?r.full:r.onset)+10; // no room before the right column: put it left of the rains-start dot
+          s+=x0>600?`<text class="ax" x="${X(r.onset)-10}" y="${cy+4}" text-anchor="end">no Sep–Dec flood</text>`:`<text class="ax" x="${x0}" y="${cy+4}">no Sep–Dec flood</text>`;}
+      }
+      y+=rowH;
+    });
+    [30,61,91].forEach(d=>{s+=`<line x1="${X(d)}" x2="${X(d)}" y1="${blockTop}" y2="${y}" style="stroke:var(--rule);stroke-width:1"/>`;});
+  });
+  s+='</svg>';
+  document.getElementById('fig3').innerHTML=s;
+})();
+
+/* ---------- Figure 4: season rainfall and floods ---------- */
+(function(){
+  document.getElementById('wet-lede').textContent=
+    `${wetTop()} Seasons with at least 120% of the 1991–2020 mean and no recorded flood were ${listAnd(hiNoFlood('SOM'))} in Somalia, ${listAnd(hiNoFlood('KEN'))} in Kenya and ${listAnd(hiNoFlood('ETH'))} in Ethiopia. Floods were also recorded in seasons with below-mean OND rainfall: ${belowFlood('SOM')} in Somalia, ${belowFlood('KEN')} in Kenya and ${belowFlood('ETH')} in Ethiopia (Figure 4).`;
+  const W=780,L=78,R=20,vmax=420,rad=4.6,step=10.5,isos=['SOM','KEN','ETH'];
+  const X=v=>L+Math.min(v,vmax)/vmax*(W-L-R);
+  const grp={}; D.phase.forEach(p=>{grp[p.year]=p.grp;});
+  const swarm=arr=>{const placed=[];[arr.filter(p=>!p.lab),arr.filter(p=>p.lab)].forEach(a=>a.sort((p,q)=>p.v-q.v).forEach(p=>{p.x=X(p.v);let k=0;while(placed.some(q=>q.k===k&&Math.abs(q.x-p.x)<2*rad+1.5))k++;p.k=k;placed.push(p);}));return placed;};
+  let s='', y=0;
+  isos.forEach(iso=>{
+    const pts=D.seasons[iso].map(([yr,v,f])=>({yr,v,f,both:grp[yr]==='both',lab:grp[yr]==='both'||(!f&&v>=120)}));
+    const fl=swarm(pts.filter(p=>p.f)), nf=swarm(pts.filter(p=>!p.f));
+    const kf=Math.max(0,...fl.map(p=>p.k))+1, kn=Math.max(0,...nf.map(p=>p.k))+1;
+    const top=y+30+22, flB=top+(kf-1)*step, nfB=flB+step+20, laneB=nfB+(kn-1)*step+rad+20, bot=laneB+6;
+    s+=`<text class="hd" x="0" y="${y+18}">${CN[iso]}${iso==='ETH'?' (OND rainfall areas)':''}</text>`;
+    [0,100,200,300,400].forEach(v=>{s+=`<line x1="${X(v)}" x2="${X(v)}" y1="${y+28}" y2="${bot}" style="stroke:${v===100?'var(--ink-3)':'var(--track)'};stroke-width:${v===100?1.2:1}"/><text class="ax" x="${X(v)}" y="${bot+14}" text-anchor="middle">${v}%</text>`;});
+    s+=`<line x1="${X(120)}" x2="${X(120)}" y1="${y+28}" y2="${bot}" style="stroke:var(--ink-3);stroke-width:1.2;stroke-dasharray:3 2"/>`;
+    s+=`<text class="ax" x="${L-12}" y="${flB+4}" text-anchor="end">Flood</text><text class="ax" x="${L-12}" y="${nfB+4}" text-anchor="end">No flood</text>`;
+    const mark=(p,cy,up)=>{
+      const tip=`${p.yr} ${CN[iso]}: ${Math.round(p.v)}% of mean; ${GN[grp[p.yr]]}; ${p.f?'EM-DAT flood':'no EM-DAT flood'}`;
+      let m=p.f?`<circle cx="${p.x}" cy="${cy}" r="${rad}" style="fill:var(--flood);stroke:var(--surface);stroke-width:1.2"><title>${tip}</title></circle>`
+               :`<circle cx="${p.x}" cy="${cy}" r="${rad-0.4}" style="fill:var(--surface);stroke:var(--ink-3);stroke-width:1.4"><title>${tip}</title></circle>`;
+      if(p.both)m+=`<circle cx="${p.x}" cy="${cy}" r="${rad+2.4}" style="fill:none;stroke:var(--ink);stroke-width:1.2"/>`;
+      p.cy=cy; return m;};
+    fl.forEach(p=>{s+=mark(p,flB-p.k*step,true);});
+    nf.forEach(p=>{s+=mark(p,nfB+p.k*step,false);});
+    const lane=(arr,ly,up)=>{
+      const a=arr.filter(p=>p.lab).sort((p,q)=>p.x-q.x), w=31; let last=-1e9;
+      a.forEach(p=>{p.lx=Math.max(p.x,last+w);last=p.lx;});
+      const over=a.length?a[a.length-1].lx-(W-R-14):0; if(over>0)a.forEach(p=>{p.lx-=over;});
+      a.forEach(p=>{const ey=up?p.cy-rad-(p.both?2.6:0.6):p.cy+rad+(p.both?2.6:0.6), ty=up?ly-9:ly+1;
+        s+=`<line x1="${p.x}" y1="${ey}" x2="${p.lx}" y2="${ty}" style="stroke:var(--ink-3);stroke-width:.8"/>`;
+        s+=`<text class="lab" x="${p.lx}" y="${up?ly-11:ly+10}" text-anchor="middle" style="font-size:11.5px">${p.yr}</text>`;});
+    };
+    lane(fl,top-rad-2,true); lane(nf,laneB-10,false);
+    y=bot+34;
+  });
+  s=`<svg viewBox="0 0 ${W} ${y}" role="img" aria-label="OND rainfall as a percentage of the 1991–2020 mean for each season from 1981 to 2025 in Somalia, Kenya and Ethiopia, seasons with and without an EM-DAT flood in separate rows, ordered by rainfall."><title>OND rainfall and EM-DAT floods by season, 1981–2025</title>`+s+'</svg>';
+  document.getElementById('figwet').innerHTML=s;
+})();
+
+/* ---------- Figure 5: temperature against rainfall ---------- */
+(function(){
+  const T=D.temp, I=TI, NS=D.phase.length;
+  const grp={}; D.phase.forEach(p=>{grp[p.year]=p.grp;});
+  const of=f=>listAnd(I.map(f));
+  const oc=I.map(i=>T[i].oct_cool), on=I.map(i=>T[i].oct_cool_nn);
+  const cnt=(set,k,key)=>of(i=>`${T[i][set][k][key]} of ${T[i][set][k].n}`);
+  document.getElementById('temp-lede').textContent=
+    `Wetter Octobers were cooler: October temperature was below the trend in ${oc[0][0]} of the ${oc[0][2]} wettest Octobers since 1981 in Somalia, ${oc[1][0]} in Kenya and ${oc[2][0]} in Ethiopia, and in ${listAnd(oc.map(x=>x[1]))} of the ${oc[0][2]} driest. In the ${T.SOM.n_nn} seasons without El Niño, it was below the trend in ${listAnd(on.map(x=>x[0]))} of the ${on[0][2]} wettest Octobers and in ${listAnd(on.map(x=>x[1]))} of the ${on[0][2]} driest. Temperature and rainfall here are measured in the same month, not one before the other (Figure 5, same month).`;
+  document.getElementById('temp-lede2').textContent=
+    `Before the season, OND rain was above the 1991–2020 mean after a warm August–September (above the trend) in ${cnt('all','warm','wet')} seasons in Somalia, Kenya and Ethiopia, and after a cool one in ${cnt('all','cool','wet')}. In the seasons without El Niño, these counts were ${cnt('nn','warm','wet')} after a warm August–September and ${cnt('nn','cool','wet')} after a cool one. An EM-DAT flood followed a warm August–September in ${cnt('all','warm','fl')} seasons and a cool one in ${cnt('all','cool','fl')}; without El Niño, in ${cnt('nn','warm','fl')} after a warm August–September and ${cnt('nn','cool','fl')} after a cool one (Figure 5, before the season).`;
+  document.getElementById('temp-lede26').textContent=
+    `In 2026, August–September was ${belIn(I.map(i=>T[i].cur_as))}: warmer than ${listAnd(I.map(i=>T[i].cur_rank))} of the ${NS} seasons since 1981.`+
+    (T.SOM.cur_oct_pct!=null?` In October 2026, rainfall was ${Math.round(T.SOM.cur_oct_pct)}% of the October mean in Somalia, ${Math.round(T.KEN.cur_oct_pct)}% in Kenya and ${Math.round(T.ETH.cur_oct_pct)}% in Ethiopia, and temperature was ${belIn(I.map(i=>T[i].cur_oct))}.`:'');
+  document.getElementById('temp-pr').textContent=
+    `With the August–September Niño3.4 (ERSST v5) and DMI (HadISST 1.1) held constant, the partial correlation of August–September temperature with OND rainfall is ${rf(T.SOM.pr_rain)} in Somalia, ${rf(T.KEN.pr_rain)} in Kenya and ${rf(T.ETH.pr_rain)} in Ethiopia, and with recorded floods ${listAnd(I.map(i=>rf(T[i].pr_flood)))}. Its correlation with the August–September DMI is ${listAnd(I.map(i=>rf(T[i].r_dmi)))}.`;
+  const ymax=420;
+  function row(id,xi,yi,xlab,ylab,cur){
+    let xm=0; I.forEach(i=>{T[i].pts.forEach(p=>{xm=Math.max(xm,Math.abs(p[xi]));}); const c=cur(i); if(c[0]!=null)xm=Math.max(xm,Math.abs(c[0]));});
+    xm=Math.ceil((xm+0.05)*2)/2;
+    const html=I.map(iso=>{
+      const W=320,H=262,L=42,R=22,Tp=12,B=40;
+      const X=v=>L+(v+xm)/(2*xm)*(W-L-R), Y=v=>Tp+(1-Math.min(v,ymax)/ymax)*(H-Tp-B);
+      let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${CN[iso]}: ${xlab} against ${ylab}, one marker per season 1981–2025, with 2026"><title>${CN[iso]}: ${xlab} against ${ylab}</title>`;
+      [0,100,200,300,400].forEach(v=>{s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:${v===100?'var(--ink-3)':'var(--track)'};stroke-width:1${v===100?';stroke-dasharray:4 3':''}"/><text class="ax" x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`;});
+      for(let q=-xm*2;q<=xm*2;q++){const v=q/2;s+=`<line x1="${X(v)}" x2="${X(v)}" y1="${Tp}" y2="${H-B}" style="stroke:${q===0?'var(--ink-3)':'var(--track)'};stroke-width:1${q===0?';stroke-dasharray:4 3':''}"/><text class="ax" x="${X(v)}" y="${H-B+15}" text-anchor="middle">${q===0?'0':(v>0?'+':'−')+Math.abs(v).toFixed(1)}</text>`;}
+      s+=`<text class="ax" x="${(L+W-R)/2}" y="${H-6}" text-anchor="middle">${xlab} (°C)</text>`;
+      s+=`<text class="ax" transform="translate(11 ${(Tp+H-B)/2}) rotate(-90)" text-anchor="middle">${ylab} (%)</text>`;
+      const c=cur(iso);
+      if(c[0]!=null&&c[1]==null){const x=X(c[0]);s+=`<line x1="${x}" x2="${x}" y1="${Tp}" y2="${H-B}" style="stroke:var(--now);stroke-width:2;stroke-dasharray:5 3"><title>2026: ${sign(c[0])} °C; rainfall not yet complete</title></line>`;}
+      const pts=T[iso].pts.slice().sort((a,b)=>(grp[a[0]]==='both')-(grp[b[0]]==='both'));
+      const obst=[], items=[];
+      const lineItem=c[0]!=null&&c[1]==null?{id:'cur',x:X(c[0]),y:Tp+12,text:'2026',rad:1}:null;
+      pts.forEach(p=>{
+        const cx=X(p[xi]), cy=Y(p[yi]), both=grp[p[0]]==='both';
+        const tip=`${p[0]}: ${sign(p[xi])} °C, ${Math.round(p[yi])}% of mean; ${p[5]?'EM-DAT flood':'no EM-DAT flood'}; ${GN[grp[p[0]]]}`;
+        s+=p[5]?`<circle cx="${cx}" cy="${cy}" r="4.3" style="fill:var(--flood);stroke:var(--surface);stroke-width:1.2"><title>${tip}</title></circle>`
+               :`<circle cx="${cx}" cy="${cy}" r="3.9" style="fill:var(--surface);stroke:var(--ink-3);stroke-width:1.4"><title>${tip}</title></circle>`;
+        if(p[6])s+=`<circle cx="${cx}" cy="${cy}" r="6.6" style="fill:none;stroke:var(--ink);stroke-width:1.1"/>`;
+        const rr=p[6]?6.6:4.3; obst.push({id:p[0],r:[cx-rr,cy-rr,cx+rr,cy+rr]});
+        if(both)items.push({id:p[0],x:cx,y:cy,text:String(p[0]),rad:p[6]?7.5:5});
+      });
+      if(c[0]!=null&&c[1]!=null){const x=X(c[0]),y=Y(c[1]);s+=`<rect x="${x-5.5}" y="${y-5.5}" width="11" height="11" transform="rotate(45 ${x} ${y})" style="fill:var(--surface);stroke:var(--now);stroke-width:2.2"><title>2026 (provisional): ${sign(c[0])} °C, ${Math.round(c[1])}% of mean</title></rect>`;
+        obst.push({id:'cur',r:[x-7,y-7,x+7,y+7]}); items.unshift({id:'cur',x,y,text:'2026',rad:8});}
+      if(lineItem)items.unshift(lineItem);
+      s+=placeLabels(items,obst,[L+2,Tp,W-R,H-B-2]);
+      s+='</svg>';
+      return `<div><h3>${CN[iso]}${iso==='ETH'?' (OND rainfall areas)':''}</h3>${s}</div>`;
+    });
+    document.getElementById(id).innerHTML=html.join('');
+  }
+  row('figtemp-as',1,2,'August–September temperature','OND rainfall',i=>[T[i].cur_as,null]);
+  row('figtemp-oct',3,4,'October temperature','October rainfall',i=>[T[i].cur_oct,T[i].cur_oct_pct]);
+})();
+
+/* ---------- 2026 lede ---------- */
+(function(){
+  const n=D.now, s=D.stats26, a=toDate('SOM'), b=toDate('ETH'), c=toDate('KEN');
+  document.getElementById('lede26').textContent=
+    `Both indices exceed their thresholds: the August–October Oceanic Niño Index was ${sign(n.oni_aso)} °C, and the DMI was ${sign(n.dmi_oct)} °C in October and ${sign(n.dmi_nov)} °C over 1–7 November. Rainfall from 1 September to 5 November was ${Math.round(s.SOM.to_date_pct)}% of the 1991–2020 mean in Somalia, ${Math.round(s.KEN.to_date_pct)}% in Kenya and ${Math.round(s.ETH.to_date_pct)}% in the Ethiopian OND rainfall areas (Figure 6). Area-average rainfall over 1–5 November was ${mm(s.SOM.month_mm)} mm in Somalia, ${mm(s.KEN.month_mm)} mm in Kenya and ${mm(s.ETH.month_mm)} mm in Ethiopia, against 1991–2020 means of ${mm(s.SOM.month_normal_mm)}, ${mm(s.KEN.month_normal_mm)} and ${mm(s.ETH.month_normal_mm)} mm for those days. By 5 November, at least as much rain had fallen in ${a.n} earlier seasons in Somalia (${fl26(a,'an EM-DAT flood')}), ${c.n} in Kenya (${c.f} of them with a flood) and ${b.n} in Ethiopia (${fl26(b,'a flood')}).`;
+})();
+
+/* ---------- Figure 6: cumulative rain ---------- */
+(function(){
+  const both=['1994','1997','2006','2018','2019','2023'];
+  const html=['SOM','KEN','ETH'].map(iso=>{
+    const c=D.curves[iso];
+    const W=340,H=250,L=44,R=50,T=12,B=30;
+    let mx=0;[...both,'normal','2026'].forEach(k=>{mx=Math.max(mx,...c[k]);});
+    const step=mx>700?200:mx>350?100:50; const ymax=Math.ceil(mx/step)*step;
+    const X=d=>L+d/121*(W-L-R), Y=v=>T+(1-v/ymax)*(H-T-B);
+    const path=a=>a.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join('');
+    let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${CN[iso]}: cumulative rainfall since 1 September for 2026, the six seasons with both conditions and the 1991–2020 mean"><title>${CN[iso]} cumulative rainfall</title>`;
+    for(let v=0;v<=ymax;v+=step){s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--track);stroke-width:1"/><text class="ax" x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`;}
+    [['Sep',0],['Oct',30],['Nov',61],['Dec',91]].forEach(m=>{s+=`<text class="ax" x="${X(m[1])+2}" y="${H-10}">${m[0]}</text><line x1="${X(m[1])}" x2="${X(m[1])}" y1="${H-B}" y2="${H-B+4}" style="stroke:var(--ink-3)"/>`;});
+    both.forEach(k=>{s+=`<path d="${path(c[k])}" style="fill:none;stroke:var(--rain);stroke-width:1.3;opacity:.6"><title>${k}: ${Math.round(c[k][c[k].length-1])} mm by 31 Dec</title></path>`;});
+    const top=both.reduce((a,k)=>c[k][120]>c[a][120]?k:a,both[0]);
+    s+=`<path d="${path(c.normal)}" style="fill:none;stroke:var(--ink-3);stroke-width:1.6;stroke-dasharray:4 3"/>`;
+    const labs=[[top,Y(c[top][120])],['2018',Y(c['2018'][120])],['mean',Y(c.normal[120])]].filter((x,i,a)=>a.findIndex(z=>z[0]===x[0])===i).sort((p,q)=>p[1]-q[1]);
+    for(let i=1;i<labs.length;i++)labs[i][1]=Math.max(labs[i][1],labs[i-1][1]+15);
+    labs.forEach(([k,yy])=>{s+=`<text class="ax" x="${X(121)+4}" y="${yy+4}">${k}</text>`;});
+    const a=c['2026'], li=a.length-1;
+    s+=`<path d="${path(a)}" style="fill:none;stroke:var(--now);stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round"/>`;
+    s+=`<circle cx="${X(li)}" cy="${Y(a[li])}" r="4" style="fill:var(--now);stroke:var(--surface);stroke-width:2"><title>2026: ${Math.round(a[li])} mm by 5 Nov</title></circle>`;
+    s+=`<text class="lab" x="${X(li)+8}" y="${Y(a[li])-6}">2026</text>`;
+    s+='</svg>';
+    return `<div><h3>${CN[iso]}${iso==='ETH'?' (OND rainfall areas)':''}</h3>${s}</div>`;
+  });
+  document.getElementById('figcum').innerHTML=html.join('');
+})();
+
+</script>
+</body>
+</html>
