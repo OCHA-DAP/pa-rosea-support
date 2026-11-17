@@ -132,23 +132,22 @@ ev = f[["DisNo.", "ISO", "Disaster Subtype", "Start Year", "Start Month", "End Y
         "Total Affected", "Location", "grp"]].sort_values(["Start Year", "Start Month", "ISO"])
 ev.to_csv(OUT / "flood_timing_events.csv", index=False)
 
-# ---- 3. per season: rains start, date the mean Sep-Dec total has fallen (from 1 Sep), Oct-Dec rain % of normal
+# ---- 3. per season: rains start, date rain from 1 Oct reached the mean Oct-Dec total, Oct-Dec rain % of normal
 RS = {y: rains_start(y) for y in s.index}
 NT = {iso: np.mean([daily[iso][f"{y}-10-01":f"{y}-12-31"].sum() for y in NORMAL]) for iso in ISOS}
-NSD = {iso: np.mean([daily[iso][f"{y}-09-01":f"{y}-12-31"].sum() for y in NORMAL]) for iso in ISOS}
 rec = []
 for iso in ISOS:
     dd, nt = daily[iso], NT[iso]
     for y in s.index:
-        cum = dd[f"{y}-09-01":f"{y + 1}-01-31"].cumsum()
-        full = cum[cum >= NSD[iso]]
+        cum = dd[f"{y}-10-01":f"{y}-12-31"].cumsum()
+        full = cum[cum >= nt]
         on, found, ok = RS[y]
         sel = SEL[iso] & ok
         od = np.average(on[sel], weights=WGT[sel])
         rec.append(dict(iso3=iso, year=y, grp=s.loc[y, "grp"],
                         onset=pd.Timestamp(y, 10, 1) + pd.Timedelta(days=round(od)),
                         no_onset_pct=float(np.average(~found[sel], weights=WGT[sel]) * 100),
-                        full_normal=full.index[0] if len(full) else pd.NaT,
+                        full_ond=full.index[0] if len(full) else pd.NaT,
                         ond_pct=100 * dd[f"{y}-10-01":f"{y}-12-31"].sum() / nt))
 t = pd.DataFrame(rec)
 t.to_csv(OUT / "flood_timing_seasons.csv", index=False)
@@ -164,12 +163,13 @@ for iso in ISOS:
     per = lambda y: dd[f"{y}-09-01":f"{y}-{md}"].sum()  # rain from 1 Sep to the same day as YEAR's data end
     nper = np.mean([per(y) for y in NORMAL])
     lm = lambda y: dd[f"{y}-{LAST:%m}-01":f"{y}-{md}"].sum()  # rain from the 1st of the data's last month to its last day
-    c = dd[f"{YEAR}-09-01":LAST].cumsum()
+    co = dd[f"{YEAR}-10-01":LAST].cumsum()  # the season so far, against the mean OND total
     stats[iso] = dict(
         onset_date=str((pd.Timestamp(YEAR, 10, 1) + pd.Timedelta(days=round(od))).date()),
         no_onset_pct=round(float(np.average(~found[sel], weights=WGT[sel]) * 100), 1),
         to_date_pct=round(float(100 * per(YEAR) / nper), 1),
-        full_normal=str(c[c >= NSD[iso]].index[0].date()) if (c >= NSD[iso]).any() else None,
+        full_ond=str(co[co >= nt].index[0].date()) if (co >= nt).any() else None,
+        ond_mm=round(float(co.iloc[-1]), 1) if len(co) else 0.0, ond_mean_mm=round(float(nt), 1),
         month_mm=round(float(lm(YEAR)), 1), month_normal_mm=round(float(np.mean([lm(y) for y in NORMAL])), 1))
     # every past season: OND rain % of mean, any EM-DAT flood starting Sep-Dec, rain to date % of mean
     fl_years = set(first.loc[first.ISO == iso, "Start Year"])
@@ -309,7 +309,7 @@ for iso in ["SOM", "KEN", "ETH"]:
     for y in BOTH:
         r = t[(t.iso3 == iso) & (t.year == y)].iloc[0]
         e = ev[(ev.ISO == iso) & (ev["Start Year"] == y)]
-        out.append(dict(year=y, onset=dos(r.onset, y), full=dos(r.full_normal, y), ond_pct=int(round(r.ond_pct)),
+        out.append(dict(year=y, onset=dos(r.onset, y), full=dos(r.full_ond, y), ond_pct=int(round(r.ond_pct)),
                         no_onset_pct=round(float(r.no_onset_pct), 1),
                         months=sorted(set(int(m) for m in e["Start Month"])),
                         events=[dict(id=a["DisNo."], sub=a["Disaster Subtype"], m=int(a["Start Month"]),
@@ -317,7 +317,7 @@ for iso in ["SOM", "KEN", "ETH"]:
                                      loc=a["Location"]) for _, a in e.iterrows()]))
     c = stats[iso]
     out.append(dict(year=YEAR, onset=dos(pd.Timestamp(c["onset_date"]), YEAR),
-                    full=dos(pd.Timestamp(c["full_normal"]), YEAR) if c["full_normal"] else None,
+                    full=dos(pd.Timestamp(c["full_ond"]), YEAR) if c["full_ond"] else None,
                     no_onset_pct=c["no_onset_pct"], months=[], events=[]))
     timeline[iso] = out
 
