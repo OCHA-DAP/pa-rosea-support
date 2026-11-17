@@ -7,6 +7,8 @@ The GitHub Pages site for this repo: <https://ocha-dap.github.io/pa-rosea-suppor
 - The drought hotspot pages are assembled at deploy time from
   `drought/ago/ago_hotspots.html` and `drought/zmb/zmb_hotspots.html` to `/ago/` and `/zmb/`.
 - The Kenya flood triggers page is copied from `flood/ken/ken_khf_trigger_review.html` to `/ken/`.
+- The Horn of Africa flood timing page is copied from `flood/hoa/hoa_flood_timing.html` to
+  `/hoa-flood-timing/`.
 - `.github/workflows/deploy-pages.yml` runs on a push to `main` that touches these files.
 
 To add a product, put it under `pages/<name>/index.html` (or add a copy step to the
